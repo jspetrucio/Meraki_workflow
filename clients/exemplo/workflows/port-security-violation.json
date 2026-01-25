@@ -1,0 +1,63 @@
+{
+  "workflow": {
+    "unique_name": "port-security-violation",
+    "name": "Port Security Violation Handler",
+    "description": "Desabilita porta quando detecta violacao de seguranca",
+    "type": "automation",
+    "schema_version": "1.0.0"
+  },
+  "triggers": [
+    {
+      "type": "webhook",
+      "properties": {
+        "event": "switch.port.security_violation"
+      }
+    }
+  ],
+  "actions": [
+    {
+      "name": "disable_port",
+      "type": "meraki.update_port",
+      "properties": {
+        "serial": "$input.switch_serial$",
+        "port_id": "$input.port_number$",
+        "enabled": false
+      }
+    },
+    {
+      "name": "notify_slack",
+      "type": "slack.post_message",
+      "properties": {
+        "channel": "#security-alerts",
+        "message": ":warning: Porta $input.port_number$ no switch $input.switch_serial$ desabilitada por violacao de seguranca"
+      }
+    },
+    {
+      "name": "create_jira_ticket",
+      "type": "jira.create_issue",
+      "properties": {
+        "project": "NET",
+        "issue_type": "Incident",
+        "summary": "Port Security Violation - $input.switch_serial$:$input.port_number$",
+        "description": "Porta automaticamente desabilitada por violacao de seguranca"
+      }
+    }
+  ],
+  "variables": [],
+  "input_variables": [
+    {
+      "name": "switch_serial",
+      "type": "string",
+      "default": null,
+      "description": "",
+      "required": true
+    },
+    {
+      "name": "port_number",
+      "type": "string",
+      "default": null,
+      "description": "",
+      "required": true
+    }
+  ]
+}

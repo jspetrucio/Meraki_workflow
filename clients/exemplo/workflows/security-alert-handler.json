@@ -1,0 +1,57 @@
+{
+  "workflow": {
+    "unique_name": "security-alert-handler",
+    "name": "Security Alert Handler",
+    "description": "Processa alertas de seguranca (IDS, MX firewall)",
+    "type": "automation",
+    "schema_version": "1.0.0"
+  },
+  "triggers": [
+    {
+      "type": "webhook",
+      "properties": {
+        "event": "security.alert",
+        "severity": [
+          "high",
+          "critical"
+        ]
+      }
+    }
+  ],
+  "actions": [
+    {
+      "name": "notify_slack",
+      "type": "slack.post_message",
+      "properties": {
+        "channel": "#security",
+        "message": ":warning: Security Alert: $input.alert_type$ - $input.alert_message$"
+      }
+    },
+    {
+      "name": "create_incident",
+      "type": "pagerduty.create_incident",
+      "properties": {
+        "title": "Security Alert: $input.alert_type$",
+        "description": "$input.alert_message$",
+        "urgency": "high"
+      }
+    }
+  ],
+  "variables": [],
+  "input_variables": [
+    {
+      "name": "alert_type",
+      "type": "string",
+      "default": null,
+      "description": "Tipo de alerta",
+      "required": true
+    },
+    {
+      "name": "alert_message",
+      "type": "string",
+      "default": null,
+      "description": "Mensagem do alerta",
+      "required": true
+    }
+  ]
+}

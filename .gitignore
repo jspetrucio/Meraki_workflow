@@ -1,0 +1,89 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Credentials (NUNCA commitar)
+.meraki/
+**/credentials
+*.pem
+*.key
+*.secret
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific - dados de cliente
+clients/*/discovery/*.json
+clients/*/reports/*.html
+clients/*/reports/*.pdf
+clients/*/.env
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Agentes nao utilizados (manter apenas meraki-specialist, network-analyst, workflow-creator)
+.claude/agents/architect.md
+.claude/agents/backend.md
+.claude/agents/code-reviewer.md
+.claude/agents/devops.md
+.claude/agents/maestro.md
+.claude/agents/qa.md
+.claude/agents/security.md
+
+# Comandos nao utilizados
+.claude/commands/
+
+# Arquivos desnecessarios para o colega
+CHECKPOINT.md
+PRD.md
+PRD_MERAKI.md
+TECH-STACK.md
+ISSUES.md
+WORKFLOW_*.md
+BRAINSTORM*.md
+IMPLEMENTATION*.md
+GIT_QUICKSTART.md
+CLI_*.md
+splendid-growing-octopus.md
+CHANGELOG_SSID.md
+
+# Dados do cliente jose-org (exemplo pessoal)
+clients/jose-org/
+
+# Arquivos extras desnecessarios
+CLI_FILES_CREATED.txt
+Meraki_Workflow_Case_Scenarios.md
+backups/
+QUICK_DEPLOY.sh
+install_cli.sh
+scripts/README_*.md
+scripts/DISCOVERY_EXAMPLES.md
+scripts/REPORT_IMPLEMENTATION_SUMMARY.md
+scripts/example_discovery.py
+scripts/CLI_*.md

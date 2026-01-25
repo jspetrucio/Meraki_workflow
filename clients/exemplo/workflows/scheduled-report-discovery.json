@@ -1,0 +1,47 @@
+{
+  "workflow": {
+    "unique_name": "scheduled-report-discovery",
+    "name": "Scheduled Discovery Report",
+    "description": "Gera relatorio discovery periodicamente",
+    "type": "automation",
+    "schema_version": "1.0.0"
+  },
+  "triggers": [
+    {
+      "type": "schedule",
+      "properties": {
+        "cron": "0 8 * * 1",
+        "timezone": "America/Sao_Paulo"
+      }
+    }
+  ],
+  "actions": [
+    {
+      "name": "generate_report",
+      "type": "python.execute",
+      "properties": {
+        "code": "\n# Gerar relatorio discovery\nfrom scripts.report import generate_report\nreport_html = generate_report('discovery')\nvars.report_content = report_html\n"
+      }
+    },
+    {
+      "name": "send_email",
+      "type": "email.send",
+      "properties": {
+        "to": "cto@example.com",
+        "subject": "Discovery Report - 2026-01-24",
+        "body": "$vars.report_content$",
+        "content_type": "text/html"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "name": "report_type",
+      "type": "string",
+      "default": "discovery",
+      "description": "Tipo de relatorio a gerar",
+      "required": false
+    }
+  ],
+  "input_variables": []
+}

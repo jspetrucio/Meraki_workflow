@@ -1,0 +1,59 @@
+{
+  "workflow": {
+    "unique_name": "firmware-compliance-check",
+    "name": "Firmware Compliance Check",
+    "description": "Verifica devices sem firmware MX 18.211",
+    "type": "automation",
+    "schema_version": "1.0.0"
+  },
+  "triggers": [
+    {
+      "type": "schedule",
+      "properties": {
+        "cron": "0 8 * * *",
+        "timezone": "America/Sao_Paulo"
+      }
+    }
+  ],
+  "actions": [
+    {
+      "name": "get_org_devices",
+      "type": "meraki.get_device_status",
+      "properties": {}
+    },
+    {
+      "name": "check_compliance",
+      "type": "python.execute",
+      "properties": {
+        "code": "\n# Filtrar devices com firmware diferente do alvo\nnon_compliant = [\n    d for d in actions.get_org_devices.devices\n    if d.get('firmware', '') != vars.target_version\n]\nvars.non_compliant_devices = non_compliant\n"
+      }
+    },
+    {
+      "name": "send_report",
+      "type": "email.send",
+      "properties": {
+        "to": "network-team@example.com,ops@example.com",
+        "subject": "Firmware Compliance Report - X devices nao-compliant",
+        "body": "Lista de devices: $vars.non_compliant_devices$"
+      },
+      "condition": "len($vars.non_compliant_devices$) > 0"
+    }
+  ],
+  "variables": [
+    {
+      "name": "target_version",
+      "type": "string",
+      "default": "MX 18.211",
+      "description": "Versao de firmware alvo",
+      "required": false
+    },
+    {
+      "name": "non_compliant_devices",
+      "type": "array",
+      "default": [],
+      "description": "Lista de devices nao-compliant",
+      "required": false
+    }
+  ],
+  "input_variables": []
+}

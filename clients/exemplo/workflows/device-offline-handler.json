@@ -1,0 +1,61 @@
+{
+  "workflow": {
+    "unique_name": "device-offline-handler",
+    "name": "Device Offline Handler",
+    "description": "Notifica quando device fica offline por mais de X minutos",
+    "type": "automation",
+    "schema_version": "1.0.0"
+  },
+  "triggers": [
+    {
+      "type": "webhook",
+      "properties": {
+        "event": "device.status.change",
+        "status": "offline"
+      }
+    }
+  ],
+  "actions": [
+    {
+      "name": "wait",
+      "type": "core.sleep",
+      "properties": {
+        "duration": "$vars.wait_time$"
+      }
+    },
+    {
+      "name": "check_status",
+      "type": "meraki.get_device_status",
+      "properties": {
+        "serial": "$input.device_serial$"
+      }
+    },
+    {
+      "name": "notify_slack",
+      "type": "slack.post_message",
+      "properties": {
+        "channel": "#network-alerts",
+        "message": "Device $input.device_serial$ offline por mais de 10 minutos!"
+      },
+      "condition": "$actions.check_status.status$ == 'offline'"
+    }
+  ],
+  "variables": [
+    {
+      "name": "wait_time",
+      "type": "number",
+      "default": 600,
+      "description": "Tempo de espera em segundos antes de notificar",
+      "required": false
+    }
+  ],
+  "input_variables": [
+    {
+      "name": "device_serial",
+      "type": "string",
+      "default": null,
+      "description": "Serial do device que ficou offline",
+      "required": true
+    }
+  ]
+}

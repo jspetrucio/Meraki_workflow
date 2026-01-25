@@ -1,0 +1,68 @@
+{
+  "workflow": {
+    "unique_name": "bulk-port-config",
+    "name": "Bulk Port Configuration",
+    "description": "Configura multiplas portas em batch",
+    "type": "automation",
+    "schema_version": "1.0.0"
+  },
+  "triggers": [
+    {
+      "type": "api_call",
+      "properties": {}
+    }
+  ],
+  "actions": [
+    {
+      "name": "configure_ports",
+      "type": "core.loop",
+      "properties": {
+        "items": "$input.port_list$",
+        "actions": [
+          {
+            "name": "update_port",
+            "type": "meraki.update_port",
+            "properties": {
+              "serial": "$input.switch_serial$",
+              "port_id": "$item$",
+              "vlan": "$input.vlan_id$",
+              "type": "access"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "notify_completion",
+      "type": "slack.post_message",
+      "properties": {
+        "channel": "#network-ops",
+        "message": "Configuracao em batch concluida: $len(input.port_list)$ portas atualizadas no switch $input.switch_serial$"
+      }
+    }
+  ],
+  "variables": [],
+  "input_variables": [
+    {
+      "name": "switch_serial",
+      "type": "string",
+      "default": null,
+      "description": "",
+      "required": true
+    },
+    {
+      "name": "port_list",
+      "type": "array",
+      "default": null,
+      "description": "Lista de portas a configurar",
+      "required": true
+    },
+    {
+      "name": "vlan_id",
+      "type": "number",
+      "default": null,
+      "description": "",
+      "required": true
+    }
+  ]
+}

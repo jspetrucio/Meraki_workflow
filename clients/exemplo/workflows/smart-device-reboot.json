@@ -1,0 +1,70 @@
+{
+  "workflow": {
+    "unique_name": "smart-device-reboot",
+    "name": "Smart Device Reboot",
+    "description": "Reboot device apenas se offline por muito tempo",
+    "type": "automation",
+    "schema_version": "1.0.0"
+  },
+  "triggers": [
+    {
+      "type": "webhook",
+      "properties": {
+        "event": "device.status.check"
+      }
+    }
+  ],
+  "actions": [
+    {
+      "name": "get_status",
+      "type": "meraki.get_device_status",
+      "properties": {
+        "serial": "$input.device_serial$"
+      }
+    },
+    {
+      "name": "reboot_device",
+      "type": "meraki.reboot_device",
+      "properties": {
+        "serial": "$input.device_serial$"
+      },
+      "condition": "$actions.get_status.status$ == 'offline' AND $vars.reboot_attempts$ < 3"
+    },
+    {
+      "name": "increment_counter",
+      "type": "core.set_variable",
+      "properties": {
+        "variable": "reboot_attempts",
+        "value": "$vars.reboot_attempts$ + 1"
+      },
+      "condition": "$actions.reboot_device.executed$ == true"
+    },
+    {
+      "name": "escalate",
+      "type": "pagerduty.create_incident",
+      "properties": {
+        "title": "Device $input.device_serial$ nao responde apos 3 reboots",
+        "urgency": "high"
+      },
+      "condition": "$vars.reboot_attempts$ >= 3 AND $actions.get_status.status$ == 'offline'"
+    }
+  ],
+  "variables": [
+    {
+      "name": "reboot_attempts",
+      "type": "number",
+      "default": 0,
+      "description": "Numero de tentativas de reboot",
+      "required": false
+    }
+  ],
+  "input_variables": [
+    {
+      "name": "device_serial",
+      "type": "string",
+      "default": null,
+      "description": "",
+      "required": true
+    }
+  ]
+}
