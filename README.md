@@ -12,7 +12,7 @@
 ### 1. Clone o Repositorio
 
 ```bash
-git clone https://github.com/SEU_USUARIO/Meraki_workflow.git
+git clone https://github.com/jspetrucio/Meraki_workflow.git
 cd Meraki_workflow
 ```
 
