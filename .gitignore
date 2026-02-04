@@ -87,3 +87,12 @@ scripts/DISCOVERY_EXAMPLES.md
 scripts/REPORT_IMPLEMENTATION_SUMMARY.md
 scripts/example_discovery.py
 scripts/CLI_*.md
+
+# Dependencies (AIOS)
+node_modules/
+node_modules
+
+# AIOS Local (AIOS)
+.aios-core/local/
+.claude/settings.local.json
+.aios/install-log.txt

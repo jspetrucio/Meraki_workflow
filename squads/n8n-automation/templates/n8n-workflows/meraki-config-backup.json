@@ -1,0 +1,314 @@
+{
+  "name": "Meraki Config Backup",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule - Daily 2AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.meraki.com/api/v1/organizations/{{ $vars.MERAKI_ORG_ID }}/networks",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Cisco-Meraki-API-Key",
+              "value": "={{ $vars.MERAKI_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-networks",
+      "name": "Meraki - Get Networks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "split-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.meraki.com/api/v1/networks/{{ $json.id }}/settings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Cisco-Meraki-API-Key",
+              "value": "={{ $vars.MERAKI_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-network-config",
+      "name": "Meraki - Get Network Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "id": "wait-rate-limit",
+      "name": "Wait - Rate Limit",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1130, 300]
+    },
+    {
+      "parameters": {
+        "operation": "aggregateItems",
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "configs",
+        "include": "allFieldsExcept",
+        "fieldsToExclude": "",
+        "options": {}
+      },
+      "id": "aggregate-configs",
+      "name": "Aggregate Configs",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3,
+      "position": [1350, 300]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=meraki-backup-{{ $now.format('yyyy-MM-dd') }}.json",
+        "fileContent": "={{ JSON.stringify($json.configs, null, 2) }}",
+        "options": {}
+      },
+      "id": "write-file",
+      "name": "Write Backup File",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [1570, 300]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "={{ $vars.S3_BUCKET }}",
+        "fileName": "=backups/meraki/{{ $now.format('yyyy/MM') }}/meraki-backup-{{ $now.format('yyyy-MM-dd') }}.json",
+        "options": {}
+      },
+      "id": "s3-upload",
+      "name": "S3 - Upload Backup",
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 1,
+      "position": [1790, 300],
+      "credentials": {
+        "aws": {
+          "id": "aws-credential",
+          "name": "AWS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $vars.EMAIL_FROM }}",
+        "toEmail": "={{ $vars.EMAIL_TO }}",
+        "subject": "=Meraki Backup Complete - {{ $now.format('yyyy-MM-dd') }}",
+        "text": "=Meraki configuration backup completed successfully.\n\nDate: {{ $now.format('yyyy-MM-dd HH:mm:ss') }}\nOrganization: {{ $vars.MERAKI_ORG_ID }}\nNetworks backed up: {{ $json.configs.length }}\nS3 Location: s3://{{ $vars.S3_BUCKET }}/backups/meraki/{{ $now.format('yyyy/MM') }}/\n\nThis is an automated message from Meraki Workflow.",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email Summary",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [2010, 300],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credential",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Meraki Config Backup\n\nAutomated daily backup of Meraki network configurations to S3.\n\n### Variables Required:\n- `MERAKI_API_KEY`: Your Meraki API key\n- `MERAKI_ORG_ID`: Organization ID\n- `S3_BUCKET`: S3 bucket name\n- `EMAIL_FROM`: Sender email\n- `EMAIL_TO`: Recipient email\n\n### Credentials Required:\n- AWS S3\n- SMTP (for email)\n\n### Schedule:\nRuns daily at 2:00 AM"
+      },
+      "id": "sticky-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [230, 80]
+    }
+  ],
+  "connections": {
+    "Schedule - Daily 2AM": {
+      "main": [
+        [
+          {
+            "node": "Meraki - Get Networks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meraki - Get Networks": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Meraki - Get Network Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aggregate Configs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meraki - Get Network Config": {
+      "main": [
+        [
+          {
+            "node": "Wait - Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Configs": {
+      "main": [
+        [
+          {
+            "node": "Write Backup File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Backup File": {
+      "main": [
+        [
+          {
+            "node": "S3 - Upload Backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "S3 - Upload Backup": {
+      "main": [
+        [
+          {
+            "node": "Send Email Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateId": "meraki-config-backup-v1",
+    "instanceId": "meraki-workflow-squad"
+  },
+  "tags": [
+    {
+      "name": "meraki",
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-02-04T00:00:00.000Z"
+    },
+    {
+      "name": "backup",
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-02-04T00:00:00.000Z"
+    }
+  ],
+  "variables": [
+    {
+      "key": "MERAKI_API_KEY",
+      "value": "YOUR_API_KEY",
+      "type": "string"
+    },
+    {
+      "key": "MERAKI_ORG_ID",
+      "value": "YOUR_ORG_ID",
+      "type": "string"
+    },
+    {
+      "key": "S3_BUCKET",
+      "value": "my-meraki-backups",
+      "type": "string"
+    },
+    {
+      "key": "EMAIL_FROM",
+      "value": "noreply@company.com",
+      "type": "string"
+    },
+    {
+      "key": "EMAIL_TO",
+      "value": "network-team@company.com",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,261 @@
+{
+  "name": "Multi-Vendor Alert Correlation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vendor-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Any Vendor Alert",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "multi-vendor-alert"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize alert from different vendors to common format\nconst input = $input.first().json;\n\n// Detect vendor by payload structure\nlet vendor = 'unknown';\nlet normalizedAlert = {};\n\nif (input.alertType && input.organizationId) {\n  // Meraki format\n  vendor = 'meraki';\n  normalizedAlert = {\n    vendor: 'meraki',\n    severity: input.alertLevel || 'warning',\n    device: input.deviceName || input.deviceSerial,\n    message: input.alertType,\n    timestamp: input.occurredAt,\n    raw_data: input\n  };\n} else if (input.source && input.source.includes('fortinet')) {\n  // Fortinet format\n  vendor = 'fortinet';\n  normalizedAlert = {\n    vendor: 'fortinet',\n    severity: input.level || 'warning',\n    device: input.devname,\n    message: input.msg,\n    timestamp: input.date + ' ' + input.time,\n    raw_data: input\n  };\n} else if (input.log_type === 'SYSTEM') {\n  // Palo Alto format\n  vendor = 'paloalto';\n  normalizedAlert = {\n    vendor: 'paloalto',\n    severity: input.severity || 'medium',\n    device: input.device_name,\n    message: input.description,\n    timestamp: input.receive_time,\n    raw_data: input\n  };\n} else {\n  // Generic format\n  normalizedAlert = {\n    vendor: 'generic',\n    severity: input.severity || input.level || 'warning',\n    device: input.device || input.host || 'unknown',\n    message: input.message || input.msg || JSON.stringify(input),\n    timestamp: input.timestamp || new Date().toISOString(),\n    raw_data: input\n  };\n}\n\n// Map severity to standard levels\nconst severityMap = {\n  'critical': 'critical',\n  'high': 'critical',\n  'error': 'high',\n  'warning': 'medium',\n  'medium': 'medium',\n  'low': 'low',\n  'info': 'low',\n  'informational': 'low'\n};\n\nnormalizedAlert.normalized_severity = severityMap[normalizedAlert.severity.toLowerCase()] || 'medium';\nnormalizedAlert.correlation_id = `${normalizedAlert.vendor}-${normalizedAlert.device}-${Date.now()}`;\n\nreturn [{ json: normalizedAlert }];"
+      },
+      "id": "normalize-alert",
+      "name": "Normalize Alert Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-critical",
+              "leftValue": "={{ $json.normalized_severity }}",
+              "rightValue": "critical",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-critical",
+      "name": "IF Critical Severity",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://events.pagerduty.com/v2/enqueue",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"routing_key\": \"{{ $vars.PAGERDUTY_ROUTING_KEY }}\",\n  \"event_action\": \"trigger\",\n  \"dedup_key\": \"{{ $json.correlation_id }}\",\n  \"payload\": {\n    \"summary\": \"[{{ $json.vendor.toUpperCase() }}] Critical: {{ $json.message }}\",\n    \"severity\": \"critical\",\n    \"source\": \"{{ $json.device }}\",\n    \"component\": \"{{ $json.vendor }}\",\n    \"custom_details\": {\n      \"vendor\": \"{{ $json.vendor }}\",\n      \"device\": \"{{ $json.device }}\",\n      \"original_message\": \"{{ $json.message }}\",\n      \"timestamp\": \"{{ $json.timestamp }}\"\n    }\n  }\n}",
+        "options": {}
+      },
+      "id": "pagerduty-critical",
+      "name": "PagerDuty - Critical Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [910, 200]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "channel": {
+          "__rl": true,
+          "value": "={{ $vars.SLACK_CHANNEL }}",
+          "mode": "name"
+        },
+        "text": "=🔴 **CRITICAL Multi-Vendor Alert**\n\n**Vendor:** {{ $json.vendor.toUpperCase() }}\n**Device:** {{ $json.device }}\n**Message:** {{ $json.message }}\n**Time:** {{ $json.timestamp }}\n**Correlation ID:** {{ $json.correlation_id }}\n\n_PagerDuty incident created_",
+        "otherOptions": {}
+      },
+      "id": "slack-critical",
+      "name": "Slack - Critical Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [1130, 200],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-credential",
+          "name": "Slack API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "channel": {
+          "__rl": true,
+          "value": "={{ $vars.SLACK_CHANNEL }}",
+          "mode": "name"
+        },
+        "text": "=⚠️ **Multi-Vendor Alert**\n\n**Vendor:** {{ $json.vendor.toUpperCase() }}\n**Severity:** {{ $json.normalized_severity }}\n**Device:** {{ $json.device }}\n**Message:** {{ $json.message }}\n**Time:** {{ $json.timestamp }}",
+        "otherOptions": {}
+      },
+      "id": "slack-warning",
+      "name": "Slack - Warning Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [910, 400],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-credential",
+          "name": "Slack API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1350, 300]
+    },
+    {
+      "parameters": {
+        "content": "## Multi-Vendor Alert Correlation\n\nReceives alerts from multiple network vendors and normalizes them to a common format.\n\n### Supported Vendors:\n- Meraki (webhooks)\n- Fortinet (syslog/webhook)\n- Palo Alto (syslog/webhook)\n- Generic (any JSON payload)\n\n### Alert Flow:\n1. Receive webhook from any vendor\n2. Normalize to common format\n3. If CRITICAL → PagerDuty + Slack\n4. If WARNING → Slack only\n\n### Variables Required:\n- `SLACK_CHANNEL`: Channel for alerts\n- `PAGERDUTY_ROUTING_KEY`: PagerDuty integration key\n\n### Configure Vendors:\n- Point Meraki Alerts to webhook URL\n- Forward Fortinet syslogs to webhook\n- Forward Palo Alto logs to webhook"
+      },
+      "id": "sticky-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [230, 80]
+    }
+  ],
+  "connections": {
+    "Webhook - Any Vendor Alert": {
+      "main": [
+        [
+          {
+            "node": "Normalize Alert Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Alert Format": {
+      "main": [
+        [
+          {
+            "node": "IF Critical Severity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Critical Severity": {
+      "main": [
+        [
+          {
+            "node": "PagerDuty - Critical Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Warning Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PagerDuty - Critical Alert": {
+      "main": [
+        [
+          {
+            "node": "Slack - Critical Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Critical Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Warning Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateId": "multi-vendor-alert-v1",
+    "instanceId": "meraki-workflow-squad"
+  },
+  "tags": [
+    {
+      "name": "multi-vendor",
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-02-04T00:00:00.000Z"
+    },
+    {
+      "name": "alerting",
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-02-04T00:00:00.000Z"
+    },
+    {
+      "name": "correlation",
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-02-04T00:00:00.000Z"
+    }
+  ],
+  "variables": [
+    {
+      "key": "SLACK_CHANNEL",
+      "value": "#network-alerts",
+      "type": "string"
+    },
+    {
+      "key": "PAGERDUTY_ROUTING_KEY",
+      "value": "YOUR_ROUTING_KEY",
+      "type": "string"
+    }
+  ]
+}

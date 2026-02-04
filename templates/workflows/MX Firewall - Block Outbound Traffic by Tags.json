@@ -1,0 +1,2392 @@
+{
+  "workflow": {
+    "unique_name": "definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5",
+    "name": "MX Firewall - Block Outbound Traffic by Tags",
+    "title": "MX Firewall - Block Outbound Traffic by Tags",
+    "type": "generic.workflow",
+    "base_type": "workflow",
+    "variables": [
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "output",
+          "name": "Result",
+          "type": "datatype.string",
+          "description": "LLM-generated comprehensive summary of firewall rule deployment results across all processed networks, including successful and failed operations with detailed information.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02Q1QSQTQOKCU1CjLr1eAr9sujJYhw3Ttud",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "local",
+          "name": "Temp Message",
+          "type": "datatype.string",
+          "description": "Temporary variable used to accumulate and format output messages from multiple network processing operations.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02Q1QSQTQOVE53W5t88WYtwDmhW4wpowYM0",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "output",
+          "name": "Error Message",
+          "type": "datatype.string",
+          "description": "Detailed error message providing specific information about workflow failures including validation errors, API failures, network discovery issues, or firewall rule deployment problems for troubleshooting and resolution.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02Q1QSQTQP0ST0fLhEJuhUSEEFYhyKPhghC",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "local",
+          "name": "Jira Issue Key",
+          "type": "datatype.string",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02Q42ODEFXUVA0rrvljIeVamnn4Ga4g1qko",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "local",
+          "name": "Block Destination IP Address",
+          "type": "datatype.string",
+          "description": "Destination IP address or CIDR block to block outbound traffic to. Supports single IPs (e.g., 192.168.1.1) or CIDR notation (e.g., 10.0.0.0/8). This will be blocked across all matching networks.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02Q2GOAE2NXUX5sZ0MiSh8ZhjjIOM8wZbKK",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.integer",
+        "properties": {
+          "value": 0,
+          "scope": "output",
+          "name": "Status Code",
+          "type": "datatype.integer",
+          "description": "The HTTP status code of the workflow execution.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": ""
+        },
+        "unique_name": "variable_workflow_02Q1QSQTQOEVK7eMGRhzx4y9HKjMz3jrVnB",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "output",
+          "name": "Status Message",
+          "type": "datatype.string",
+          "description": "Overall execution status message indicating successful completion or high-level error information for the bulk firewall rule deployment operation.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02Q1QSQTQP6J54ZRumdIJYW4KyAcBuJgFE4",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.boolean",
+        "properties": {
+          "value": true,
+          "scope": "input",
+          "name": "Enable Jira Tracking",
+          "type": "datatype.boolean",
+          "description": "Enable or disable Jira issue creation and tracking for this firewall deployment. When enabled, a Jira issue will be created and updated throughout the workflow execution.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": ""
+        },
+        "unique_name": "variable_workflow_02Q2WIXANNMFB20LMBdn83SZJbTmTlZNb9s",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "variable_type_array_01JhSTW61I3ZU2IfL7dwQox83eFDzE1qUiA",
+        "properties": {
+          "value": [],
+          "scope": "local",
+          "name": "Network Tags to Search",
+          "type": "datatype.array",
+          "description": "Provide a list of network tags to search. Only networks in the user's organization with at least one matching tag from this list will be included. Note: The filtering is case-sensitive.\nExample:\n[\n  \"example-tag\", \"another-tag\"\n]",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": ""
+        },
+        "unique_name": "variable_workflow_02Q1QSQTQO714054Q7dul17Do9BOLKTN304",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "input",
+          "name": "ServiceNow Incoming Message",
+          "type": "datatype.string",
+          "is_required": true,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "json"
+        },
+        "unique_name": "variable_workflow_02Q3QSTLSDE6F4BEoEtuzNrfL3fIoMMCh4b",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "local",
+          "name": "Jira Issue ID",
+          "type": "datatype.string",
+          "description": "Stores the ID of the created Jira issue for use in subsequent comment operations throughout the workflow execution.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "input",
+          "name": "Jira Issue Type ID",
+          "type": "datatype.string",
+          "description": "The Jira Issue Type ID for the tracking issue (e.g., '11018' for Bug, '10001' for Task). Check your Jira administration settings for the correct issue type ID.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02Q2WIXANNGDT5Wj0XefBKBb4CYxUGhSMOK",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "input",
+          "name": "Jira Project ID",
+          "type": "datatype.string",
+          "description": "The Jira Project ID where the tracking issue will be created. This should be the numeric project ID (e.g., '10004') that can be found in your Jira project settings.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02Q2WIXANN61A7kXwrSboPA6uxsXwBxCNb8",
+        "object_type": "variable_workflow"
+      }
+    ],
+    "properties": {
+      "atomic": {
+        "is_atomic": false
+      },
+      "automation_rules": {
+        "type": [
+          "webhook.rule_event"
+        ]
+      },
+      "delete_workflow_instance": false,
+      "description": "This workflow blocks outbound traffic to a specified destination IP/CIDR across multiple Meraki MX networks based on network tags. It automatically discovers networks with matching tags and adds a deny firewall rule to block traffic to the specified destination.\n\nThe workflow creates outbound L3 firewall rules with deny policy for the provided destination across all matching networks.\n\nPrerequisites:\n- User must have network admin privileges for target organizations\n- Target networks must exist, have specified tags, and support MX appliances\n- Valid destination IP address or CIDR block\n\nFeatures:\n- Automatic network discovery by tags\n- Bulk firewall rule deployment\n- Comprehensive error handling and reporting\n- AI-powered result summarization\n\nLimitations:\n- Maximum 500 networks per organization query\n- Case-sensitive tag matching\n- Requires valid IP/CIDR format for destination",
+      "display_name": "MX Firewall - Block Outbound Traffic by Tags",
+      "runtime_user": {},
+      "target": {
+        "execute_on_target_group": true,
+        "target_group": {
+          "target_group_id": "target_group_02Q3CONQ2KMDK6n03u6ls7UKsCWVFf58Q5G",
+          "run_on_all_targets": false,
+          "selected_target_types": [
+            "web-service.endpoint",
+            "meraki.endpoint",
+            "target.openai_endpoint"
+          ],
+          "use_criteria": {
+            "choose_target_using_algorithm": "choose_all_with_matching_criteria",
+            "conditions": [
+              {
+                "operator": "mw",
+                "left_operand": "$targetgroup.target_group_02Q3CONQ2KMDK6n03u6ls7UKsCWVFf58Q5G.common.display_name$",
+                "right_operand": "*Target-Group"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "object_type": "definition_workflow",
+    "actions": [
+      {
+        "unique_name": "definition_activity_02Q3QRTWMJOBR0jHZUTgLVttIN6l3VTV1sl",
+        "name": "Group",
+        "title": "Analyze ServiceNow Incident",
+        "type": "logic.group",
+        "base_type": "activity",
+        "properties": {
+          "continue_on_failure": false,
+          "description": "Parse ServiceNow incident webhook payload using LLM to extract CIDR block and network region tags for automated firewall rule deployment targeting.",
+          "display_as_suggestion": false,
+          "display_name": "Analyze ServiceNow Incident",
+          "skip_execution": false
+        },
+        "object_type": "definition_activity",
+        "actions": [
+          {
+            "unique_name": "definition_activity_02Q3QTYMOR8O2257iuINGbpPGS5vKtjUoqd",
+            "name": "LLM Prompt",
+            "title": "Extract from ServiceNow Incident",
+            "type": "activity.openai_structured_output_agent",
+            "base_type": "activity",
+            "properties": {
+              "action_timeout": 180,
+              "chat_messages": [
+                {
+                  "content": "Extract the CIDR block and network region from this ServiceNow incident payload:\n\n$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.input.variable_workflow_02Q3QSTLSDE6F4BEoEtuzNrfL3fIoMMCh4b$\n\nFocus on the 'description' field which contains the incident details. Extract the CIDR block and regional network tags from this description text.\nExtract the 'number' to capture the Incident Number.",
+                  "role": "user"
+                }
+              ],
+              "continue_on_failure": false,
+              "description": "Extract the CIDR block and network region from the ServiceNow incident text using structured LLM parsing.",
+              "display_name": "Extract from ServiceNow Incident",
+              "input": {
+                "json_schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"cidr_block\": {\n      \"type\": \"string\",\n      \"description\": \"The CIDR block or IP address that needs to be blocked (e.g., 203.0.113.0/24 or 192.168.1.1)\"\n    },\n    \"network_region\": {\n      \"type\": \"string\",\n      \"description\": \"The network region or tag identifier (e.g., US-East-Region, region:east-coast)\"\n    },\n    \"incident_summary\": {\n      \"type\": \"string\",\n      \"description\": \"Brief summary of the security incident requiring the firewall block\"\n    }\n  },\n  \"required\": [\"cidr_block\", \"network_region\"]\n}",
+                "system_messages": [
+                  {
+                    "content": "You are a network security analyst expert at extracting critical information from ServiceNow incident webhook payloads. Your job is to identify CIDR blocks and network regions that require immediate firewall blocking.\n\nKey extraction rules:\n1. Parse the JSON payload and focus on the 'description' field\n2. Look for CIDR notation (e.g., 203.0.113.0/24) or IP addresses in the description\n3. Find regional identifiers and ALWAYS convert them to standardized network tags:\n   - 'East Coast', 'east coast', 'US-East-Region', 'region:east-coast' → 'US-East-Region'\n   - 'West Coast', 'west coast', 'US-West-Region', 'region:west-coast' → 'US-West-Region' \n   - 'North America', 'US', 'USA' → 'US-Region'\n   - 'Europe', 'EU' → 'EU-Region'\n4. If multiple CIDRs are mentioned, extract the primary threat CIDR\n5. ALWAYS return standardized network tag format for network_region\n\nExample input: {\"description\": \"Emergency Security Block - CIDR 203.0.113.0/24 targeting East Coast retail...\"}\nExpected output: {\"cidr_block\": \"203.0.113.0/24\", \"network_region\": \"US-East-Region\"}\n\nBe precise and focus on actionable network security information from the description field. Always standardize regional descriptions to proper network tags."
+                  }
+                ],
+                "user_messages": [
+                  {
+                    "content": "Extract the CIDR block and network region from this ServiceNow incident payload:\n\n$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.input.variable_workflow_02Q3QSTLSDE6F4BEoEtuzNrfL3fIoMMCh4b$\n\nFocus on the 'description' field which contains the incident details. Extract the CIDR block and regional network tags from this description text."
+                  }
+                ]
+              },
+              "modelName": "gpt-4o-mini",
+              "output_format": [
+                {
+                  "output_name": "networkTags",
+                  "output_type": "list"
+                },
+                {
+                  "output_name": "blockDestCidr",
+                  "output_type": "string"
+                },
+                {
+                  "output_name": "incidentNumber",
+                  "output_type": "string"
+                }
+              ],
+              "runtime_user": {
+                "target_default": true
+              },
+              "skip_execution": false,
+              "systemPrompt": "You are a network security analyst expert at extracting critical information from ServiceNow incident webhook payloads. Your job is to identify CIDR blocks and network regions that require immediate firewall blocking along with Incident number for tracking.\n\nKey extraction rules:\n1. Parse the JSON payload and focus on the 'description' and 'number' fields\n2. Look for CIDR notation (e.g., 203.0.113.0/24) or IP addresses in the description\n3. Find regional identifiers and ALWAYS convert them to standardized network tags:\n   - 'East Coast', 'east coast', 'US-East-Region', 'region:east-coast' → 'US-East-Region'\n   - 'West Coast', 'west coast', 'US-West-Region', 'region:west-coast' → 'US-West-Region' \n   - 'North America', 'US', 'USA' → 'US-Region'\n   - 'Europe', 'EU' → 'EU-Region'\n4. If multiple CIDRs are mentioned, extract the primary threat CIDR\n5. ALWAYS return standardized network tag format for network_region\n\nBe precise and focus on actionable network security information from the description field. Always standardize regional descriptions to proper network tags.",
+              "target": {
+                "use_workflow_target_group": true
+              }
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02Q3RY9ULP3P120AUXnCn3t7LiHQOZ4CSCs",
+            "name": "JSONPath Query",
+            "title": "Extract Values from LLM Response",
+            "type": "corejava.jsonpathquery",
+            "base_type": "activity",
+            "properties": {
+              "action_timeout": 180,
+              "continue_on_failure": false,
+              "description": "Extract network tags and CIDR block from LLM structured output to populate workflow variables for targeted firewall rule deployment.",
+              "display_name": "Extract Values from LLM Response",
+              "input_json": "$activity.definition_activity_02Q3QTYMOR8O2257iuINGbpPGS5vKtjUoqd.output.content$",
+              "jsonpath_queries": [
+                {
+                  "jsonpath_query": "networkTags",
+                  "jsonpath_query_name": "networkTags",
+                  "jsonpath_query_type": "string",
+                  "zdate_type_format": "yyyy-MM-dd'T'HH:mm:ssZ"
+                },
+                {
+                  "jsonpath_query": "blockDestCidr",
+                  "jsonpath_query_name": "blockDestCidr",
+                  "jsonpath_query_type": "string",
+                  "zdate_type_format": "yyyy-MM-dd'T'HH:mm:ssZ"
+                },
+                {
+                  "jsonpath_query": "incidentNumber",
+                  "jsonpath_query_name": "incidentNumber",
+                  "jsonpath_query_type": "string",
+                  "zdate_type_format": "yyyy-MM-dd'T'HH:mm:ssZ"
+                }
+              ],
+              "skip_execution": false
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02Q3RJ55V2HSO40oHvYaXnaqY5dPtKTdVLz",
+            "name": "Set Variables",
+            "title": "Update Workflow Variables",
+            "type": "core.set_multiple_variables",
+            "base_type": "activity",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Update workflow variables with extracted CIDR block and network tags from ServiceNow incident for use in firewall rule deployment targeting.",
+              "display_name": "Update Workflow Variables",
+              "skip_execution": false,
+              "variables_to_update": [
+                {
+                  "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2GOAE2NXUX5sZ0MiSh8ZhjjIOM8wZbKK$",
+                  "variable_value_new": "$activity.definition_activity_02Q3RY9ULP3P120AUXnCn3t7LiHQOZ4CSCs.output.jsonpath_queries.blockDestCidr$"
+                },
+                {
+                  "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQO714054Q7dul17Do9BOLKTN304$",
+                  "variable_value_new": "$activity.definition_activity_02Q3RY9ULP3P120AUXnCn3t7LiHQOZ4CSCs.output.jsonpath_queries.networkTags$"
+                }
+              ]
+            },
+            "object_type": "definition_activity"
+          }
+        ]
+      },
+      {
+        "unique_name": "definition_activity_02Q1QSQWSGCF03g8p6i3rNTph72LylrRaaT",
+        "name": "Group",
+        "title": "Input Validation",
+        "type": "logic.group",
+        "base_type": "activity",
+        "properties": {
+          "continue_on_failure": false,
+          "description": "Validate input parameters to ensure they meet required format and constraints.",
+          "display_as_suggestion": false,
+          "display_name": "Input Validation",
+          "skip_execution": false
+        },
+        "object_type": "definition_activity",
+        "actions": [
+          {
+            "unique_name": "definition_activity_02Q1QSQY6P8016BAv20B5H2xR3NOnnB6JpX",
+            "name": "Parallel Block",
+            "title": "Validate Required Inputs",
+            "type": "logic.parallel",
+            "base_type": "activity",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Validate all required input parameters in parallel to ensure efficient error detection.",
+              "display_name": "Validate Inputs",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "blocks": [
+              {
+                "unique_name": "definition_activity_02Q1QSQYW2EM97brGpQ6WHGsGXUvC2bXhX9",
+                "name": "Parallel Branch",
+                "title": "Check Tags are provided",
+                "type": "logic.parallel_block",
+                "base_type": "activity",
+                "properties": {
+                  "continue_on_failure": false,
+                  "display_name": "Tags Provided?",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "actions": [
+                  {
+                    "unique_name": "definition_activity_02Q1QSQZUTXC87hb7lnlCpGR78CCtuQKoQA",
+                    "name": "Execute Python Script",
+                    "title": "Validate Network Tags Array",
+                    "type": "python3.script",
+                    "base_type": "activity",
+                    "properties": {
+                      "action_timeout": 180,
+                      "continue_on_failure": false,
+                      "description": "Validates that the network tags array is not empty and contains valid tag values for network discovery.",
+                      "display_name": "Parse Tags Array",
+                      "script": "import sys\nimport json\n\n# Get the network tags input\ntags_input = sys.argv[1]\n\n# Check if array is empty\nif tags_input == \"[]\":\n    isValid = False\n    errorMessage = \"Network tags array is empty. At least one tag must be provided.\"\nelse:\n    isValid = True\n    errorMessage = \"\"",
+                      "script_arguments": [
+                        "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQO714054Q7dul17Do9BOLKTN304$"
+                      ],
+                      "script_queries": [
+                        {
+                          "script_query": "isValid",
+                          "script_query_name": "isValid",
+                          "script_query_type": "boolean"
+                        },
+                        {
+                          "script_query": "errorMessage",
+                          "script_query_name": "errorMessage",
+                          "script_query_type": "string"
+                        }
+                      ],
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity"
+                  },
+                  {
+                    "unique_name": "definition_activity_02Q2GOK0GBQ2V2uF4HEjxfxUFu648J6XnYx",
+                    "name": "Condition Block",
+                    "title": "Has Tags?",
+                    "type": "logic.if_else",
+                    "base_type": "activity",
+                    "properties": {
+                      "conditions": [],
+                      "continue_on_failure": false,
+                      "display_name": "Valid Format?",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "blocks": [
+                      {
+                        "unique_name": "definition_activity_02Q2GOK0HD5KK32zdcfbXADo9qj9vGIgPK1",
+                        "name": "Condition Branch",
+                        "title": "No Tags Provided",
+                        "type": "logic.condition_block",
+                        "base_type": "activity",
+                        "properties": {
+                          "condition": {
+                            "left_operand": "$activity.definition_activity_02Q1QSQZUTXC87hb7lnlCpGR78CCtuQKoQA.output.script_queries.isValid$",
+                            "operator": "eq",
+                            "right_operand": false
+                          },
+                          "continue_on_failure": false,
+                          "description": "Handle validation failure when no network tags are provided by the user.",
+                          "display_name": "Empty/Invalid",
+                          "skip_execution": false
+                        },
+                        "object_type": "definition_activity",
+                        "actions": [
+                          {
+                            "unique_name": "definition_activity_02Q2GOK0J19ZI1s5YJmg8fxZhunuzcQcgP7",
+                            "name": "Set Variables",
+                            "title": "Set Tag Validation Error",
+                            "type": "core.set_multiple_variables",
+                            "base_type": "activity",
+                            "properties": {
+                              "continue_on_failure": false,
+                              "description": "Set error output variables when network tags validation fails.",
+                              "display_name": "Set Output Variables",
+                              "skip_execution": false,
+                              "variables_to_update": [
+                                {
+                                  "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.variable_workflow_02Q1QSQTQP0ST0fLhEJuhUSEEFYhyKPhghC$",
+                                  "variable_value_new": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.variable_workflow_02Q1QSQTQP0ST0fLhEJuhUSEEFYhyKPhghC$\n$activity.definition_activity_02Q1QSQZUTXC87hb7lnlCpGR78CCtuQKoQA.output.script_queries.errorMessage$"
+                                },
+                                {
+                                  "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.variable_workflow_02Q1QSQTQP6J54ZRumdIJYW4KyAcBuJgFE4$",
+                                  "variable_value_new": "Failed"
+                                },
+                                {
+                                  "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.variable_workflow_02Q1QSQTQOEVK7eMGRhzx4y9HKjMz3jrVnB$",
+                                  "variable_value_new": "400"
+                                }
+                              ]
+                            },
+                            "object_type": "definition_activity"
+                          },
+                          {
+                            "unique_name": "definition_activity_02Q2GOK0L8F5Q6Qbc7Q9Xd1l6ysFLZrzMky",
+                            "name": "Completed",
+                            "title": "End on Tag Validation Error",
+                            "type": "logic.completed",
+                            "base_type": "activity",
+                            "properties": {
+                              "completion_type": "failed-completed",
+                              "continue_on_failure": false,
+                              "description": "Terminate workflow execution when network tags validation fails.",
+                              "display_name": "Exit Workflow",
+                              "result_message": "Network tags validation failed",
+                              "skip_execution": false
+                            },
+                            "object_type": "definition_activity"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "unique_name": "definition_activity_02Q2WIXKI1GCJ10fvvj0jYUGrQQl6M0r39D",
+        "name": "Group",
+        "title": "Initialize Jira Tracking",
+        "type": "logic.group",
+        "base_type": "activity",
+        "properties": {
+          "continue_on_failure": false,
+          "description": "Create Jira tracking issue for firewall deployment with comprehensive deployment plan and workflow details.",
+          "display_as_suggestion": false,
+          "display_name": "Initialize Jira Tracking",
+          "skip_execution": false
+        },
+        "object_type": "definition_activity",
+        "actions": [
+          {
+            "unique_name": "definition_activity_02Q2WIXLGXICY147oryEVQVKt96HLmy1WIG",
+            "name": "Condition Block",
+            "title": "Jira Tracking Enabled?",
+            "type": "logic.if_else",
+            "base_type": "activity",
+            "properties": {
+              "conditions": [],
+              "continue_on_failure": false,
+              "description": "Check if Jira tracking is enabled before creating the tracking issue.",
+              "display_name": "Jira Tracking Enabled?",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "blocks": [
+              {
+                "unique_name": "definition_activity_02Q2WIXM493931FO8qRKHlFt4ADhoqJ8NWC",
+                "name": "Condition Branch",
+                "title": "Yes",
+                "type": "logic.condition_block",
+                "base_type": "activity",
+                "properties": {
+                  "condition": {
+                    "left_operand": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.input.variable_workflow_02Q2WIXANNMFB20LMBdn83SZJbTmTlZNb9s$",
+                    "operator": "eq",
+                    "right_operand": true
+                  },
+                  "continue_on_failure": false,
+                  "description": "Create Jira tracking issue when tracking is enabled.",
+                  "display_name": "Yes",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "actions": [
+                  {
+                    "unique_name": "definition_activity_02Q2WIXNQ6E7P0B6gpSMyP1X2hDMiz5aEwf",
+                    "name": "Create Tracking Issue",
+                    "title": "Create Tracking Issue",
+                    "type": "workflow.atomic_workflow",
+                    "base_type": "subworkflow",
+                    "properties": {
+                      "continue_on_failure": true,
+                      "description": "Creates a comprehensive tracking issue in Jira for the firewall deployment operation with detailed deployment plan and security rule information. If Jira is unavailable or misconfigured, the workflow will continue without tracking - the core firewall deployment should not be blocked by optional tracking functionality.",
+                      "display_name": "Create Tracking Issue",
+                      "input": {
+                        "variable_workflow_02CKHDLHVBBM63jIcb4SIHe5gnrYldlYMjK": "",
+                        "variable_workflow_02CKHDSGXEM550s003XpmkK226Svqlif2bw": "🔥 Firewall Deployment: Block $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2GOAE2NXUX5sZ0MiSh8ZhjjIOM8wZbKK$ on tagged networks",
+                        "variable_workflow_02CKHDYBAIMJK57x2ckgX5LQLpn32zcRK3j": "🚀 **AUTOMATED FIREWALL DEPLOYMENT INITIATED**\n\n**🎯 Deployment Details:**\n• **Target Destination**: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2GOAE2NXUX5sZ0MiSh8ZhjjIOM8wZbKK$\n• **Network Tags**: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQO714054Q7dul17Do9BOLKTN304$\n• **Rule Action**: DENY (Block outbound traffic)\n• **Priority**: Position 0 (Highest priority)\n• **Scope**: All ports and protocols from any internal source\n\n**🔧 Technical Details:**\n• **Workflow ID**: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.instance_id$\n• **Execution Time**: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.start_time$\n• **Execution Started By**: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.started_by$\n• **Automation Platform**: Cisco Workflows\n• **API Integration**: Meraki MX Layer 3 Firewall\n\n**📋 Deployment Plan:**\n1. ✅ Input validation completed\n2. 🔍 Discover organizations and matching networks\n3. 🛠️ Build security rule configuration\n4. 🚀 Deploy firewall rules across all matching networks\n5. 📊 Generate comprehensive deployment summary\n\n**🎯 Expected Outcome:**\nAll networks with specified tags will have a new deny rule blocking outbound traffic to the specified destination, inserted at the highest priority position.\n\n---\n*This issue will be automatically updated with progress throughout the deployment process.*",
+                        "variable_workflow_02CKHE50IPLPB2F0LS6MUVMEb7RRRLck6aS": "",
+                        "variable_workflow_02CKHEBDV1RYB2Uzqv2hMzF7d4eZHhB8a3R": "",
+                        "variable_workflow_02COWYJ9IF27Y56n4IOIXnO5EKOlsWCXTrb": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.input.variable_workflow_02Q2WIXANNGDT5Wj0XefBKBb4CYxUGhSMOK$",
+                        "variable_workflow_02COWYQUB8YO42xsV1D0A5XNqTHdUpdNJr1": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.input.variable_workflow_02Q2WIXANN61A7kXwrSboPA6uxsXwBxCNb8$"
+                      },
+                      "runtime_user": {
+                        "target_default": true
+                      },
+                      "skip_execution": false,
+                      "target": {
+                        "use_workflow_target_group": true
+                      },
+                      "workflow_id": "definition_workflow_02CKHCLVHDLHE5s3HKPDCx2desMLbzvFMCI",
+                      "workflow_name": "Jira Cloud - Create Issue"
+                    },
+                    "object_type": "definition_activity"
+                  },
+                  {
+                    "unique_name": "definition_activity_02Q2WIXP586VL5xTZ82Fx5Qf7dPH6al0cI3",
+                    "name": "Set Variables",
+                    "title": "Set Output Variables",
+                    "type": "core.set_multiple_variables",
+                    "base_type": "activity",
+                    "properties": {
+                      "continue_on_failure": false,
+                      "description": "Store the created Jira issue ID for use in subsequent comment operations.",
+                      "display_name": "Set Output Variables",
+                      "skip_execution": false,
+                      "variables_to_update": [
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap$",
+                          "variable_value_new": "$activity.definition_activity_02Q2WIXNQ6E7P0B6gpSMyP1X2hDMiz5aEwf.output.variable_workflow_02CKHEPY92ZMO4Shjsd4UdIY64vsWGOGan2$"
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q42ODEFXUVA0rrvljIeVamnn4Ga4g1qko$",
+                          "variable_value_new": "$activity.definition_activity_02Q2WIXNQ6E7P0B6gpSMyP1X2hDMiz5aEwf.output.variable_workflow_02CQ0X7AJ9G5I0PWeX4SEXzccDrw2fN92Z7$"
+                        }
+                      ]
+                    },
+                    "object_type": "definition_activity"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "unique_name": "definition_activity_02Q1QSR4F0H9S2zC1lbMLLDFb3blfZSKnnS",
+        "name": "Group",
+        "title": "Find Organizations",
+        "type": "logic.group",
+        "base_type": "activity",
+        "properties": {
+          "continue_on_failure": false,
+          "description": "Retrieve all organizations accessible to the authenticated API key and identify those containing networks with the specified tags for firewall rule deployment.",
+          "display_as_suggestion": false,
+          "display_name": "Find Organizations",
+          "skip_execution": false
+        },
+        "object_type": "definition_activity",
+        "actions": [
+          {
+            "unique_name": "definition_activity_02Q1QSR67DLI00ygdwTazORisSsgppw8EDP",
+            "name": "Get Organizations",
+            "title": "Get Organizations",
+            "type": "workflow.atomic_workflow",
+            "base_type": "subworkflow",
+            "properties": {
+              "continue_on_failure": true,
+              "description": "Retrieve a list of organizations that the authenticated user has access to within their Meraki account. The workflow includes explicit error handling in the subsequent condition block to check for both empty results and operation failures, allowing for proper error messaging and graceful workflow termination.",
+              "display_name": "Get Organizations",
+              "input": {
+                "variable_workflow_02LXK9KUOD0MH4qj4j062vm12gYmFb9y5N0": 100,
+                "variable_workflow_02LXKBG6HGMSD1YojnHQ3bM2cT6mP8A02A9": "",
+                "variable_workflow_02LXKCCX4AREX6odSHkvY5oECunJtqcLahK": ""
+              },
+              "runtime_user": {
+                "target_default": true
+              },
+              "skip_execution": false,
+              "target": {
+                "use_workflow_target_group": true
+              },
+              "workflow_id": "definition_workflow_02LV5GIDUTY3X0WhuidM5ZWhkjL8wQCGAPq",
+              "workflow_name": "Meraki - Get Organizations"
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02Q1QSR7BYWU30o7diIIS3thRsBOXqDwYrv",
+            "name": "Condition Block",
+            "title": "No Organizations Found?",
+            "type": "logic.if_else",
+            "base_type": "activity",
+            "properties": {
+              "conditions": [],
+              "continue_on_failure": false,
+              "description": "Validate that organizations are available before proceeding with network discovery and firewall rule deployment.",
+              "display_name": "Orgs Available?",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "blocks": [
+              {
+                "unique_name": "definition_activity_02Q1QSR87DCNB0WTbIjiG15771Iv3ULFoUn",
+                "name": "Condition Branch",
+                "title": "No Organizations Available",
+                "type": "logic.condition_block",
+                "base_type": "activity",
+                "properties": {
+                  "condition": {
+                    "left_operand": {
+                      "left_operand": "$activity.definition_activity_02Q1QSR67DLI00ygdwTazORisSsgppw8EDP.output.variable_workflow_02LXKZA6725S35QBWMZCg1AlZnT11mbSFQi$",
+                      "operator": "eq",
+                      "right_operand": "[]"
+                    },
+                    "operator": "or",
+                    "right_operand": {
+                      "left_operand": "$activity.definition_activity_02Q1QSR67DLI00ygdwTazORisSsgppw8EDP.output.succeeded$",
+                      "operator": "eq",
+                      "right_operand": false
+                    }
+                  },
+                  "continue_on_failure": false,
+                  "description": "Handle scenarios when organizations cannot be retrieved: either no organizations are accessible to the authenticated API key, or the Get Organizations API call failed due to authentication, network, or other API errors.",
+                  "display_name": "None Available",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "actions": [
+                  {
+                    "unique_name": "definition_activity_02Q1QSR9H1O6A74przxYXOYNz8X3Pe1n1E1",
+                    "name": "Set Variables",
+                    "title": "Set No Organizations Error",
+                    "type": "core.set_multiple_variables",
+                    "base_type": "activity",
+                    "properties": {
+                      "continue_on_failure": false,
+                      "description": "Set error output variables when no organizations are accessible.",
+                      "display_name": "Set Output Variables",
+                      "skip_execution": false,
+                      "variables_to_update": [
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.variable_workflow_02Q1QSQTQP0ST0fLhEJuhUSEEFYhyKPhghC$",
+                          "variable_value_new": "No organizations found or accessible with the provided API key"
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.variable_workflow_02Q1QSQTQP6J54ZRumdIJYW4KyAcBuJgFE4$",
+                          "variable_value_new": "Failed"
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.variable_workflow_02Q1QSQTQOEVK7eMGRhzx4y9HKjMz3jrVnB$",
+                          "variable_value_new": "404"
+                        }
+                      ]
+                    },
+                    "object_type": "definition_activity"
+                  },
+                  {
+                    "unique_name": "definition_activity_02Q1QSRAB5M0I1ptEmI598VcfrDDvQ6aEc9",
+                    "name": "Completed",
+                    "title": "End on No Organizations",
+                    "type": "logic.completed",
+                    "base_type": "activity",
+                    "properties": {
+                      "completion_type": "failed-completed",
+                      "continue_on_failure": false,
+                      "description": "Terminate workflow execution when no organizations are accessible.",
+                      "display_name": "Exit Workflow",
+                      "result_message": "No organizations accessible",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "unique_name": "definition_activity_02Q1QSRB0HE9F0NI5lxfbtleqBWSI9lBN9U",
+        "name": "Group",
+        "title": "Deploy Rules",
+        "type": "logic.group",
+        "base_type": "activity",
+        "properties": {
+          "continue_on_failure": false,
+          "description": "Iterate through organizations to find networks with specified tags and deploy firewall rules to block the specified destination.",
+          "display_as_suggestion": false,
+          "display_name": "Deploy Rules",
+          "skip_execution": false
+        },
+        "object_type": "definition_activity",
+        "actions": [
+          {
+            "unique_name": "definition_activity_02Q1QSRC7SC1C6erONADXiomUMArgJhCp1M",
+            "name": "Read Table from JSON",
+            "title": "Read Orgs from JSON",
+            "type": "corejava.read_table_from_json",
+            "base_type": "activity",
+            "properties": {
+              "action_timeout": 180,
+              "continue_on_failure": false,
+              "description": "Parse the JSON response containing organizations to extract organization IDs and names for network discovery.",
+              "display_name": "Parse Organizations",
+              "input_json": "$activity.definition_activity_02Q1QSR67DLI00ygdwTazORisSsgppw8EDP.output.variable_workflow_02LXKZA6725S35QBWMZCg1AlZnT11mbSFQi$",
+              "jsonpath_query": "$.*",
+              "persist_output": true,
+              "populate_columns": false,
+              "skip_execution": false,
+              "table_columns": [
+                {
+                  "column_name": "id",
+                  "column_type": "string"
+                },
+                {
+                  "column_name": "name",
+                  "column_type": "string"
+                }
+              ]
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02Q2WIXXO8VQQ5KdWljIP8pXCMK94TwkWr5",
+            "name": "Condition Block",
+            "title": "Add Jira Comment?",
+            "type": "logic.if_else",
+            "base_type": "activity",
+            "properties": {
+              "conditions": [],
+              "continue_on_failure": false,
+              "description": "Add Jira comment with organization discovery results if tracking is enabled.",
+              "display_name": "Add Jira Comment?",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "blocks": [
+              {
+                "unique_name": "definition_activity_02Q2WIXYBNJZA45dCJrdlS4s5ha3xUoJTFq",
+                "name": "Condition Branch",
+                "title": "Yes",
+                "type": "logic.condition_block",
+                "base_type": "activity",
+                "properties": {
+                  "condition": {
+                    "left_operand": {
+                      "left_operand": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.input.variable_workflow_02Q2WIXANNMFB20LMBdn83SZJbTmTlZNb9s$",
+                      "operator": "eq",
+                      "right_operand": true
+                    },
+                    "operator": "and",
+                    "right_operand": {
+                      "left_operand": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap$",
+                      "operator": "ne",
+                      "right_operand": ""
+                    }
+                  },
+                  "continue_on_failure": false,
+                  "description": "Add organization discovery comment when tracking is enabled and issue exists.",
+                  "display_name": "Yes",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "actions": [
+                  {
+                    "unique_name": "definition_activity_02Q2WIXZXEFMD4RtMs3ht7sk6v2gfM59lvy",
+                    "name": "Add Discovery Comment",
+                    "title": "Add Discovery Comment",
+                    "type": "workflow.atomic_workflow",
+                    "base_type": "subworkflow",
+                    "properties": {
+                      "continue_on_failure": true,
+                      "description": "Add comment to Jira issue with organization discovery results and deployment readiness status. If Jira is unavailable, the workflow continues with core firewall deployment - tracking comments are optional and should not block security operations.",
+                      "display_name": "Add Discovery Comment",
+                      "input": {
+                        "variable_workflow_02CKLMMNW0QB22kSLAe9Hs4sGUgr8lDFTuf": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap$",
+                        "variable_workflow_02CKLRYVFHY4H2oe3tmYApbcazybXd67w12": "🔍 **ORGANIZATION DISCOVERY COMPLETED**\n\nDiscovered organizations for firewall rule deployment:\n\n📊 **Discovery Results:**\n• **Organizations Found**: Multiple organizations accessible\n• **Search Criteria**: Networks with tags: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQO714054Q7dul17Do9BOLKTN304$\n• **Target Destination**: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2GOAE2NXUX5sZ0MiSh8ZhjjIOM8wZbKK$\n\n🚀 **Next Phase**: Processing each organization to identify matching networks and deploy firewall rules\n\n---\n*Proceeding to network discovery and rule deployment phase...*",
+                        "variable_workflow_02CKLSJJK1OWB0erCzD0yOHeqwmv0qf4yMQ": ""
+                      },
+                      "runtime_user": {
+                        "target_default": true
+                      },
+                      "skip_execution": false,
+                      "target": {
+                        "use_workflow_target_group": true
+                      },
+                      "workflow_id": "definition_workflow_02CKLMMMVNLXR6EAdBc69psxWjZxVgZ6ovD",
+                      "workflow_name": "Jira Cloud - Add Comment to Issue"
+                    },
+                    "object_type": "definition_activity"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "unique_name": "definition_activity_02Q2T8I0KQY6U4NJyBXwkgZY9SX5fuPoCvN",
+            "name": "Execute Python Script",
+            "title": "Build Deny FW Rule",
+            "type": "python3.script",
+            "base_type": "activity",
+            "properties": {
+              "action_timeout": 180,
+              "continue_on_failure": false,
+              "description": "Builds a properly formatted L3 firewall rule JSON structure from the input destination IP/CIDR. Creates a deny rule for outbound traffic with automation tracking via comments.",
+              "display_name": "Build Deny FW Rule",
+              "script": "import json\nimport sys\n\n# Get the destination IP address from workflow input\ndestination = sys.argv[1] if len(sys.argv) > 1 else \"\"\n\nif not destination:\n    print(\"Error: No destination IP address provided\")\n    sys.exit(1)\n\n# Build the firewall rule JSON structure using the provided format\nnewRule = {\n    \"comment\": \"Updated by Cisco Workflows Automation ($activity.definition_activity_02Q3RY9ULP3P120AUXnCn3t7LiHQOZ4CSCs.output.jsonpath_queries.incidentNumber$ - $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q42ODEFXUVA0rrvljIeVamnn4Ga4g1qko$)\",\n    \"destCidr\": destination,\n    \"destPort\": \"any\",\n    \"policy\": \"deny\",\n    \"protocol\": \"any\",\n    \"srcCidr\": \"any\",\n    \"srcPort\": \"any\",\n    \"syslogEnabled\": False\n}\n\n# Convert to JSON string and output\nruleJson = json.dumps(newRule, indent=2)\nprint(f\"Built firewall rule for destination {destination}\")\nprint(f\"Rule JSON: {ruleJson}\")",
+              "script_arguments": [
+                "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2GOAE2NXUX5sZ0MiSh8ZhjjIOM8wZbKK$"
+              ],
+              "script_queries": [
+                {
+                  "script_query": "ruleJson",
+                  "script_query_name": "ruleJson",
+                  "script_query_type": "string"
+                }
+              ],
+              "skip_execution": false
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02Q1QSRDMC4AA0ULO5nqJ6dddzQkGbkGijd",
+            "name": "For Each",
+            "title": "For Each Org",
+            "type": "logic.for_each",
+            "base_type": "activity",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Iterate through each organization to discover networks with matching tags for firewall rule deployment.",
+              "display_name": "Each Org",
+              "skip_execution": false,
+              "source_array": "$activity.definition_activity_02Q1QSRC7SC1C6erONADXiomUMArgJhCp1M.output.read_table_from_json$"
+            },
+            "object_type": "definition_activity",
+            "actions": [
+              {
+                "unique_name": "definition_activity_02Q1QSRG8PB986DFHbuDi5Az0EecVcGR2yn",
+                "name": "Meraki - Get Organization Networks",
+                "title": "Meraki - Get Organization Networks",
+                "type": "workflow.atomic_workflow",
+                "base_type": "subworkflow",
+                "properties": {
+                  "continue_on_failure": true,
+                  "description": "List networks in the current organization that match the specified tags. In bulk operations across multiple organizations, if one organization fails (due to API limits, permissions, or temporary issues), the workflow should continue processing other organizations to maximize deployment coverage.",
+                  "display_name": "Meraki - Get Organization Networks",
+                  "input": {
+                    "variable_workflow_02L9TZH6C81473IDtFQ0NIzW3jmXrgchtN9": "$activity.definition_activity_02Q1QSRDMC4AA0ULO5nqJ6dddzQkGbkGijd.input.source_array[@].id$",
+                    "variable_workflow_02LEUL5GOHN9T53T7jFQx3T2Yo04p5Xuz0r": false,
+                    "variable_workflow_02LNK5WW0RD2A20mG7v1G7gsyE2N2RrKdQd": "",
+                    "variable_workflow_02LNK5WW0RTCB1AXbOwJOBVWvUx1wdyKtkt": "withAnyTags",
+                    "variable_workflow_02LNK5WW0S5E21Q9biFSXTiLbHr7cWP2K7y": "false",
+                    "variable_workflow_02LNK5WW0SE2H1zmchhUHyfX7L0XGvKmB7W": 500,
+                    "variable_workflow_02LNK5WW0SM7R5SjIvnnytN6vYzR7wfDHeE": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQO714054Q7dul17Do9BOLKTN304$",
+                    "variable_workflow_02LNK5WW0STMX38BXiY2IvPQoHQliJHSCgE": [
+                      "appliance"
+                    ],
+                    "variable_workflow_02LNK5WW0T0NX26NyApdlTn355uYJwcQGqW": "",
+                    "variable_workflow_02LNK5WW0T92U1HJd1sxzFrmVvwxy7NVaQn": ""
+                  },
+                  "runtime_user": {
+                    "target_default": true
+                  },
+                  "skip_execution": false,
+                  "target": {
+                    "use_workflow_target_group": true
+                  },
+                  "workflow_id": "definition_workflow_02L9TZH5W95870XebPF2g8kSyIYcawUvljX",
+                  "workflow_name": "Meraki - Get Organization Networks"
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02Q1QSRHLDCCG1zEqzSdAzPdhg0q52aJrOK",
+                "name": "Condition Block",
+                "title": "Has Networks matching Tag?",
+                "type": "logic.if_else",
+                "base_type": "activity",
+                "properties": {
+                  "conditions": [],
+                  "continue_on_failure": false,
+                  "description": "Validate that networks with matching tags exist in the current organization and that the Get Organization Networks API call succeeded before proceeding with firewall rule deployment.",
+                  "display_name": "Networks Found?",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "blocks": [
+                  {
+                    "unique_name": "definition_activity_02Q1QSRIK9FXG6pvtYx2qYYQWBaIyFm2ID4",
+                    "name": "Condition Branch",
+                    "title": "Yes",
+                    "type": "logic.condition_block",
+                    "base_type": "activity",
+                    "properties": {
+                      "condition": {
+                        "left_operand": {
+                          "left_operand": "$activity.definition_activity_02Q1QSRG8PB986DFHbuDi5Az0EecVcGR2yn.output.variable_workflow_02L9TZH6C8OZI7c9t9Z0h0JHAbqCc7LuTGT$",
+                          "operator": "ne",
+                          "right_operand": "[]"
+                        },
+                        "operator": "and",
+                        "right_operand": {
+                          "left_operand": "$activity.definition_activity_02Q1QSRG8PB986DFHbuDi5Az0EecVcGR2yn.output.succeeded$",
+                          "operator": "eq",
+                          "right_operand": true
+                        }
+                      },
+                      "continue_on_failure": false,
+                      "display_name": "Yes",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "actions": [
+                      {
+                        "unique_name": "definition_activity_02Q1QSRK247X46CmA4x4CP0n3SzAU82XkEU",
+                        "name": "Set Variables",
+                        "title": "Set Success Variables",
+                        "type": "core.set_multiple_variables",
+                        "base_type": "activity",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Append organization processing results to the output message accumulator.",
+                          "display_name": "Set Output Variables",
+                          "skip_execution": false,
+                          "variables_to_update": [
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQOVE53W5t88WYtwDmhW4wpowYM0$",
+                              "variable_value_new": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQOVE53W5t88WYtwDmhW4wpowYM0$\nResults for Organization: $activity.definition_activity_02Q1QSRDMC4AA0ULO5nqJ6dddzQkGbkGijd.input.source_array[@].name$"
+                            }
+                          ]
+                        },
+                        "object_type": "definition_activity"
+                      },
+                      {
+                        "unique_name": "definition_activity_02Q1QSRL1TD8K1BpxusUuBL0gB8XzpMC9MC",
+                        "name": "Read Table from JSON",
+                        "title": "Read Networks from JSON",
+                        "type": "corejava.read_table_from_json",
+                        "base_type": "activity",
+                        "properties": {
+                          "action_timeout": 180,
+                          "continue_on_failure": false,
+                          "description": "Parse the JSON response containing organizations to extract organization IDs and names for network discovery.",
+                          "display_name": "Read Networks from JSON",
+                          "input_json": "$activity.definition_activity_02Q1QSRG8PB986DFHbuDi5Az0EecVcGR2yn.output.variable_workflow_02L9TZH6C8OZI7c9t9Z0h0JHAbqCc7LuTGT$",
+                          "jsonpath_query": "$.*",
+                          "persist_output": true,
+                          "populate_columns": false,
+                          "skip_execution": false,
+                          "table_columns": [
+                            {
+                              "column_name": "id",
+                              "column_type": "string"
+                            },
+                            {
+                              "column_name": "name",
+                              "column_type": "string"
+                            }
+                          ]
+                        },
+                        "object_type": "definition_activity"
+                      },
+                      {
+                        "unique_name": "definition_activity_02Q2WIY8TBY3E25VW4D4vmEeWQqfYYWCF6h",
+                        "name": "Condition Block",
+                        "title": "Add Jira Comment?",
+                        "type": "logic.if_else",
+                        "base_type": "activity",
+                        "properties": {
+                          "conditions": [],
+                          "continue_on_failure": false,
+                          "description": "Add Jira comment with organization processing results if tracking is enabled.",
+                          "display_name": "Add Jira Comment?",
+                          "skip_execution": false
+                        },
+                        "object_type": "definition_activity",
+                        "blocks": [
+                          {
+                            "unique_name": "definition_activity_02Q2WIY9IV74Z7NHWXsp8rtvpDSxdhvldWC",
+                            "name": "Condition Branch",
+                            "title": "Yes",
+                            "type": "logic.condition_block",
+                            "base_type": "activity",
+                            "properties": {
+                              "condition": {
+                                "left_operand": {
+                                  "left_operand": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.input.variable_workflow_02Q2WIXANNMFB20LMBdn83SZJbTmTlZNb9s$",
+                                  "operator": "eq",
+                                  "right_operand": true
+                                },
+                                "operator": "and",
+                                "right_operand": {
+                                  "left_operand": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap$",
+                                  "operator": "ne",
+                                  "right_operand": ""
+                                }
+                              },
+                              "continue_on_failure": false,
+                              "description": "Add organization processing comment when tracking is enabled and issue exists.",
+                              "display_name": "Yes",
+                              "skip_execution": false
+                            },
+                            "object_type": "definition_activity",
+                            "actions": [
+                              {
+                                "unique_name": "definition_activity_02Q2WIYB127IJ453svGZIEzy8HPZGn8eoVo",
+                                "name": "Add Processing Comment",
+                                "title": "Add Processing Comment",
+                                "type": "workflow.atomic_workflow",
+                                "base_type": "subworkflow",
+                                "properties": {
+                                  "continue_on_failure": true,
+                                  "description": "Add comment to Jira issue with current organization processing status and network discovery results. Optional tracking operation - if Jira fails, the core firewall deployment continues uninterrupted to ensure security rule deployment is not blocked by tracking system issues.",
+                                  "display_name": "Add Processing Comment",
+                                  "input": {
+                                    "variable_workflow_02CKLMMNW0QB22kSLAe9Hs4sGUgr8lDFTuf": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap$",
+                                    "variable_workflow_02CKLRYVFHY4H2oe3tmYApbcazybXd67w12": "🏢 **PROCESSING ORGANIZATION**: *$activity.definition_activity_02Q1QSRDMC4AA0ULO5nqJ6dddzQkGbkGijd.input.source_array[@].name$*\n\n✅ **Network Discovery Successful**\n• Found matching networks with specified tags\n• Networks ready for firewall rule deployment\n• Target destination: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2GOAE2NXUX5sZ0MiSh8ZhjjIOM8wZbKK$\n\n🚀 **Status**: Proceeding with firewall rule deployment across all matching networks in this organization\n\n---",
+                                    "variable_workflow_02CKLSJJK1OWB0erCzD0yOHeqwmv0qf4yMQ": ""
+                                  },
+                                  "runtime_user": {
+                                    "target_default": true
+                                  },
+                                  "skip_execution": false,
+                                  "target": {
+                                    "use_workflow_target_group": true
+                                  },
+                                  "workflow_id": "definition_workflow_02CKLMMMVNLXR6EAdBc69psxWjZxVgZ6ovD",
+                                  "workflow_name": "Jira Cloud - Add Comment to Issue"
+                                },
+                                "object_type": "definition_activity"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "unique_name": "definition_activity_02Q1QSRMENUIA52oEdIIXjiWUkIVV4vfrsK",
+                        "name": "For Each",
+                        "title": "For Each Network",
+                        "type": "logic.for_each",
+                        "base_type": "activity",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Iterate through each discovered network to deploy firewall rules for all matching networks in the current organization.",
+                          "display_name": "For Each Network",
+                          "skip_execution": false,
+                          "source_array": "$activity.definition_activity_02Q1QSRL1TD8K1BpxusUuBL0gB8XzpMC9MC.output.read_table_from_json$"
+                        },
+                        "object_type": "definition_activity",
+                        "actions": [
+                          {
+                            "unique_name": "definition_activity_02Q2S5M8NXGVB23drx9kZtELBfRCC9qHEkc",
+                            "name": "Meraki - Manage MX L3 Firewall Rules",
+                            "title": "Meraki - Manage MX L3 Firewall Rules",
+                            "type": "workflow.sub_workflow",
+                            "base_type": "subworkflow",
+                            "properties": {
+                              "continue_on_failure": true,
+                              "description": "Deploy firewall rule to block outbound traffic for the specified destination on this network. In bulk operations across multiple networks, individual network failures should not stop processing of remaining networks - this maximizes deployment coverage even when some networks have issues (API limits, insufficient permissions, configuration conflicts, etc.).",
+                              "display_name": "Meraki - Manage MX L3 Firewall Rules",
+                              "input": {
+                                "variable_workflow_02Q2QBASBNJPU4Jb0bAtz75rsEjBfxWl1zC": "$activity.definition_activity_02Q1QSRMENUIA52oEdIIXjiWUkIVV4vfrsK.input.source_array[@].id$",
+                                "variable_workflow_02Q2QE6HSDSEX1fzaLABhotUMJPPr6qdkNX": "$activity.definition_activity_02Q2T8I0KQY6U4NJyBXwkgZY9SX5fuPoCvN.output.script_queries.ruleJson$",
+                                "variable_workflow_02Q2QEL1AO2C12qBxR6feTHxGJnyV0DnqKJ": true,
+                                "variable_workflow_02Q2RX032F5FC0xIG13ihAQLIaoxWflVFkr": 0
+                              },
+                              "runtime_user": {
+                                "target_default": true
+                              },
+                              "skip_execution": false,
+                              "target": {
+                                "use_workflow_target_group": true
+                              },
+                              "workflow_id": "definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU",
+                              "workflow_name": "Meraki - Manage MX L3 Firewall Rules"
+                            },
+                            "object_type": "definition_activity"
+                          },
+                          {
+                            "unique_name": "definition_activity_02Q2LDRUXK2X42c0a9VrSm0A0WhbKQj9xRB",
+                            "name": "Set Variables",
+                            "title": "Set Output Variables",
+                            "type": "core.set_multiple_variables",
+                            "base_type": "activity",
+                            "properties": {
+                              "continue_on_failure": false,
+                              "description": "Append network firewall deployment results to the output message accumulator.",
+                              "display_name": "Set Output Variables",
+                              "skip_execution": false,
+                              "variables_to_update": [
+                                {
+                                  "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQOVE53W5t88WYtwDmhW4wpowYM0$",
+                                  "variable_value_new": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQOVE53W5t88WYtwDmhW4wpowYM0$\nNetwork: $activity.definition_activity_02Q1QSRMENUIA52oEdIIXjiWUkIVV4vfrsK.input.source_array[@].name$ $activity.definition_activity_02Q2S5M8NXGVB23drx9kZtELBfRCC9qHEkc.output.variable_workflow_02Q2Q77XBFC8H025dryrtHYnRJPx1un4EfB$ $activity.definition_activity_02Q2S5M8NXGVB23drx9kZtELBfRCC9qHEkc.output.variable_workflow_02Q2Q77XBFIRE6QjQkXlVEVTnhSUvp49dFB$"
+                                }
+                              ]
+                            },
+                            "object_type": "definition_activity"
+                          },
+                          {
+                            "unique_name": "definition_activity_02Q2WIYGS8DUV4SkhYkKL19gjaKMcLuLYnT",
+                            "name": "Condition Block",
+                            "title": "Log Failure in Jira?",
+                            "type": "logic.if_else",
+                            "base_type": "activity",
+                            "properties": {
+                              "conditions": [],
+                              "continue_on_failure": false,
+                              "description": "Add Jira comment for significant network processing failures if tracking is enabled.",
+                              "display_name": "Log Failure in Jira?",
+                              "skip_execution": false
+                            },
+                            "object_type": "definition_activity",
+                            "blocks": [
+                              {
+                                "unique_name": "definition_activity_02Q2WIYHFKTV01YYe8xuniHizoJQ5OpGFGW",
+                                "name": "Condition Branch",
+                                "title": "Yes",
+                                "type": "logic.condition_block",
+                                "base_type": "activity",
+                                "properties": {
+                                  "condition": {
+                                    "left_operand": {
+                                      "left_operand": {
+                                        "left_operand": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.input.variable_workflow_02Q2WIXANNMFB20LMBdn83SZJbTmTlZNb9s$",
+                                        "operator": "eq",
+                                        "right_operand": true
+                                      },
+                                      "operator": "and",
+                                      "right_operand": {
+                                        "left_operand": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap$",
+                                        "operator": "ne",
+                                        "right_operand": ""
+                                      }
+                                    },
+                                    "operator": "and",
+                                    "right_operand": {
+                                      "left_operand": "$activity.definition_activity_02Q2S5M8NXGVB23drx9kZtELBfRCC9qHEkc.output.succeeded$",
+                                      "operator": "eq",
+                                      "right_operand": false
+                                    }
+                                  },
+                                  "continue_on_failure": false,
+                                  "description": "Add network failure comment when tracking is enabled, issue exists, and network processing failed.",
+                                  "display_name": "Yes",
+                                  "skip_execution": false
+                                },
+                                "object_type": "definition_activity",
+                                "actions": [
+                                  {
+                                    "unique_name": "definition_activity_02Q2WIYJ2L3KO0e1eM0tWW0Deh3RfBoGLnR",
+                                    "name": "Add Failure Comment",
+                                    "title": "Add Failure Comment",
+                                    "type": "workflow.atomic_workflow",
+                                    "base_type": "subworkflow",
+                                    "properties": {
+                                      "continue_on_failure": true,
+                                      "description": "Add comment to Jira issue with network processing failure details for immediate visibility. Optional tracking operation - failure to log to Jira should not interrupt the bulk deployment process as other networks may still be successfully processed.",
+                                      "display_name": "Add Failure Comment",
+                                      "input": {
+                                        "variable_workflow_02CKLMMNW0QB22kSLAe9Hs4sGUgr8lDFTuf": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap$",
+                                        "variable_workflow_02CKLRYVFHY4H2oe3tmYApbcazybXd67w12": "❌ **NETWORK PROCESSING FAILURE**\n\n🏢 **Organization**: $activity.definition_activity_02Q1QSRDMC4AA0ULO5nqJ6dddzQkGbkGijd.input.source_array[@].name$\n🌐 **Network**: $activity.definition_activity_02Q1QSRMENUIA52oEdIIXjiWUkIVV4vfrsK.input.source_array[@].name$\n\n⚠️ **Error Details**:\n$activity.definition_activity_02Q2S5M8NXGVB23drx9kZtELBfRCC9qHEkc.output.variable_workflow_02Q2Q77XBFIRE6QjQkXlVEVTnhSUvp49dFB$\n\n🎯 **Impact**: Firewall rule deployment failed for this network. The target destination ($workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2GOAE2NXUX5sZ0MiSh8ZhjjIOM8wZbKK$) may still be accessible from this network.\n\n🔧 **Action Required**: Manual investigation and remediation may be needed for this specific network.\n\n---",
+                                        "variable_workflow_02CKLSJJK1OWB0erCzD0yOHeqwmv0qf4yMQ": ""
+                                      },
+                                      "runtime_user": {
+                                        "target_default": true
+                                      },
+                                      "skip_execution": false,
+                                      "target": {
+                                        "use_workflow_target_group": true
+                                      },
+                                      "workflow_id": "definition_workflow_02CKLMMMVNLXR6EAdBc69psxWjZxVgZ6ovD",
+                                      "workflow_name": "Jira Cloud - Add Comment to Issue"
+                                    },
+                                    "object_type": "definition_activity"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "unique_name": "definition_activity_02Q1QSRO1NMD34aZG2OS0hvjoqZEJH0T2Bu",
+                    "name": "Condition Branch",
+                    "title": "No",
+                    "type": "logic.condition_block",
+                    "base_type": "activity",
+                    "properties": {
+                      "condition": {
+                        "left_operand": {
+                          "left_operand": "$activity.definition_activity_02Q1QSRG8PB986DFHbuDi5Az0EecVcGR2yn.output.variable_workflow_02L9TZH6C8OZI7c9t9Z0h0JHAbqCc7LuTGT$",
+                          "operator": "eq",
+                          "right_operand": "[]"
+                        },
+                        "operator": "or",
+                        "right_operand": {
+                          "left_operand": "$activity.definition_activity_02Q1QSRG8PB986DFHbuDi5Az0EecVcGR2yn.output.succeeded$",
+                          "operator": "ne",
+                          "right_operand": true
+                        }
+                      },
+                      "continue_on_failure": false,
+                      "display_name": "No",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "actions": [
+                      {
+                        "unique_name": "definition_activity_02Q1QSRPIMTUF6FPLPkbhiYL01hrN87T9q1",
+                        "name": "Set Variables",
+                        "title": "Set Error Variables",
+                        "type": "core.set_multiple_variables",
+                        "base_type": "activity",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Append organization error details to the output message accumulator when no matching networks are found.",
+                          "display_name": "Set Output Variables",
+                          "skip_execution": false,
+                          "variables_to_update": [
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQOVE53W5t88WYtwDmhW4wpowYM0$",
+                              "variable_value_new": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQOVE53W5t88WYtwDmhW4wpowYM0$\nOrganization: $activity.definition_activity_02Q1QSRDMC4AA0ULO5nqJ6dddzQkGbkGijd.input.source_array[@].name$ has no matching tags."
+                            }
+                          ]
+                        },
+                        "object_type": "definition_activity"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "unique_name": "definition_activity_02Q2LH9XR5WT95lQxy6aRodkSphqN89IbSL",
+        "name": "Group",
+        "title": "Summarize Outputs",
+        "type": "logic.group",
+        "base_type": "activity",
+        "properties": {
+          "continue_on_failure": false,
+          "description": "Generate comprehensive summary of firewall rule deployment results using AI analysis for easy administrator review and reporting.",
+          "display_as_suggestion": false,
+          "display_name": "Summarize Outputs",
+          "skip_execution": false
+        },
+        "object_type": "definition_activity",
+        "actions": [
+          {
+            "unique_name": "definition_activity_02Q2LI90RF3ZC6tOrqlxLjmjxbS7N3xskSF",
+            "name": "LLM Prompt",
+            "title": "LLM Prompt",
+            "type": "activity.openai_structured_output_agent",
+            "base_type": "activity",
+            "properties": {
+              "action_timeout": 180,
+              "chat_messages": [
+                {
+                  "content": "You are a network security automation assistant. Please provide a comprehensive summary of the firewall rule deployment results across multiple Meraki MX networks and organizations.",
+                  "role": "system"
+                }
+              ],
+              "continue_on_failure": false,
+              "description": "Generates a comprehensive, user-friendly summary of the bulk firewall rule deployment results using AI. Provides detailed analysis of successful and failed operations across all processed networks for easy administrator review.",
+              "display_name": "LLM Prompt",
+              "modelName": "gpt-4o",
+              "runtime_user": {
+                "target_default": true
+              },
+              "skip_execution": false,
+              "systemPrompt": "You are a text analyzer expert at extracting statistical information from Workflow Execution of blocking an IP address in L3 Firewall rules. Your job is to identify summary counts to provide the user Organization, Network counts where the firewall rule has been applied. \n\nKey extraction rules:\n1. Parse the text payload and focus on the 'Organization:', Network, Duplicate, Failed, Success keywords.\n2. Analyze the number of occurrences for those specific words.\n\n$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQOVE53W5t88WYtwDmhW4wpowYM0$\n",
+              "target": {
+                "use_workflow_target_group": true
+              }
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02Q2WIYOZAC3C4PyxVDHmCZQLYChbGZb0lF",
+            "name": "Condition Block",
+            "title": "Complete Jira?",
+            "type": "logic.if_else",
+            "base_type": "activity",
+            "properties": {
+              "conditions": [],
+              "continue_on_failure": false,
+              "description": "Add final Jira comment with LLM summary and transition issue to resolved status if tracking is enabled.",
+              "display_name": "Complete Jira?",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "blocks": [
+              {
+                "unique_name": "definition_activity_02Q2WIYPOM3T72YD4zztrD6hU0tbQcCLcbS",
+                "name": "Condition Branch",
+                "title": "Yes",
+                "type": "logic.condition_block",
+                "base_type": "activity",
+                "properties": {
+                  "condition": {
+                    "left_operand": {
+                      "left_operand": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.input.variable_workflow_02Q2WIXANNMFB20LMBdn83SZJbTmTlZNb9s$",
+                      "operator": "eq",
+                      "right_operand": true
+                    },
+                    "operator": "and",
+                    "right_operand": {
+                      "left_operand": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap$",
+                      "operator": "ne",
+                      "right_operand": ""
+                    }
+                  },
+                  "continue_on_failure": false,
+                  "description": "Complete Jira issue with final summary when tracking is enabled and issue exists.",
+                  "display_name": "Yes",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "actions": [
+                  {
+                    "unique_name": "definition_activity_02Q2WIYRATR6F2m63bWbLw6nyFtSSgO5RO2",
+                    "name": "Add Final Comment",
+                    "title": "Add Final Comment",
+                    "type": "workflow.atomic_workflow",
+                    "base_type": "subworkflow",
+                    "properties": {
+                      "continue_on_failure": true,
+                      "description": "Add comprehensive final comment to Jira issue with LLM-generated deployment summary. Optional tracking operation - if Jira fails at the end, the core firewall deployment has already completed successfully and should be marked as such.",
+                      "display_name": "Add Final Comment",
+                      "input": {
+                        "variable_workflow_02CKLMMNW0QB22kSLAe9Hs4sGUgr8lDFTuf": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap$",
+                        "variable_workflow_02CKLRYVFHY4H2oe3tmYApbcazybXd67w12": "🏁 **FIREWALL DEPLOYMENT COMPLETED**\n\n**📊 AI-GENERATED SUMMARY:**\n\n$activity.definition_activity_02Q2LI90RF3ZC6tOrqlxLjmjxbS7N3xskSF.output.content$\n\n---\n\n**🔧 Technical Execution Details:**\n• **Workflow ID**: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.instance_id$\n• **Final Status**: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.output.variable_workflow_02Q1QSQTQP6J54ZRumdIJYW4KyAcBuJgFE4$\n• **Target Blocked**: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2GOAE2NXUX5sZ0MiSh8ZhjjIOM8wZbKK$\n• **Network Tags**: $workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q1QSQTQO714054Q7dul17Do9BOLKTN304$\n\n✅ **Deployment process completed successfully!** All applicable networks have been processed for firewall rule deployment.",
+                        "variable_workflow_02CKLSJJK1OWB0erCzD0yOHeqwmv0qf4yMQ": ""
+                      },
+                      "runtime_user": {
+                        "target_default": true
+                      },
+                      "skip_execution": false,
+                      "target": {
+                        "use_workflow_target_group": true
+                      },
+                      "workflow_id": "definition_workflow_02CKLMMMVNLXR6EAdBc69psxWjZxVgZ6ovD",
+                      "workflow_name": "Jira Cloud - Add Comment to Issue"
+                    },
+                    "object_type": "definition_activity"
+                  },
+                  {
+                    "unique_name": "definition_activity_02Q2WIYT9BN3K25cASyxTaja8hZVlp3y1qb",
+                    "name": "Resolve Issue",
+                    "title": "Resolve Issue",
+                    "type": "workflow.atomic_workflow",
+                    "base_type": "subworkflow",
+                    "properties": {
+                      "continue_on_failure": true,
+                      "description": "Transition the Jira issue to resolved/done status upon successful completion of firewall deployment. Optional tracking operation - if issue resolution fails, the core security deployment has already succeeded and workflow should complete successfully.",
+                      "display_name": "Resolve Issue",
+                      "input": {
+                        "variable_workflow_02F94HNR01XYG09noSestlonS0xSSZC8yhW": "$workflow.definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5.local.variable_workflow_02Q2WIXANNRQV1zfSP1zsQxJ6OvUT6Ef0ap$",
+                        "variable_workflow_02F94HNR02CF804XP2jwULkyFLrlIyivC3U": "Done",
+                        "variable_workflow_02F94J1MB34RR2QVVEQrYtwCiQtldJrVvcR": 0
+                      },
+                      "runtime_user": {
+                        "target_default": true
+                      },
+                      "skip_execution": false,
+                      "target": {
+                        "override_workflow_target": true,
+                        "target_id": "definition_target_02Q21ERZ51G4R6xzRhu5PiQ7C78WLZhCnZ2",
+                        "target_type": "web-service.endpoint"
+                      },
+                      "workflow_id": "definition_workflow_02F94HNQSXFCD3PsCVNZZx5oObAWBAZEKIM",
+                      "workflow_name": "Jira Cloud - Transition Issue"
+                    },
+                    "object_type": "definition_activity"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "categories": [
+      "category_1BMfMXSnJMyt5Ihqi7rWJr5N8cf"
+    ]
+  },
+  "rules": {
+    "ruleevent_02Q2HDDXNL5UX3aLG6kGaQdA7FKUSN1PaUu": {
+      "name": "ServiceNow Incident Webhook",
+      "title": "ServiceNow Incident Webhook",
+      "description": "Webhook automation rule that triggers the Meraki MX firewall blocking workflow when ServiceNow security incidents are received. Automatically extracts CIDR blocks and network regions from incident payloads to deploy emergency firewall rules across tagged networks.",
+      "type": "webhook.rule_event",
+      "rule_type": "rule_event",
+      "base_type": "rule",
+      "object_type": "ruleevent",
+      "version": "1.0.0",
+      "properties": {
+        "description": "Webhook automation rule that triggers the Meraki MX firewall blocking workflow when ServiceNow security incidents are received. Automatically extracts CIDR blocks and network regions from incident payloads to deploy emergency firewall rules across tagged networks.",
+        "disabled": false,
+        "display_name": "ServiceNow Incident Webhook",
+        "group_by": false,
+        "rule_type": "rule_event",
+        "title": "ServiceNow Incident Webhook",
+        "webhook_id": "webhook_02Q1Y895DFEXD113I03hLBXqSLWlRFmWAe7",
+        "workflows_config": [
+          {
+            "disabled": false,
+            "ref_id": "definition_workflow_02Q1QSQT8A6T01nq4Xm61AwFBo6TiZW2WB5",
+            "wf_input_variables": {
+              "variable_workflow_02Q2WIXANN61A7kXwrSboPA6uxsXwBxCNb8": "11018",
+              "variable_workflow_02Q2WIXANNGDT5Wj0XefBKBb4CYxUGhSMOK": "10004",
+              "variable_workflow_02Q2WIXANNMFB20LMBdn83SZJbTmTlZNb9s": true,
+              "variable_workflow_02Q3QSTLSDE6F4BEoEtuzNrfL3fIoMMCh4b": "$rule.webhook rule_event.output.request_body$"
+            },
+            "status": {
+              "state": "started-polling",
+              "prev_state": "started-polling",
+              "error_msg": ""
+            }
+          }
+        ]
+      },
+      "disabled": false,
+      "unique_name": "ruleevent_02Q2HDDXNL5UX3aLG6kGaQdA7FKUSN1PaUu"
+    }
+  },
+  "targets": {
+    "definition_target_02Q21ERZ51G4R6xzRhu5PiQ7C78WLZhCnZ2": {
+      "unique_name": "definition_target_02Q21ERZ51G4R6xzRhu5PiQ7C78WLZhCnZ2",
+      "name": "Jira HTTP Target-Group",
+      "title": "Jira HTTP Target-Group",
+      "type": "web-service.endpoint",
+      "base_type": "target",
+      "object_type": "definition_target",
+      "properties": {
+        "default_runtime_user_id": "definition_runtime_user_02Q21VHNGE47X2W177z8ByDSjEs2p9rad7B",
+        "description": "",
+        "disable_certificate_validation": false,
+        "display_name": "Jira HTTP Target-Group",
+        "host": "meraki.atlassian.net",
+        "ignore_proxy": false,
+        "is_https_proxy": false,
+        "no_runtime_user": false,
+        "path": "/rest",
+        "port": 443,
+        "protocol": "https"
+      }
+    }
+  },
+  "runtime_users": {
+    "definition_runtime_user_02Q21VHNGE47X2W177z8ByDSjEs2p9rad7B": {
+      "unique_name": "definition_runtime_user_02Q21VHNGE47X2W177z8ByDSjEs2p9rad7B",
+      "name": "Jira Basic",
+      "title": "Jira Basic",
+      "type": "runtime_user.web-service_basic_credentials",
+      "base_type": "runtime_user",
+      "object_type": "definition_runtime_user",
+      "properties": {
+        "display_name": "Jira Basic"
+      }
+    }
+  },
+  "target_groups": {
+    "target_group_02Q3CONQ2KMDK6n03u6ls7UKsCWVFf58Q5G": {
+      "unique_name": "target_group_02Q3CONQ2KMDK6n03u6ls7UKsCWVFf58Q5G",
+      "name": "Meraki - Open AI - Jira",
+      "title": "Meraki - Open AI - Jira",
+      "type": "generic.target_group",
+      "base_type": "target_group",
+      "version": "1.0.0",
+      "targets": [
+        {
+          "data_target_type": "meraki.endpoint",
+          "view_target_type": "meraki.endpoint",
+          "include_all_targets": true
+        },
+        {
+          "data_target_type": "target.openai_endpoint",
+          "view_target_type": "target.openai_endpoint",
+          "include_all_targets": true
+        },
+        {
+          "data_target_type": "web-service.endpoint",
+          "view_target_type": "web-service.endpoint",
+          "include_all_targets": false,
+          "criteria": [
+            {
+              "operator": "mw",
+              "left_operand": "$input.host$",
+              "right_operand": "*atlassian*"
+            }
+          ]
+        }
+      ],
+      "object_type": "target_group"
+    }
+  },
+  "subworkflows": [
+    {
+      "workflow": {
+        "unique_name": "definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU",
+        "name": "Meraki - Manage MX L3 Firewall Rules",
+        "title": "Meraki - Manage MX L3 Firewall Rules",
+        "type": "generic.workflow",
+        "base_type": "workflow",
+        "variables": [
+          {
+            "schema_id": "datatype.integer",
+            "properties": {
+              "value": 0,
+              "scope": "input",
+              "name": "Position",
+              "type": "datatype.integer",
+              "description": "Rule insertion position in firewall list (0-based index). 0=highest priority (first rule), 1=second rule, etc. Only used when Add or Remove Rule=true. Values beyond rule count insert at end. Negative values insert at beginning.",
+              "is_required": false,
+              "display_on_wizard": false,
+              "is_invisible": false,
+              "variable_string_format": ""
+            },
+            "unique_name": "variable_workflow_02Q2RX032F5FC0xIG13ihAQLIaoxWflVFkr",
+            "object_type": "variable_workflow"
+          },
+          {
+            "schema_id": "datatype.string",
+            "properties": {
+              "value": "",
+              "scope": "output",
+              "name": "Status Message",
+              "type": "datatype.string",
+              "description": "Brief status message indicating workflow outcome. Examples: 'Success: Firewall rule operation completed', 'Validation Error: Invalid policy value', 'Error: GET operation failed'. Useful for quick status checks.",
+              "is_required": false,
+              "display_on_wizard": false,
+              "is_invisible": false,
+              "variable_string_format": "text"
+            },
+            "unique_name": "variable_workflow_02Q2Q77XBFC8H025dryrtHYnRJPx1un4EfB",
+            "object_type": "variable_workflow"
+          },
+          {
+            "schema_id": "datatype.string",
+            "properties": {
+              "value": "",
+              "scope": "output",
+              "name": "Result",
+              "type": "datatype.string",
+              "description": "Comprehensive summary of firewall rule operation including network ID, operation performed, rule details, and success/failure status. Useful for logging and monitoring workflow executions.",
+              "is_required": false,
+              "display_on_wizard": false,
+              "is_invisible": false,
+              "variable_string_format": "text"
+            },
+            "unique_name": "variable_workflow_02Q2Q77XBG9322NBbswlydiy7ZEAmNzlTX0",
+            "object_type": "variable_workflow"
+          },
+          {
+            "schema_id": "datatype.string",
+            "properties": {
+              "value": "",
+              "scope": "output",
+              "name": "Error Message",
+              "type": "datatype.string",
+              "description": "Detailed error message when workflow fails. Includes specific validation errors, API failures, or processing issues to help troubleshoot problems.",
+              "is_required": false,
+              "display_on_wizard": false,
+              "is_invisible": false,
+              "variable_string_format": "text"
+            },
+            "unique_name": "variable_workflow_02Q2Q77XBFIRE6QjQkXlVEVTnhSUvp49dFB",
+            "object_type": "variable_workflow"
+          },
+          {
+            "schema_id": "datatype.string",
+            "properties": {
+              "value": "{\n  \"comment\": \"\",\n  \"destCidr\": \"any\",\n  \"destPort\": \"any\",\n  \"policy\": \"deny\",\n  \"protocol\": \"any\",\n  \"srcCidr\": \"any\",\n  \"srcPort\": \"any\",\n  \"syslogEnabled\": false\n}",
+              "scope": "input",
+              "name": "Rule",
+              "type": "datatype.string",
+              "description": "JSON object defining the firewall rule to add. Required fields: policy (allow/deny), protocol (any/tcp/udp/icmp), destPort, destCidr, srcPort, srcCidr. Optional: comment, syslogEnabled. Example: {\"policy\":\"deny\",\"protocol\":\"tcp\",\"destPort\":\"22\",\"destCidr\":\"any\",\"srcPort\":\"any\",\"srcCidr\":\"192.168.1.0/24\",\"comment\":\"Block SSH from internal\"}",
+              "is_required": true,
+              "display_on_wizard": false,
+              "is_invisible": false,
+              "variable_string_format": "json"
+            },
+            "unique_name": "variable_workflow_02Q2QE6HSDSEX1fzaLABhotUMJPPr6qdkNX",
+            "object_type": "variable_workflow"
+          },
+          {
+            "schema_id": "datatype.integer",
+            "properties": {
+              "value": 0,
+              "scope": "output",
+              "name": "Status Code",
+              "type": "datatype.integer",
+              "description": "HTTP status code returned by the Meraki API operations. Common values: 200 (success), 400 (validation error), 401 (unauthorized), 404 (network not found), 429 (rate limited).",
+              "is_required": false,
+              "display_on_wizard": false,
+              "is_invisible": false,
+              "variable_string_format": ""
+            },
+            "unique_name": "variable_workflow_02Q2Q77XBFP4H7gfjwt0uyrKj8h9WQVEUQm",
+            "object_type": "variable_workflow"
+          },
+          {
+            "schema_id": "datatype.string",
+            "properties": {
+              "value": "",
+              "scope": "input",
+              "name": "Network ID",
+              "type": "datatype.string",
+              "description": "Meraki network identifier where firewall rules will be managed. Format: N_XXXXXXXXXX. Must be a valid MX network with Layer 3 firewall capabilities. Found in Meraki Dashboard under Network-wide > General.",
+              "is_required": true,
+              "display_on_wizard": false,
+              "is_invisible": false,
+              "variable_string_format": "text"
+            },
+            "unique_name": "variable_workflow_02Q2QBASBNJPU4Jb0bAtz75rsEjBfxWl1zC",
+            "object_type": "variable_workflow"
+          },
+          {
+            "schema_id": "datatype.boolean",
+            "properties": {
+              "value": false,
+              "scope": "input",
+              "name": "Add or Remove Rule",
+              "type": "datatype.boolean",
+              "description": "Operation mode: true = Add new firewall rule at specified position, false = Remove all automation-created rules. When adding, uses Rule and Position inputs. When removing, ignores Rule and Position inputs.",
+              "is_required": false,
+              "display_on_wizard": false,
+              "is_invisible": false,
+              "variable_string_format": ""
+            },
+            "unique_name": "variable_workflow_02Q2QEL1AO2C12qBxR6feTHxGJnyV0DnqKJ",
+            "object_type": "variable_workflow"
+          }
+        ],
+        "properties": {
+          "atomic": {
+            "is_atomic": false
+          },
+          "automation_rules": {
+            "type": []
+          },
+          "delete_workflow_instance": false,
+          "description": "Manages Meraki MX Layer 3 outbound firewall rules with add/remove operations and position-based insertion. Includes comprehensive validation and error handling.\n\nFeatures:\n- Add new firewall rules at specified position (0=first/highest priority, 1=second, etc.)\n- Use comment field exactly as provided in Rule input\n- Remove existing automation rules (identified by workflow comment)\n- Input validation for required fields (policy, protocol, destPort, destCidr, srcPort, srcCidr)\n- Error handling for GET/UPDATE operations\n- Comprehensive output variables\n- Position validation with automatic boundary adjustment\n",
+          "display_name": "Meraki - Manage MX L3 Firewall Rules",
+          "runtime_user": {
+            "target_default": true
+          },
+          "target": {
+            "target_type": "meraki.endpoint",
+            "specify_on_workflow_start": true
+          }
+        },
+        "object_type": "definition_workflow",
+        "actions": [
+          {
+            "unique_name": "definition_activity_02Q2RQABK55WX3su2ycT7dg2xZjh86uCPDE",
+            "name": "Group",
+            "title": "Input Validation & Requirements Check",
+            "type": "logic.group",
+            "base_type": "activity",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Comprehensive validation of all input parameters before processing firewall rules. Validates JSON structure, required fields, policy values, and data types to ensure safe and reliable firewall rule operations.",
+              "display_name": "Input Validation & Requirements Check",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "actions": [
+              {
+                "unique_name": "definition_activity_02Q2Q77ZB7LYU259f0SCVlJBZfjGrUaXvEG",
+                "name": "JSONPath Query",
+                "title": "Validate Rule JSON Structure",
+                "type": "corejava.jsonpathquery",
+                "base_type": "activity",
+                "properties": {
+                  "action_timeout": 180,
+                  "continue_on_failure": true,
+                  "description": "Validate that the Rule input contains all required firewall rule fields and can be parsed as valid JSON",
+                  "display_name": "Validate Rule JSON Structure",
+                  "input_json": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.input.variable_workflow_02Q2QE6HSDSEX1fzaLABhotUMJPPr6qdkNX$",
+                  "jsonpath_queries": [
+                    {
+                      "jsonpath_query": "$.policy",
+                      "jsonpath_query_name": "policy",
+                      "jsonpath_query_type": "string"
+                    },
+                    {
+                      "jsonpath_query": "$.protocol",
+                      "jsonpath_query_name": "protocol",
+                      "jsonpath_query_type": "string"
+                    },
+                    {
+                      "jsonpath_query": "$.destPort",
+                      "jsonpath_query_name": "destPort",
+                      "jsonpath_query_type": "string"
+                    },
+                    {
+                      "jsonpath_query": "$.destCidr",
+                      "jsonpath_query_name": "destCidr",
+                      "jsonpath_query_type": "string"
+                    },
+                    {
+                      "jsonpath_query": "$.srcPort",
+                      "jsonpath_query_name": "srcPort",
+                      "jsonpath_query_type": "string"
+                    },
+                    {
+                      "jsonpath_query": "$.srcCidr",
+                      "jsonpath_query_name": "srcCidr",
+                      "jsonpath_query_type": "string"
+                    }
+                  ],
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02Q2ROPCRNOG915LCfZBLVjbez3kON0u37H",
+                "name": "Condition Block",
+                "title": "Check JSON Parsing Success",
+                "type": "logic.if_else",
+                "base_type": "activity",
+                "properties": {
+                  "continue_on_failure": false,
+                  "description": "Check if the JSONPath query succeeded, indicating valid JSON structure. If failed, terminate with validation error.",
+                  "display_name": "Check JSON Parsing Success",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "blocks": [
+                  {
+                    "unique_name": "definition_activity_02Q2ROPDE0QA6053P9xEh0yZXXO32bput3C",
+                    "name": "Condition Branch",
+                    "title": "JSON Parsing Failed",
+                    "type": "logic.condition_block",
+                    "base_type": "activity",
+                    "properties": {
+                      "condition": {
+                        "left_operand": "$activity.definition_activity_02Q2Q77ZB7LYU259f0SCVlJBZfjGrUaXvEG.output.succeeded$",
+                        "operator": "eq",
+                        "right_operand": false
+                      },
+                      "continue_on_failure": false,
+                      "description": "Triggered when Rule input contains invalid JSON or missing required fields that prevent JSONPath parsing.",
+                      "display_name": "JSON Parsing Failed",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "actions": [
+                      {
+                        "unique_name": "definition_activity_02Q2ROPEDARFA7PBhcwETk5Q5OwqM19ULKI",
+                        "name": "Set Variables",
+                        "title": "Set JSON Validation Error Details",
+                        "type": "core.set_multiple_variables",
+                        "base_type": "activity",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Populate output variables with JSON validation error details including missing fields or malformed JSON structure.",
+                          "display_name": "Set JSON Validation Error Details",
+                          "skip_execution": false,
+                          "variables_to_update": [
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFIRE6QjQkXlVEVTnhSUvp49dFB$",
+                              "variable_value_new": "Invalid Rule JSON format or missing required fields. Required fields: policy, protocol, destPort, destCidr, srcPort, srcCidr. Error: $activity.definition_activity_02Q2Q77ZB7LYU259f0SCVlJBZfjGrUaXvEG.output.error.message$"
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFP4H7gfjwt0uyrKj8h9WQVEUQm$",
+                              "variable_value_new": 400
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFC8H025dryrtHYnRJPx1un4EfB$",
+                              "variable_value_new": "Validation Error: Invalid JSON format"
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBG9322NBbswlydiy7ZEAmNzlTX0$",
+                              "variable_value_new": "Validation failed: Invalid Rule JSON format or missing required fields."
+                            }
+                          ]
+                        },
+                        "object_type": "definition_activity"
+                      },
+                      {
+                        "unique_name": "definition_activity_02Q2ROPF58RDD0sjSO9bGp4DzjUweeagNBs",
+                        "name": "Completed",
+                        "title": "Terminate - Invalid JSON Format",
+                        "type": "logic.completed",
+                        "base_type": "activity",
+                        "properties": {
+                          "completion_type": "failed-completed",
+                          "continue_on_failure": false,
+                          "description": "Terminate workflow execution due to invalid JSON format or missing required fields in Rule input.",
+                          "display_name": "Terminate - Invalid JSON Format",
+                          "result_message": "Rule JSON validation failed: Invalid format or missing required fields",
+                          "skip_execution": false
+                        },
+                        "object_type": "definition_activity"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "unique_name": "definition_activity_02Q2ROPFQD0MP5NtfWODy25UtjDGNrYW0hq",
+                "name": "Condition Block",
+                "title": "Validate Policy Values (Allow/Deny)",
+                "type": "logic.if_else",
+                "base_type": "activity",
+                "properties": {
+                  "continue_on_failure": false,
+                  "description": "Validate policy field contains only valid firewall values: 'allow' or 'deny'. Invalid values cause workflow failure with error details.",
+                  "display_name": "Validate Policy Values (Allow/Deny)",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "blocks": [
+                  {
+                    "unique_name": "definition_activity_02Q2ROPGDCJ174fSZlvWUnNzi7auvuxBMET",
+                    "name": "Condition Branch",
+                    "title": "Policy Value Not Allow/Deny",
+                    "type": "logic.condition_block",
+                    "base_type": "activity",
+                    "properties": {
+                      "condition": {
+                        "left_operand": "$activity.definition_activity_02Q2Q77ZB7LYU259f0SCVlJBZfjGrUaXvEG.output.jsonpath_queries.policy$",
+                        "operator": "mregex",
+                        "right_operand": "^(?!allow$|deny$).*"
+                      },
+                      "continue_on_failure": false,
+                      "description": "Triggered when policy field contains invalid values. Only 'allow' and 'deny' are permitted for Meraki firewall rules.",
+                      "display_name": "Policy Value Not Allow/Deny",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "actions": [
+                      {
+                        "unique_name": "definition_activity_02Q2ROPHD68UM2MuwS8gNyZOmq30fRAqwoi",
+                        "name": "Set Variables",
+                        "title": "Set Policy Validation Error Details",
+                        "type": "core.set_multiple_variables",
+                        "base_type": "activity",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Populate output variables with detailed policy validation error info including invalid value and expected values.",
+                          "display_name": "Set Policy Validation Error Details",
+                          "skip_execution": false,
+                          "variables_to_update": [
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFIRE6QjQkXlVEVTnhSUvp49dFB$",
+                              "variable_value_new": "Invalid policy value: '$activity.definition_activity_02Q2Q77ZB7LYU259f0SCVlJBZfjGrUaXvEG.output.jsonpath_queries.policy$'. Must be 'allow' or 'deny'."
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFP4H7gfjwt0uyrKj8h9WQVEUQm$",
+                              "variable_value_new": 400
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFC8H025dryrtHYnRJPx1un4EfB$",
+                              "variable_value_new": "Validation Error: Invalid policy value"
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBG9322NBbswlydiy7ZEAmNzlTX0$",
+                              "variable_value_new": "Validation failed: Invalid policy value in Rule input. Expected 'allow' or 'deny'."
+                            }
+                          ]
+                        },
+                        "object_type": "definition_activity"
+                      },
+                      {
+                        "unique_name": "definition_activity_02Q2ROPI5T6467Yhe0ppqwtt53CJcawngSs",
+                        "name": "Completed",
+                        "title": "Terminate - Invalid Policy Value",
+                        "type": "logic.completed",
+                        "base_type": "activity",
+                        "properties": {
+                          "completion_type": "failed-completed",
+                          "continue_on_failure": false,
+                          "description": "Terminate workflow execution due to invalid policy value in Rule input. Completes with failure status and detailed error info.",
+                          "display_name": "Terminate - Invalid Policy Value",
+                          "result_message": "Policy validation failed: '$activity.definition_activity_02Q2Q77ZB7LYU259f0SCVlJBZfjGrUaXvEG.output.jsonpath_queries.policy$' is not a valid policy value",
+                          "skip_execution": false
+                        },
+                        "object_type": "definition_activity"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "unique_name": "definition_activity_02Q2Q8UZC4U2B23Y8N5JEgL2bSMSXmATZA0",
+            "name": "Group",
+            "title": "Firewall Rules Processing",
+            "type": "logic.group",
+            "base_type": "activity",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Main processing group that retrieves current firewall rules, modifies them based on Add/Remove input, and updates the network configuration.",
+              "display_name": "Firewall Rules Processing",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "actions": [
+              {
+                "unique_name": "definition_activity_02Q2Q78SQ9K1F74GEslWWM4grvtwqaSkPgS",
+                "name": "Meraki - Get Network Appliance Firewall L3 Firewall Rules",
+                "title": "Meraki - Get Network Appliance Firewall L3 Firewall Rules",
+                "type": "workflow.atomic_workflow",
+                "base_type": "subworkflow",
+                "properties": {
+                  "continue_on_failure": true,
+                  "description": "API endpoint is used to retrieve the Layer 3 (L3) firewall rules configured on a network appliance. Layer 3 firewall rules control traffic based on IP addresses, protocols, and ports, allowing administrators to manage traffic flows and secure the network.",
+                  "display_name": "Meraki - Get Network Appliance Firewall L3 Firewall Rules",
+                  "input": {
+                    "variable_workflow_02MN4XD4FIP4W3FWhabwFykP3DiQaZHmfTR": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.input.variable_workflow_02Q2QBASBNJPU4Jb0bAtz75rsEjBfxWl1zC$"
+                  },
+                  "runtime_user": {
+                    "target_default": true
+                  },
+                  "skip_execution": false,
+                  "target": {
+                    "target_type": "meraki.endpoint",
+                    "use_workflow_target": true
+                  },
+                  "workflow_id": "definition_workflow_02MN4XD4FINLC4h2i95QOdYECcfArPzx1eY",
+                  "workflow_name": "Meraki - Get Network Appliance Firewall L3 Firewall Rules"
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02Q2ROPL8N11N31v9pX6ZYgIkG2awCfZHl3",
+                "name": "Condition Block",
+                "title": "Handle GET Firewall Rules Failure",
+                "type": "logic.if_else",
+                "base_type": "activity",
+                "properties": {
+                  "continue_on_failure": false,
+                  "description": "Check if GET firewall rules API failed and handle errors gracefully by setting output variables and terminating execution.",
+                  "display_name": "Handle GET Firewall Rules Failure",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "blocks": [
+                  {
+                    "unique_name": "definition_activity_02Q2ROPLUOOLF1nU43WStZiBIunZTq5BEz7",
+                    "name": "Condition Branch",
+                    "title": "GET API Operation Failed",
+                    "type": "logic.condition_block",
+                    "base_type": "activity",
+                    "properties": {
+                      "condition": {
+                        "left_operand": "$activity.definition_activity_02Q2Q78SQ9K1F74GEslWWM4grvtwqaSkPgS.output.succeeded$",
+                        "operator": "eq",
+                        "right_operand": false
+                      },
+                      "continue_on_failure": false,
+                      "description": "Triggered when GET firewall rules API fails due to network issues, authentication problems, invalid Network ID, or API errors.",
+                      "display_name": "GET API Operation Failed",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "actions": [
+                      {
+                        "unique_name": "definition_activity_02Q2ROPN2DMDO1r53CLaUG1gxNRIUpUEghK",
+                        "name": "Set Variables",
+                        "title": "Set GET Failure Error Details",
+                        "type": "core.set_multiple_variables",
+                        "base_type": "activity",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Populate output variables with comprehensive error info from failed GET operation including Network ID, error message, and HTTP status.",
+                          "display_name": "Set GET Failure Error Details",
+                          "skip_execution": false,
+                          "variables_to_update": [
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFIRE6QjQkXlVEVTnhSUvp49dFB$",
+                              "variable_value_new": "Failed to retrieve firewall rules for Network ID: $workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.input.variable_workflow_02Q2QBASBNJPU4Jb0bAtz75rsEjBfxWl1zC$. Error: $activity.definition_activity_02Q2Q78SQ9K1F74GEslWWM4grvtwqaSkPgS.output.error.message$"
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFP4H7gfjwt0uyrKj8h9WQVEUQm$",
+                              "variable_value_new": "$activity.definition_activity_02Q2Q78SQ9K1F74GEslWWM4grvtwqaSkPgS.output.variable_workflow_02MN4XD4FIQOG0udjI82Gn6l19oPOym5CTt$"
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFC8H025dryrtHYnRJPx1un4EfB$",
+                              "variable_value_new": "Error: GET operation failed"
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBG9322NBbswlydiy7ZEAmNzlTX0$",
+                              "variable_value_new": "Failed to retrieve or modify firewall rules due to GET operation failure."
+                            }
+                          ]
+                        },
+                        "object_type": "definition_activity"
+                      },
+                      {
+                        "unique_name": "definition_activity_02Q2ROPO3VBO62oFYc1RUo0hxo4eSOh6pED",
+                        "name": "Completed",
+                        "title": "Terminate - GET Operation Failed",
+                        "type": "logic.completed",
+                        "base_type": "activity",
+                        "properties": {
+                          "completion_type": "succeeded",
+                          "continue_on_failure": false,
+                          "description": "Gracefully terminate workflow when GET firewall rules fails. Completes with success status but comprehensive error details in outputs.",
+                          "display_name": "Terminate - GET Operation Failed",
+                          "result_message": "Workflow completed with GET error: $activity.definition_activity_02Q2Q78SQ9K1F74GEslWWM4grvtwqaSkPgS.output.error.message$",
+                          "skip_execution": false
+                        },
+                        "object_type": "definition_activity"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "unique_name": "definition_activity_02Q2Q78U5XHWB0bAe6yWQZWyl3qO6LgFkPw",
+                "name": "JSONPath Query",
+                "title": "Extract Rules Array from Response",
+                "type": "corejava.jsonpathquery",
+                "base_type": "activity",
+                "properties": {
+                  "action_timeout": 180,
+                  "continue_on_failure": false,
+                  "description": "Extract the 'rules' array from the GET firewall rules API response to prepare for rule modification.",
+                  "display_name": "Extract Rules Array from Response",
+                  "input_json": "$activity.definition_activity_02Q2Q78SQ9K1F74GEslWWM4grvtwqaSkPgS.output.variable_workflow_02MN4XD4FIS801gUrtzo8CEOhwoP6kzmgvY$",
+                  "jsonpath_queries": [
+                    {
+                      "jsonpath_query": "$.rules",
+                      "jsonpath_query_name": "rules",
+                      "jsonpath_query_type": "string"
+                    }
+                  ],
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02Q2Q78VGCHXX73AyhxI9mrF6jQtpZEEOHQ",
+                "name": "Execute Python Script",
+                "title": "Add or Remove Firewall Rule",
+                "type": "python3.script",
+                "base_type": "activity",
+                "properties": {
+                  "action_timeout": 180,
+                  "continue_on_failure": false,
+                  "description": "Process firewall rules based on Add/Remove boolean and Position. Add: checks for duplicates and inserts rule at specified position if no duplicate found. Remove: removes matching rules by key fields.",
+                  "display_name": "Add or Remove Firewall Rule",
+                  "script": "import sys, json\n\nexistingRules = sys.argv[1]  # This is already the rules array, not full response\nruleInput = sys.argv[2]\naddOrRemove = sys.argv[3].lower() == 'true'  # true = add, false = remove\nposition = int(sys.argv[4])  # position to insert rule\n\n# Parse inputs - existingRules is already just the rules array\nrulesArray = json.loads(existingRules)\nnewRule = json.loads(ruleInput)\n\n# Filter out the default rule from existing rules (API update should not include it)\n# Default rule format: comment=\"Default rule\", policy=\"allow\", protocol=\"Any/any\", all ports/CIDRs=\"Any/any\"\nuser_rules = []\nfor rule in rulesArray:\n    is_default_rule = (\n        rule.get('comment', '') == 'Default rule' and\n        rule.get('policy', '').lower() == 'allow' and\n        rule.get('protocol', '').lower() == 'any' and\n        rule.get('destCidr', '').lower() == 'any' and\n        rule.get('srcCidr', '').lower() == 'any' and\n        rule.get('destPort', '').lower() == 'any' and\n        rule.get('srcPort', '').lower() == 'any'\n    )\n    if not is_default_rule:\n        user_rules.append(rule)\n\nif addOrRemove:\n    # Add rule - first check for duplicates against ALL existing rules (including default), then insert at specified position\n    # Use comment as provided in input (or empty string if not provided)\n    if 'comment' not in newRule:\n        newRule['comment'] = \"\"\n    \n    # Define the key fields to check for duplicates (exclude comment and syslogEnabled)\n    key_fields = ['policy', 'protocol', 'destPort', 'destCidr', 'srcPort', 'srcCidr']\n    \n    # Check if a rule with the same key fields already exists in ALL rules (including default rule)\n    # Use case-insensitive comparison for field values\n    duplicate_found = False\n    for existing_rule in rulesArray:  # Check against ALL rules, not just user_rules\n        if all(existing_rule.get(field, '').lower() == newRule.get(field, '').lower() for field in key_fields):\n            duplicate_found = True\n            break\n    \n    if duplicate_found:\n        # Don't add duplicate rule\n        result = f\"Duplicate rule detected.\"\n        newRules = json.dumps(user_rules)  # Return unchanged user rules (no default rule)\n        skipUpdate = True\n    else:\n        # No duplicate found, proceed with adding the rule\n        # Ensure position is within valid range for user rules\n        max_position = len(user_rules)\n        if position > max_position:\n            position = max_position  # Insert at end if position too high\n        elif position < 0:\n            position = 0  # Insert at beginning if position negative\n        \n        user_rules.insert(position, newRule)\n        result = f\"Rule added successfully at position {position} (no duplicate found)\"\n        newRules = json.dumps(user_rules)  # Return user rules without default rule\n        skipUpdate = False\nelse:\n    # Remove rule - find and remove matching rules by comparing key fields among user rules\n    original_count = len(user_rules)\n    \n    # Define the key fields to match for rule identification\n    key_fields = ['policy', 'protocol', 'destPort', 'destCidr', 'srcPort', 'srcCidr']\n    \n    # Filter out rules that match ALL key fields of the input rule (case-insensitive)\n    filtered_rules = [rule for rule in user_rules \n                     if not all(rule.get(field, '').lower() == newRule.get(field, '').lower() for field in key_fields)]\n    \n    user_rules = filtered_rules\n    removed_count = original_count - len(user_rules)\n    \n    if removed_count == 0:\n        result = f\"No matching rule found to remove\"\n        skipUpdate = True  # No changes to make\n    elif removed_count == 1:\n        result = f\"Successfully removed 1 matching rule\"\n        skipUpdate = False  # Changes made, need to update\n    else:\n        # This shouldn't happen in normal scenarios but handle it defensively\n        result = f\"Warning: Removed {removed_count} identical rules (unexpected)\"\n        skipUpdate = False  # Changes made, need to update\n    \n    # Output user rules array without default rule\n    newRules = json.dumps(user_rules)\n\nprint(newRules)",
+                  "script_arguments": [
+                    "$activity.definition_activity_02Q2Q78U5XHWB0bAe6yWQZWyl3qO6LgFkPw.output.jsonpath_queries.rules$",
+                    "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.input.variable_workflow_02Q2QE6HSDSEX1fzaLABhotUMJPPr6qdkNX$",
+                    "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.input.variable_workflow_02Q2QEL1AO2C12qBxR6feTHxGJnyV0DnqKJ$",
+                    "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.input.variable_workflow_02Q2RX032F5FC0xIG13ihAQLIaoxWflVFkr$"
+                  ],
+                  "script_queries": [
+                    {
+                      "script_query": "newRules",
+                      "script_query_name": "newRules",
+                      "script_query_type": "string"
+                    },
+                    {
+                      "script_query": "result",
+                      "script_query_name": "operationResult",
+                      "script_query_type": "string"
+                    },
+                    {
+                      "script_query": "skipUpdate",
+                      "script_query_name": "skipUpdate",
+                      "script_query_type": "boolean"
+                    }
+                  ],
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02Q2Q7CHB8K1E3dxs6m7n9QCDFhHj2LaP89",
+                "name": "Condition Block",
+                "title": "Should Update Firewall Rules?",
+                "type": "logic.if_else",
+                "base_type": "activity",
+                "properties": {
+                  "continue_on_failure": false,
+                  "description": "Check if firewall rules should be updated based on duplicate detection results. Skip API call if no changes are needed.",
+                  "display_name": "Should Update Firewall Rules?",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "blocks": [
+                  {
+                    "unique_name": "definition_activity_02Q2Q7CHI5T4F2wn8k1x0N9bCzRgHm3VqPe",
+                    "name": "Condition Branch",
+                    "title": "Yes - Update Required",
+                    "type": "logic.condition_block",
+                    "base_type": "activity",
+                    "properties": {
+                      "condition": {
+                        "left_operand": "$activity.definition_activity_02Q2Q78VGCHXX73AyhxI9mrF6jQtpZEEOHQ.output.script_queries.skipUpdate$",
+                        "operator": "eq",
+                        "right_operand": false
+                      },
+                      "continue_on_failure": false,
+                      "description": "Proceed with Meraki API update when changes were made to the rules array.",
+                      "display_name": "Yes - Update Required",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "actions": [
+                      {
+                        "unique_name": "definition_activity_02Q2Q78XAX8TO45HOyCGANT6Xz0IjI86LZo",
+                        "name": "Meraki - Update Network Appliance Firewall L3 Firewall Rules",
+                        "title": "Meraki - Update Network Appliance Firewall L3 Firewall Rules",
+                        "type": "workflow.atomic_workflow",
+                        "base_type": "subworkflow",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Update the L3 firewall rules of an MX network",
+                          "display_name": "Meraki - Update Network Appliance Firewall L3 Firewall Rules",
+                          "input": {
+                            "variable_workflow_02OARCAWCPEKW6FIUW4231asrsW5zdZSuRt": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.input.variable_workflow_02Q2QBASBNJPU4Jb0bAtz75rsEjBfxWl1zC$",
+                            "variable_workflow_02OARCAWCPFCO3SCyjYumx4q9hDvyXUUjZd": "$activity.definition_activity_02Q2Q78VGCHXX73AyhxI9mrF6jQtpZEEOHQ.output.script_queries.newRules$",
+                            "variable_workflow_02OARCAWCPG4G4L7GFWJjCfqcwghsizomSK": ""
+                          },
+                          "runtime_user": {
+                            "target_default": true
+                          },
+                          "skip_execution": false,
+                          "target": {
+                            "target_type": "meraki.endpoint",
+                            "use_workflow_target": true
+                          },
+                          "workflow_id": "definition_workflow_02OARCAWCPC9K1Xa28TIaQHu4JXVyBcjJP8",
+                          "workflow_name": "Meraki - Update Network Appliance Firewall L3 Firewall Rules"
+                        },
+                        "object_type": "definition_activity"
+                      },
+                      {
+                        "unique_name": "definition_activity_02Q3MBHT8OF4R7CMKUDSkjJ432YYzKXOYl8",
+                        "name": "Set Variables",
+                        "title": "Set Success Output Variables",
+                        "type": "core.set_multiple_variables",
+                        "base_type": "activity",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Set final output variables with comprehensive results including network info, operation details, and success status.",
+                          "display_name": "Set Success Output Variables",
+                          "skip_execution": false,
+                          "variables_to_update": [
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBG9322NBbswlydiy7ZEAmNzlTX0$",
+                              "variable_value_new": "Network: $workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.input.variable_workflow_02Q2QBASBNJPU4Jb0bAtz75rsEjBfxWl1zC$ - Firewall rule operation completed successfully. Operation: $activity.definition_activity_02Q2Q78VGCHXX73AyhxI9mrF6jQtpZEEOHQ.output.script_queries.operationResult$"
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFC8H025dryrtHYnRJPx1un4EfB$",
+                              "variable_value_new": "Firewall updated successfully."
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFP4H7gfjwt0uyrKj8h9WQVEUQm$",
+                              "variable_value_new": "200"
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFIRE6QjQkXlVEVTnhSUvp49dFB$",
+                              "variable_value_new": ""
+                            }
+                          ]
+                        },
+                        "object_type": "definition_activity"
+                      }
+                    ]
+                  },
+                  {
+                    "unique_name": "definition_activity_02Q2Q7CHNB89D5mzL3x0r8QFGkDhJ2VqP14",
+                    "name": "Condition Branch",
+                    "title": "No - Skip Update",
+                    "type": "logic.condition_block",
+                    "base_type": "activity",
+                    "properties": {
+                      "condition": {
+                        "left_operand": "$activity.definition_activity_02Q2Q78VGCHXX73AyhxI9mrF6jQtpZEEOHQ.output.script_queries.skipUpdate$",
+                        "operator": "eq",
+                        "right_operand": true
+                      },
+                      "continue_on_failure": false,
+                      "description": "Skip Meraki API update when no changes are needed (duplicate detected or no matching rule to remove).",
+                      "display_name": "No - Skip Update",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "actions": [
+                      {
+                        "unique_name": "definition_activity_02Q2Q78ZBEB4M7iXt72oUOH4ZAiakbfftbV",
+                        "name": "Set Variables",
+                        "title": "Set Error Variables",
+                        "type": "core.set_multiple_variables",
+                        "base_type": "activity",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Set final output variables with comprehensive results including network info, operation details, and success status.",
+                          "display_name": "Set Error Variables",
+                          "skip_execution": false,
+                          "variables_to_update": [
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBG9322NBbswlydiy7ZEAmNzlTX0$",
+                              "variable_value_new": "Network: $workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.input.variable_workflow_02Q2QBASBNJPU4Jb0bAtz75rsEjBfxWl1zC$ - Firewall rule skipped.$activity.definition_activity_02Q2Q78VGCHXX73AyhxI9mrF6jQtpZEEOHQ.output.script_queries.operationResult$"
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFC8H025dryrtHYnRJPx1un4EfB$",
+                              "variable_value_new": "Firewall rule skipped"
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFP4H7gfjwt0uyrKj8h9WQVEUQm$",
+                              "variable_value_new": 409
+                            },
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU.output.variable_workflow_02Q2Q77XBFIRE6QjQkXlVEVTnhSUvp49dFB$",
+                              "variable_value_new": "$activity.definition_activity_02Q2Q78VGCHXX73AyhxI9mrF6jQtpZEEOHQ.output.script_queries.operationResult$"
+                            }
+                          ]
+                        },
+                        "object_type": "definition_activity"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "categories": [
+          "category_1BMfMXSnJMyt5Ihqi7rWJr5N8cf"
+        ]
+      },
+      "atomic_workflows": [
+        "definition_workflow_02MN4XD4FINLC4h2i95QOdYECcfArPzx1eY",
+        "definition_workflow_02OARCAWCPC9K1Xa28TIaQHu4JXVyBcjJP8"
+      ],
+      "dependent_workflows": [
+        "definition_workflow_02MN4XD4FINLC4h2i95QOdYECcfArPzx1eY",
+        "definition_workflow_02OARCAWCPC9K1Xa28TIaQHu4JXVyBcjJP8"
+      ]
+    }
+  ],
+  "atomic_workflows": [
+    "definition_workflow_02CKHCLVHDLHE5s3HKPDCx2desMLbzvFMCI",
+    "definition_workflow_02LV5GIDUTY3X0WhuidM5ZWhkjL8wQCGAPq",
+    "definition_workflow_02CKLMMMVNLXR6EAdBc69psxWjZxVgZ6ovD",
+    "definition_workflow_02L9TZH5W95870XebPF2g8kSyIYcawUvljX",
+    "definition_workflow_02F94HNQSXFCD3PsCVNZZx5oObAWBAZEKIM"
+  ],
+  "webhooks": {
+    "webhook_02Q1Y895DFEXD113I03hLBXqSLWlRFmWAe7": {
+      "name": "Webhook-Receiver",
+      "title": "Webhook-Receiver",
+      "type": "generic.webhook",
+      "base_type": "webhook",
+      "object_type": "webhook",
+      "version": "1.0.0",
+      "properties": {
+        "description": "Creates a webhook endpoint to receive payloads from any automated systems. This webhook generates a unique URL that external systems can send data to, triggering the Meraki workflow.",
+        "display_name": "Webhook-Receiver",
+        "request_content_type": "application/json"
+      },
+      "unique_name": "webhook_02Q1Y895DFEXD113I03hLBXqSLWlRFmWAe7",
+      "expires_on": "2026-03-29T01:20:08.513Z"
+    }
+  },
+  "dependent_workflows": [
+    "definition_workflow_02CKHCLVHDLHE5s3HKPDCx2desMLbzvFMCI",
+    "definition_workflow_02LV5GIDUTY3X0WhuidM5ZWhkjL8wQCGAPq",
+    "definition_workflow_02CKLMMMVNLXR6EAdBc69psxWjZxVgZ6ovD",
+    "definition_workflow_02L9TZH5W95870XebPF2g8kSyIYcawUvljX",
+    "definition_workflow_02Q2Q77WT8QTE4UkIuKUVeySa9Viy5opNWU",
+    "definition_workflow_02F94HNQSXFCD3PsCVNZZx5oObAWBAZEKIM"
+  ]
+}

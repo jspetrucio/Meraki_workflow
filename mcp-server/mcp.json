@@ -1,0 +1,278 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/schemas/server-manifest.json",
+  "name": "meraki-workflow",
+  "version": "0.1.0",
+  "description": "MCP Server para automação de redes Cisco Meraki via linguagem natural",
+  "author": "Meraki Workflow Team",
+  "license": "MIT",
+  "repository": "https://github.com/yourusername/meraki-workflow",
+
+  "runtime": {
+    "type": "python",
+    "command": "python",
+    "args": ["-m", "mcp-server.src.server"]
+  },
+
+  "tools": [
+    {
+      "name": "meraki_discover",
+      "description": "Execute complete network discovery for a Meraki organization. Returns network topology, device status, and identified issues.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "string",
+            "description": "Client name for organizing results (e.g., 'acme')"
+          },
+          "full": {
+            "type": "boolean",
+            "description": "If true, performs full discovery",
+            "default": true
+          },
+          "save": {
+            "type": "boolean",
+            "description": "If true, saves snapshot",
+            "default": true
+          },
+          "profile": {
+            "type": "string",
+            "description": "Credentials profile name",
+            "default": "default"
+          }
+        },
+        "required": ["client"]
+      }
+    },
+    {
+      "name": "meraki_list_networks",
+      "description": "List all networks in a Meraki organization with their types, tags, and optionally device counts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "description": "Organization ID (uses profile default if not provided)"
+          },
+          "profile": {
+            "type": "string",
+            "description": "Credentials profile name",
+            "default": "default"
+          },
+          "include_devices": {
+            "type": "boolean",
+            "description": "Include device count per network",
+            "default": false
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "meraki_configure",
+      "description": "Apply configuration to a Meraki network. Supports SSID, Firewall rules, and VLAN configuration.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "network_id": {
+            "type": "string",
+            "description": "Meraki Network ID (e.g., 'N_123456789')"
+          },
+          "config_type": {
+            "type": "string",
+            "enum": ["ssid", "firewall", "vlan"],
+            "description": "Type of configuration to apply"
+          },
+          "params": {
+            "type": "object",
+            "description": "Configuration parameters (varies by config_type)"
+          },
+          "client": {
+            "type": "string",
+            "description": "Client name for backup and changelog"
+          },
+          "profile": {
+            "type": "string",
+            "description": "Credentials profile name",
+            "default": "default"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Validate without applying changes",
+            "default": false
+          }
+        },
+        "required": ["network_id", "config_type", "params", "client"]
+      }
+    },
+    {
+      "name": "meraki_create_workflow",
+      "description": "Create a new Meraki workflow from a template using Clone + Patch. Generates unique IDs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "string",
+            "description": "Template name (e.g., 'Device Offline Handler')"
+          },
+          "client": {
+            "type": "string",
+            "description": "Client name for output organization"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name for the new workflow"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description for the workflow"
+          },
+          "variables": {
+            "type": "object",
+            "description": "Variables to set in the workflow"
+          }
+        },
+        "required": ["template", "client", "name"]
+      }
+    },
+    {
+      "name": "meraki_report",
+      "description": "Generate reports for Meraki networks. Supports discovery, changes, inventory, and security reports.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "string",
+            "description": "Client name for the report"
+          },
+          "report_type": {
+            "type": "string",
+            "enum": ["discovery", "changes", "inventory", "security"],
+            "description": "Type of report to generate",
+            "default": "discovery"
+          },
+          "output_format": {
+            "type": "string",
+            "enum": ["html", "pdf"],
+            "description": "Output format",
+            "default": "html"
+          },
+          "profile": {
+            "type": "string",
+            "description": "Credentials profile name",
+            "default": "default"
+          },
+          "days": {
+            "type": "integer",
+            "description": "Days to include for changes report",
+            "default": 30
+          }
+        },
+        "required": ["client"]
+      }
+    },
+    {
+      "name": "meraki_get_device_status",
+      "description": "Get detailed status of a Meraki device including uplinks and connected clients.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "serial": {
+            "type": "string",
+            "description": "Device serial number (e.g., 'Q2XX-XXXX-XXXX')"
+          },
+          "profile": {
+            "type": "string",
+            "description": "Credentials profile name",
+            "default": "default"
+          },
+          "include_clients": {
+            "type": "boolean",
+            "description": "Include connected clients list",
+            "default": false
+          },
+          "include_uplinks": {
+            "type": "boolean",
+            "description": "Include uplink status",
+            "default": true
+          }
+        },
+        "required": ["serial"]
+      }
+    }
+  ],
+
+  "prompts": [
+    {
+      "name": "onboarding",
+      "description": "Interactive setup guide for new users. Walks through API key configuration, organization setup, and initial discovery.",
+      "arguments": [
+        {
+          "name": "api_key",
+          "description": "Meraki Dashboard API Key",
+          "required": true
+        },
+        {
+          "name": "org_id",
+          "description": "Meraki Organization ID",
+          "required": true
+        },
+        {
+          "name": "client_name",
+          "description": "Identifier for this client/environment",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "select_agent",
+      "description": "Guide to help users select the right specialized agent (meraki-specialist, network-analyst, workflow-creator).",
+      "arguments": [
+        {
+          "name": "task_description",
+          "description": "Brief description of what the user wants to accomplish",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "troubleshoot",
+      "description": "Guided troubleshooting for common Meraki network issues with step-by-step diagnosis.",
+      "arguments": [
+        {
+          "name": "problem_type",
+          "description": "Type of problem: device_offline, slow_network, connectivity, wireless, security",
+          "required": false
+        },
+        {
+          "name": "description",
+          "description": "Additional context about the issue",
+          "required": false
+        }
+      ]
+    }
+  ],
+
+  "resources": [
+    {
+      "uriTemplate": "template://workflows/{name}",
+      "name": "Workflow Templates",
+      "description": "Pre-built workflow templates for Meraki automation"
+    },
+    {
+      "uriTemplate": "agent://{name}",
+      "name": "Specialized Agents",
+      "description": "Available specialized agents for different tasks"
+    }
+  ],
+
+  "configuration": {
+    "required": [],
+    "optional": [
+      {
+        "name": "MERAKI_PROFILE",
+        "description": "Default credentials profile to use",
+        "default": "default"
+      }
+    ]
+  }
+}

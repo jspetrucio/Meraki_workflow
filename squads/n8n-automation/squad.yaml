@@ -1,0 +1,109 @@
+# Squad: N8N Automation
+# Especializado em automação via N8N para ambientes multi-vendor
+
+name: n8n-automation
+version: 1.0.0
+description: Squad para criação e gerenciamento de workflows N8N integrados com Meraki
+author: Synkra AIOS
+
+metadata:
+  created: 2026-02-04
+  category: automation
+  tags:
+    - n8n
+    - automation
+    - multi-vendor
+    - meraki
+    - workflows
+
+# Quando usar este squad
+when_to_use: |
+  Use este squad quando:
+  - Precisar de automação sem limites de rate limiting
+  - Ambiente multi-vendor (Meraki + Fortinet, Palo Alto, etc.)
+  - Quiser interface visual para criar workflows
+  - Precisar de integrações não suportadas nativamente pelo Meraki Workflows
+
+  NÃO use quando:
+  - Ambiente 100% Cisco/Meraki (use Meraki Workflows nativo)
+  - Precisar de suporte TAC Cisco
+  - Quiser audit trail nativo Meraki
+
+# Agentes do squad
+agents:
+  - id: n8n-specialist
+    name: Nate
+    file: agents/n8n-specialist.md
+    role: N8N Workflow Architect
+    primary: true
+
+# Tasks disponíveis
+tasks:
+  - id: create-n8n-workflow
+    file: tasks/create-n8n-workflow.md
+    description: Criar novo workflow N8N
+
+  - id: deploy-n8n-instance
+    file: tasks/deploy-n8n-instance.md
+    description: Setup de instância N8N (Docker/Cloud)
+
+  - id: migrate-meraki-to-n8n
+    file: tasks/migrate-meraki-to-n8n.md
+    description: Converter workflow Meraki para N8N
+
+  - id: validate-n8n-workflow
+    file: tasks/validate-n8n-workflow.md
+    description: Validar workflow antes de deploy
+
+# Templates disponíveis
+templates:
+  n8n-workflows:
+    - meraki-device-offline.json
+    - meraki-config-backup.json
+    - meraki-discovery-scheduled.json
+    - multi-vendor-alert.json
+
+# Ferramentas externas
+external_tools:
+  n8n-mcp:
+    source: github.com/czlonkowski/n8n-mcp
+    installation: npx n8n-mcp
+    features:
+      - 1084 nodes disponíveis
+      - 2709 templates
+      - 87% cobertura de docs
+      - 265 AI-capable tools
+
+  n8n-skills:
+    source: github.com/czlonkowski/n8n-skills
+    skills:
+      - n8n Expression Syntax
+      - n8n MCP Tools Expert
+      - n8n Workflow Patterns
+      - n8n Validation Expert
+      - n8n Node Configuration
+      - n8n Code JavaScript
+      - n8n Code Python
+
+# Dependências
+dependencies:
+  required:
+    - n8n instance (Docker ou Cloud)
+    - n8n-mcp (para integração com Claude)
+  optional:
+    - n8n-skills (para expertise avançada)
+
+# Comparação com alternativas
+comparison:
+  vs_meraki_workflows:
+    n8n_advantages:
+      - Sem rate limiting
+      - Multi-vendor
+      - Self-hosted
+      - Interface visual
+      - 1084 nodes vs ~50 Meraki
+    meraki_advantages:
+      - Nativo Cisco
+      - Suporte TAC
+      - Audit trail built-in
+      - Sem infra adicional

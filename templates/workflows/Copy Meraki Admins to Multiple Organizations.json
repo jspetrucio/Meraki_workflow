@@ -1,0 +1,829 @@
+{
+  "workflow": {
+    "unique_name": "definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z",
+    "name": "Copy Meraki Admins to Multiple Organizations",
+    "title": "Copy Meraki Admins to Multiple Organizations",
+    "type": "generic.workflow",
+    "base_type": "workflow",
+    "variables": [
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "output",
+          "name": "Status Message",
+          "type": "datatype.string",
+          "description": "High-level status message indicating the overall workflow execution result (e.g., 'Completed Successfully', 'Input Validation Failed', etc.)",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": ""
+        },
+        "unique_name": "variable_workflow_02QEDOR0GNEHG3ydfQyefXRgvlBqSN64aPZ",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "output",
+          "name": "Error Message",
+          "type": "datatype.string",
+          "description": "Detailed error message when the workflow fails, providing specific information about what went wrong for troubleshooting purposes.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02QEDOXPN6R802kbc4bnhPUDY6tJScVkHuF",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "output",
+          "name": "Result",
+          "type": "datatype.string",
+          "description": "Detailed results showing which administrators were successfully copied and any failures that occurred during the process.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02R1E2S3U4L5T6V7A8R9I0A1B2L3E4T5E6F",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "variable_type_array_01JhSTW61I3ZU2IfL7dwQox83eFDzE1qUiA",
+        "properties": {
+          "value": [],
+          "scope": "input",
+          "name": "Destination Organization Names or IDs",
+          "type": "datatype.array",
+          "description": "List of destination organization Names or IDs where administrators will be copied. Each admin from the source organization will be created in all destination organizations with the same permissions.\nExample: [\"123456\",\"789012\"] or [\"Org 1\",\"Org 2\"]",
+          "is_required": true,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": ""
+        },
+        "unique_name": "variable_workflow_02QEDL2MUEU1T3c9TCNRl8SHZmFiWq6Acup",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.integer",
+        "properties": {
+          "value": 0,
+          "scope": "output",
+          "name": "Status Code",
+          "type": "datatype.integer",
+          "description": "HTTP-style status code indicating workflow execution result. 200 = Success, 400 = Input validation error, 500 = Execution error.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": ""
+        },
+        "unique_name": "variable_workflow_02QEDOJ2VBGAS6mBRSmSTK4DHsHZY8KScKg",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "input",
+          "name": "Source Organization Name or ID",
+          "type": "datatype.string",
+          "description": "The Meraki organization name or ID to copy administrators from. Can use either the exact organization name or the numeric organization ID. Find organization names in the Meraki Dashboard or use the numeric ID from Organization > Settings.",
+          "is_required": true,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q",
+        "object_type": "variable_workflow"
+      }
+    ],
+    "properties": {
+      "atomic": {
+        "is_atomic": false
+      },
+      "delete_workflow_instance": false,
+      "description": "This workflow copies all administrators from a source Meraki organization to one or more destination organizations using flexible name or ID inputs. It validates inputs, resolves organization names/IDs, retrieves admins from the source organization, and creates corresponding admin accounts in each destination organization with the same permissions and settings.",
+      "display_name": "Copy Meraki Admins to Multiple Organizations",
+      "runtime_user": {
+        "target_default": true
+      },
+      "target": {
+        "target_type": "meraki.endpoint",
+        "specify_on_workflow_start": true
+      }
+    },
+    "object_type": "definition_workflow",
+    "actions": [
+      {
+        "unique_name": "definition_activity_02QEDPHXLGM3P7GydpRjlmmIO8BG3m4XOM5",
+        "name": "Group",
+        "title": "Input Validation",
+        "type": "logic.group",
+        "base_type": "activity",
+        "properties": {
+          "continue_on_failure": false,
+          "description": "Validates that required input parameters are provided and properly formatted before proceeding with the admin copying process.",
+          "display_as_suggestion": false,
+          "display_name": "Input Validation",
+          "skip_execution": false
+        },
+        "object_type": "definition_activity",
+        "actions": [
+          {
+            "unique_name": "definition_activity_02QEEHPZ2PQ2A52aSQp65km1eZdBSrp5F5V",
+            "name": "Execute Python Script",
+            "title": "Validate Destination Organizations",
+            "type": "python3.script",
+            "base_type": "activity",
+            "properties": {
+              "action_timeout": 180,
+              "continue_on_failure": false,
+              "description": "Validates that the Destination Organizations array is not empty and contains at least one organization name or ID.",
+              "display_name": "Validate Destination Organizations",
+              "script": "import sys\nimport json\n\n# Get the destination organizations input\ndest_orgs_input = sys.argv[1]\n\n# Check if array is empty\nif dest_orgs_input == \"[]\":\n    isValid = False\n    errorMessage = \"At least one destination organization must be provided.\"\nelse:\n    try:\n        # Try to parse as JSON to validate format\n        orgs = json.loads(dest_orgs_input)\n        if len(orgs) == 0:\n            isValid = False\n            errorMessage = \"At least one destination organization must be provided.\"\n        else:\n            isValid = True\n            errorMessage = \"\"\n    except json.JSONDecodeError:\n        isValid = False\n        errorMessage = \"Invalid JSON format for destination organizations.\"",
+              "script_arguments": [
+                "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.input.variable_workflow_02QEDL2MUEU1T3c9TCNRl8SHZmFiWq6Acup$"
+              ],
+              "script_queries": [
+                {
+                  "script_query": "isValid",
+                  "script_query_name": "isValid",
+                  "script_query_type": "boolean"
+                },
+                {
+                  "script_query": "errorMessage",
+                  "script_query_name": "errorMessage",
+                  "script_query_type": "string"
+                }
+              ],
+              "skip_execution": false
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02QEEJKO8KCGR1FYqj7bxOC8utqZUljwxl0",
+            "name": "Condition Block",
+            "title": "Has Destination Orgs?",
+            "type": "logic.if_else",
+            "base_type": "activity",
+            "properties": {
+              "conditions": [],
+              "continue_on_failure": false,
+              "description": "Checks if input validation failed and terminates workflow with appropriate error message if validation fails.",
+              "display_name": "Has Destination Orgs?",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "blocks": [
+              {
+                "unique_name": "definition_activity_02QEEJKPL4DVI7ca78c5lZanHXQroepGWl1",
+                "name": "Condition Branch",
+                "title": "No",
+                "type": "logic.condition_block",
+                "base_type": "activity",
+                "properties": {
+                  "condition": {
+                    "left_operand": "$activity.definition_activity_02QEEHPZ2PQ2A52aSQp65km1eZdBSrp5F5V.output.script_queries.isValid$",
+                    "operator": "eq",
+                    "right_operand": false
+                  },
+                  "continue_on_failure": false,
+                  "description": "Executes when input validation fails, setting error messages and terminating the workflow.",
+                  "display_name": "No",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "actions": [
+                  {
+                    "unique_name": "definition_activity_02QEEJYV50RRT6OooqGSEUXqkarAhtGJoid",
+                    "name": "Set Variables",
+                    "title": "Set Variables",
+                    "type": "core.set_multiple_variables",
+                    "base_type": "activity",
+                    "properties": {
+                      "continue_on_failure": false,
+                      "description": "Sets error message and status code (400) when input validation fails.",
+                      "display_name": "Set Variables",
+                      "skip_execution": false,
+                      "variables_to_update": [
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOXPN6R802kbc4bnhPUDY6tJScVkHuF$",
+                          "variable_value_new": "Input Destination Organizations Invalid. $activity.definition_activity_02QEEHPZ2PQ2A52aSQp65km1eZdBSrp5F5V.output.script_queries.errorMessage$"
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOJ2VBGAS6mBRSmSTK4DHsHZY8KScKg$",
+                          "variable_value_new": 400
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOR0GNEHG3ydfQyefXRgvlBqSN64aPZ$",
+                          "variable_value_new": "Input Validation Failed."
+                        }
+                      ]
+                    },
+                    "object_type": "definition_activity"
+                  },
+                  {
+                    "unique_name": "definition_activity_02QEEL7IHNN282gYuhFm2dFYlbXSQVcGPke",
+                    "name": "Completed",
+                    "title": "Completed",
+                    "type": "logic.completed",
+                    "base_type": "activity",
+                    "properties": {
+                      "completion_type": "failed-completed",
+                      "continue_on_failure": false,
+                      "description": "Terminates the workflow with failure status when input validation fails.",
+                      "display_name": "Completed",
+                      "result_message": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOR0GNEHG3ydfQyefXRgvlBqSN64aPZ$",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "unique_name": "definition_activity_02QEDRWIY4VM65d6yDqYySic7WZJnffc1vv",
+        "name": "Group",
+        "title": "Get Admins from Source",
+        "type": "logic.group",
+        "base_type": "activity",
+        "properties": {
+          "continue_on_failure": false,
+          "description": "Retrieves all administrators from the source Meraki organization and prepares the data for copying to destination organizations.",
+          "display_as_suggestion": false,
+          "display_name": "Get Admins from Source",
+          "skip_execution": false
+        },
+        "object_type": "definition_activity",
+        "actions": [
+          {
+            "unique_name": "definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj",
+            "name": "Get Source Organization By Name or ID",
+            "title": "Get Source Organization By Name or ID",
+            "type": "workflow.sub_workflow",
+            "base_type": "subworkflow",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Utility workflow to retrieve organization details using either Organization Name or ID as input. Calls Meraki API to fetch all accessible organizations, then searches for the specified match.\n\n**Returns:** Organization ID, name, URL, API status, licensing model, cloud region, and management details.\n\n**Key Features:**\n- Search by Organization Name (exact match, case-sensitive)\n- Search by Organization ID (numeric format)\n- Comprehensive output variables\n- Optional error handling with 'Ignore Errors' parameter\n- Suitable for validation and automation workflows",
+              "display_name": "Get Source Organization By Name or ID",
+              "input": {
+                "variable_workflow_02M605GTHU5L72i8goD4nuYixYOvQEFV7rN": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.input.variable_workflow_02A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q$",
+                "variable_workflow_02M605GTI1LUG737lDLyzxnE9jwENJNQ08W": false
+              },
+              "runtime_user": {
+                "target_default": true
+              },
+              "skip_execution": false,
+              "target": {
+                "target_type": "meraki.endpoint",
+                "use_workflow_target": true
+              },
+              "workflow_id": "definition_workflow_02M605GS81XN44qr4RBWrJ6Zazk7k0ArIYX",
+              "workflow_name": "Meraki - Get Organization By Name or ID"
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02QEGZAUC648C6BVLlbmQlyo7cjNft0US1o",
+            "name": "Condition Block",
+            "title": "Check Valid Source Organization",
+            "type": "logic.if_else",
+            "base_type": "activity",
+            "properties": {
+              "conditions": [],
+              "continue_on_failure": false,
+              "description": "Checks if the source organization lookup failed and terminates workflow with appropriate error message if organization is not found.",
+              "display_name": "Check Valid Source Organization",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "blocks": [
+              {
+                "unique_name": "definition_activity_02QEGZAUDDAEP13fDP0YbvJxxw8P8txvaCK",
+                "name": "Condition Branch",
+                "title": "Org Not Found",
+                "type": "logic.condition_block",
+                "base_type": "activity",
+                "properties": {
+                  "condition": {
+                    "left_operand": "$activity.definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj.output.variable_workflow_02M605GTHEWOW4TGG1xjMEivKqrrMbc2hM3$",
+                    "operator": "ne",
+                    "right_operand": 200
+                  },
+                  "continue_on_failure": false,
+                  "description": "Executes when the source organization name or ID cannot be found or accessed, setting error messages and terminating the workflow.",
+                  "display_name": "Org Not Found",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "actions": [
+                  {
+                    "unique_name": "definition_activity_02QEGZAUFCG5I1NW3F5d5tqMBemT5Wf0XmW",
+                    "name": "Set Variables",
+                    "title": "Set Variables",
+                    "type": "core.set_multiple_variables",
+                    "base_type": "activity",
+                    "properties": {
+                      "continue_on_failure": false,
+                      "description": "Sets error message and status code (400) when input validation fails.",
+                      "display_name": "Set Variables",
+                      "skip_execution": false,
+                      "variables_to_update": [
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOXPN6R802kbc4bnhPUDY6tJScVkHuF$",
+                          "variable_value_new": "$activity.definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj.output.variable_workflow_02M626PI3Q2OV0mssfVdKVoL7b05VXvEYFK$"
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOJ2VBGAS6mBRSmSTK4DHsHZY8KScKg$",
+                          "variable_value_new": "$activity.definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj.output.variable_workflow_02M605GTHEWOW4TGG1xjMEivKqrrMbc2hM3$"
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOR0GNEHG3ydfQyefXRgvlBqSN64aPZ$",
+                          "variable_value_new": "$activity.definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj.output.variable_workflow_02M605GTIWHFI3iui9r08gEQgBmIFLqet5B$"
+                        }
+                      ]
+                    },
+                    "object_type": "definition_activity"
+                  },
+                  {
+                    "unique_name": "definition_activity_02QESLLRQUQKA5V9AaZBD15QkJKAHJzWizF",
+                    "name": "Completed",
+                    "title": "Completed",
+                    "type": "logic.completed",
+                    "base_type": "activity",
+                    "properties": {
+                      "completion_type": "failed-completed",
+                      "continue_on_failure": false,
+                      "description": "Completed action",
+                      "display_name": "Completed",
+                      "result_message": "Source Organization $workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.input.variable_workflow_02A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q$ Not Found.",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "unique_name": "definition_activity_02X1Y2Z3A4B5C6D7E8F9G0H1I2J3K4L5M6N",
+            "name": "Get Organization Admins",
+            "title": "Get Organization Admins",
+            "type": "workflow.atomic_workflow",
+            "base_type": "subworkflow",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Calls the Meraki API to retrieve all administrators from the source organization, including their permissions, tags, and access levels.",
+              "display_name": "Get Organization Admins",
+              "input": {
+                "variable_workflow_02OARCID71O7K0vH9Rmaxw18nabRuf3hKi2": "$activity.definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj.output.variable_workflow_02M605GTJITQP1fcLQlR8CLYAHoMomGWZvE$",
+                "variable_workflow_02P699CMNR3X41bOIkd2XA6Wkj4FzfkwMEy": "[]"
+              },
+              "runtime_user": {
+                "target_default": true
+              },
+              "skip_execution": false,
+              "target": {
+                "target_type": "meraki.endpoint",
+                "use_workflow_target": true
+              },
+              "workflow_id": "definition_workflow_02OARCID71E6G7dts7OEcdFt7dCb4fzGlnW",
+              "workflow_name": "Meraki - Get Organization Admins"
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02QEF1ZZJWH1Y6iBaNGacpdmNB1XIGJDILE",
+            "name": "Condition Block",
+            "title": "Check Admin List",
+            "type": "logic.if_else",
+            "base_type": "activity",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Checks if the retrieved admin list is empty and terminates workflow with appropriate message if no admins found.",
+              "display_name": "Check Admin List",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "blocks": [
+              {
+                "unique_name": "definition_activity_02QEF200TIEV22krWr4NzY5g2Xluh0jeO21",
+                "name": "Condition Branch",
+                "title": "No Admins Found",
+                "type": "logic.condition_block",
+                "base_type": "activity",
+                "properties": {
+                  "condition": {
+                    "left_operand": "$activity.definition_activity_02X1Y2Z3A4B5C6D7E8F9G0H1I2J3K4L5M6N.output.variable_workflow_02OARCID71SU80NzHeL2nVHrHQU2JHkMs5J$",
+                    "operator": "eq",
+                    "right_operand": "[]"
+                  },
+                  "continue_on_failure": false,
+                  "description": "Executes when no administrators are found in the source organization, setting appropriate messages and terminating the workflow.",
+                  "display_name": "No Admins Found",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "actions": [
+                  {
+                    "unique_name": "definition_activity_02QEF2XJ8KA7L1r6QvwbZeLf0ScGZdzu6SI",
+                    "name": "Set Variables",
+                    "title": "Set Variables",
+                    "type": "core.set_multiple_variables",
+                    "base_type": "activity",
+                    "properties": {
+                      "continue_on_failure": false,
+                      "description": "Sets error message and status code (400) when no administrators are found in the source organization.",
+                      "display_name": "Set Variables",
+                      "skip_execution": false,
+                      "variables_to_update": [
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOXPN6R802kbc4bnhPUDY6tJScVkHuF$",
+                          "variable_value_new": "No Admins in Source Organization."
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOJ2VBGAS6mBRSmSTK4DHsHZY8KScKg$",
+                          "variable_value_new": 400
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOR0GNEHG3ydfQyefXRgvlBqSN64aPZ$",
+                          "variable_value_new": "Failed."
+                        }
+                      ]
+                    },
+                    "object_type": "definition_activity"
+                  },
+                  {
+                    "unique_name": "definition_activity_02QEF2VGX77Q64qxbw4t6cX62wWU3oWhEcF",
+                    "name": "Completed",
+                    "title": "Completed",
+                    "type": "logic.completed",
+                    "base_type": "activity",
+                    "properties": {
+                      "completion_type": "succeeded",
+                      "continue_on_failure": false,
+                      "description": "Terminates the workflow successfully when no administrators are found in the source organization.",
+                      "display_name": "Completed",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "unique_name": "definition_activity_02PWYPKS89S5P7BkFeREQ1GnDBtXDyDG5sL",
+            "name": "Read Table from JSON",
+            "title": "Read Table from JSON",
+            "type": "corejava.read_table_from_json",
+            "base_type": "activity",
+            "properties": {
+              "action_timeout": 180,
+              "continue_on_failure": false,
+              "description": "Parses the administrator data from JSON format into a structured table for processing by the ForEach loops.",
+              "display_name": "Read Table from JSON",
+              "input_json": "$activity.definition_activity_02X1Y2Z3A4B5C6D7E8F9G0H1I2J3K4L5M6N.output.variable_workflow_02OARCID71SU80NzHeL2nVHrHQU2JHkMs5J$",
+              "jsonpath_query": "$.*",
+              "persist_output": true,
+              "populate_columns": false,
+              "skip_execution": false,
+              "table_columns": [
+                {
+                  "column_name": "name",
+                  "column_type": "string"
+                },
+                {
+                  "column_name": "email",
+                  "column_type": "string"
+                },
+                {
+                  "column_name": "orgAccess",
+                  "column_type": "string"
+                },
+                {
+                  "column_name": "tags",
+                  "column_type": "string"
+                }
+              ]
+            },
+            "object_type": "definition_activity"
+          }
+        ]
+      },
+      {
+        "unique_name": "definition_activity_02QEEM9PR86YD6h5anMSQTjapUMejkyeCo3",
+        "name": "For Each",
+        "title": "For Each Destination Organizations",
+        "type": "logic.for_each",
+        "base_type": "activity",
+        "properties": {
+          "continue_on_failure": false,
+          "description": "Iterates through each destination organization name or ID to copy administrators from the source organization.",
+          "display_name": "For Each Destination Organizations",
+          "skip_execution": false,
+          "source_array": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.input.variable_workflow_02QEDL2MUEU1T3c9TCNRl8SHZmFiWq6Acup$"
+        },
+        "object_type": "definition_activity",
+        "actions": [
+          {
+            "unique_name": "definition_activity_02QESJSXQ44UA6aLGx4grM2hwgSSCI7XaTY",
+            "name": "Get Destination Organization By Name or ID",
+            "title": "Get Destination Organization By Name or ID",
+            "type": "workflow.sub_workflow",
+            "base_type": "subworkflow",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Utility workflow to retrieve organization details using either Organization Name or ID as input. Calls Meraki API to fetch all accessible organizations, then searches for the specified match.\n\n**Returns:** Organization ID, name, URL, API status, licensing model, cloud region, and management details.\n\n**Key Features:**\n- Search by Organization Name (exact match, case-sensitive)\n- Search by Organization ID (numeric format)\n- Comprehensive output variables\n- Optional error handling with 'Ignore Errors' parameter\n- Suitable for validation and automation workflows",
+              "display_name": "Get Destination Organization By Name or ID",
+              "input": {
+                "variable_workflow_02M605GTHU5L72i8goD4nuYixYOvQEFV7rN": "$activity.definition_activity_02QEEM9PR86YD6h5anMSQTjapUMejkyeCo3.input.source_array[@]$",
+                "variable_workflow_02M605GTI1LUG737lDLyzxnE9jwENJNQ08W": false
+              },
+              "runtime_user": {
+                "target_default": true
+              },
+              "skip_execution": false,
+              "target": {
+                "target_type": "meraki.endpoint",
+                "use_workflow_target": true
+              },
+              "workflow_id": "definition_workflow_02M605GS81XN44qr4RBWrJ6Zazk7k0ArIYX",
+              "workflow_name": "Meraki - Get Organization By Name or ID"
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02QESKGD8NKR92suTZ067tpRr0e4FDaAd7k",
+            "name": "Condition Block",
+            "title": "Check Valid Destination Organization",
+            "type": "logic.if_else",
+            "base_type": "activity",
+            "properties": {
+              "conditions": [],
+              "continue_on_failure": false,
+              "description": "Checks if the destination organization lookup failed and continues to next organization if current one is not found.",
+              "display_name": "Check Valid Destination Organization",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "blocks": [
+              {
+                "unique_name": "definition_activity_02QESKGDA052Z4hj3gXYnhfiqbIKqXDjSHw",
+                "name": "Condition Branch",
+                "title": "Org Not Found",
+                "type": "logic.condition_block",
+                "base_type": "activity",
+                "properties": {
+                  "condition": {
+                    "left_operand": "$activity.definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj.output.variable_workflow_02M605GTHEWOW4TGG1xjMEivKqrrMbc2hM3$",
+                    "operator": "ne",
+                    "right_operand": 200
+                  },
+                  "continue_on_failure": false,
+                  "description": "Executes when the destination organization name or ID cannot be found, logging the error and continuing to the next organization.",
+                  "display_name": "Org Not Found",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "actions": [
+                  {
+                    "unique_name": "definition_activity_02QESKGDCEN602OdN5OUxTuEbpTpoTwymMX",
+                    "name": "Set Variables",
+                    "title": "Set Variables",
+                    "type": "core.set_multiple_variables",
+                    "base_type": "activity",
+                    "properties": {
+                      "continue_on_failure": false,
+                      "description": "Logs error message when destination organization name or ID cannot be found or accessed.",
+                      "display_name": "Set Variables",
+                      "skip_execution": false,
+                      "variables_to_update": [
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOXPN6R802kbc4bnhPUDY6tJScVkHuF$",
+                          "variable_value_new": "$activity.definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj.output.variable_workflow_02M626PI3Q2OV0mssfVdKVoL7b05VXvEYFK$"
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOJ2VBGAS6mBRSmSTK4DHsHZY8KScKg$",
+                          "variable_value_new": "$activity.definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj.output.variable_workflow_02M605GTHEWOW4TGG1xjMEivKqrrMbc2hM3$"
+                        },
+                        {
+                          "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02QEDOR0GNEHG3ydfQyefXRgvlBqSN64aPZ$",
+                          "variable_value_new": "$activity.definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj.output.variable_workflow_02M605GTIWHFI3iui9r08gEQgBmIFLqet5B$"
+                        }
+                      ]
+                    },
+                    "object_type": "definition_activity"
+                  },
+                  {
+                    "unique_name": "definition_activity_02QESKGDFYBVT7kVuvp7s8fqrkHVfx8fvo6",
+                    "name": "Continue",
+                    "title": "Continue to next Org",
+                    "type": "logic.continue",
+                    "base_type": "activity",
+                    "properties": {
+                      "continue_on_failure": false,
+                      "description": "Continue action",
+                      "display_name": "Continue to next Org",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "unique_name": "definition_activity_02QEH35O9N79L0uAarCjpYPJTFX63WpuWi9",
+            "name": "Set Variables",
+            "title": "Log Org Name in Output",
+            "type": "core.set_multiple_variables",
+            "base_type": "activity",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Logs the organization name in the output results to provide clear identification of which organization is being processed.",
+              "display_name": "Log Org Name in Output",
+              "skip_execution": false,
+              "variables_to_update": [
+                {
+                  "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02R1E2S3U4L5T6V7A8R9I0A1B2L3E4T5E6F$",
+                  "variable_value_new": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02R1E2S3U4L5T6V7A8R9I0A1B2L3E4T5E6F$\nResults for Organization: $activity.definition_activity_02QEGYPPP8Z7C0MkHLhup5BV1QIkc8KdHJj.output.variable_workflow_02M605GTI9MS96oJT1lTU8xUOEZTdwk6xz6$"
+                }
+              ]
+            },
+            "object_type": "definition_activity"
+          },
+          {
+            "unique_name": "definition_activity_02PWYQU1KL89C3UBf15beESYyAatrw3unTA",
+            "name": "For Each",
+            "title": "For Each Admin",
+            "type": "logic.for_each",
+            "base_type": "activity",
+            "properties": {
+              "continue_on_failure": false,
+              "description": "Iterates through each administrator found in the source organization and creates them in the current destination organization.",
+              "display_name": "For Each Admin",
+              "skip_execution": false,
+              "source_array": "$activity.definition_activity_02PWYPKS89S5P7BkFeREQ1GnDBtXDyDG5sL.output.read_table_from_json$"
+            },
+            "object_type": "definition_activity",
+            "actions": [
+              {
+                "unique_name": "definition_activity_02PWYR4SHQDM04KYVMDDlPcA0GzywHKJpQv",
+                "name": "Meraki - Create Organization Admin",
+                "title": "Meraki - Create Organization Admin",
+                "type": "workflow.atomic_workflow",
+                "base_type": "subworkflow",
+                "properties": {
+                  "continue_on_failure": true,
+                  "description": "Creates a new administrator in the destination organization with the same permissions, email, name, and access settings as the source admin.",
+                  "display_name": "Meraki - Create Organization Admin",
+                  "input": {
+                    "variable_workflow_02OARCIDZTGSG2MlRecr5IoTWmpjasd9XUv": "$activity.definition_activity_02QEEM9PR86YD6h5anMSQTjapUMejkyeCo3.input.source_array[@]$",
+                    "variable_workflow_02OARCIDZTIC02ouCjIaWY7ikBGjVEpNna6": false,
+                    "variable_workflow_02OARCIDZTJ3S5Km6kSVppTVLHoLlXF8V4h": "$activity.definition_activity_02PWYQU1KL89C3UBf15beESYyAatrw3unTA.input.source_array[@].email$",
+                    "variable_workflow_02OARCIDZTJVK23W8u3Zvgy1CNTyyohsDAm": "$activity.definition_activity_02PWYQU1KL89C3UBf15beESYyAatrw3unTA.input.source_array[@].name$",
+                    "variable_workflow_02OARCIDZTKNC77hhMHW8gTtdBLEZ1wY1mo": "$activity.definition_activity_02PWYQU1KL89C3UBf15beESYyAatrw3unTA.input.source_array[@].orgAccess$",
+                    "variable_workflow_02OARCIDZTLF446noE8Z34wboVxmUOo2mtW": "$activity.definition_activity_02PWYQU1KL89C3UBf15beESYyAatrw3unTA.input.source_array[@].tags$",
+                    "variable_workflow_02OARCIDZTM6W0kPWfETInQDwqUdssqXXnl": "[]",
+                    "variable_workflow_02OARCIDZTMYO4SZpoqufn0kNLH2mZpBevp": ""
+                  },
+                  "runtime_user": {
+                    "target_default": true
+                  },
+                  "skip_execution": false,
+                  "target": {
+                    "target_type": "meraki.endpoint",
+                    "use_workflow_target": true
+                  },
+                  "workflow_id": "definition_workflow_02OARCIDZTAM87ey01OcZjWHaBkb8MX53sA",
+                  "workflow_name": "Meraki - Create Organization Admin"
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02PWYSC5LGIJ31Dsqo17eAiraPOLzTAmJRr",
+                "name": "Condition Block",
+                "title": "Check Admin Creation Result",
+                "type": "logic.if_else",
+                "base_type": "activity",
+                "properties": {
+                  "continue_on_failure": false,
+                  "description": "Evaluates the result of the admin creation attempt and logs appropriate success or failure messages.",
+                  "display_name": "Check Admin Creation Result",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity",
+                "blocks": [
+                  {
+                    "unique_name": "definition_activity_02PWYSC6W23FB208dXg4Hnb1MfqHDn3TwTq",
+                    "name": "Condition Branch",
+                    "title": "Success",
+                    "type": "logic.condition_block",
+                    "base_type": "activity",
+                    "properties": {
+                      "condition": {
+                        "left_operand": "$activity.definition_activity_02PWYR4SHQDM04KYVMDDlPcA0GzywHKJpQv.output.variable_workflow_02OARCIDZUHTS6S6pyxdKh160xJIbrR3His$",
+                        "operator": "eq",
+                        "right_operand": 201
+                      },
+                      "continue_on_failure": false,
+                      "description": "Executes when administrator creation succeeds (HTTP 201), logging a success message.",
+                      "display_name": "Success",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "actions": [
+                      {
+                        "unique_name": "definition_activity_02S1E2T3V4A5R6I7A8B9L0E1S2T3E4S5T6U",
+                        "name": "Set Variables",
+                        "title": "Log Success Message",
+                        "type": "core.set_multiple_variables",
+                        "base_type": "activity",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Logs a success message when an administrator is successfully created in the destination organization.",
+                          "display_name": "Log Success Message",
+                          "skip_execution": false,
+                          "variables_to_update": [
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02R1E2S3U4L5T6V7A8R9I0A1B2L3E4T5E6F$",
+                              "variable_value_new": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02R1E2S3U4L5T6V7A8R9I0A1B2L3E4T5E6F$ \nAdded $activity.definition_activity_02PWYQU1KL89C3UBf15beESYyAatrw3unTA.input.source_array[@].name$  successfully."
+                            }
+                          ]
+                        },
+                        "object_type": "definition_activity"
+                      }
+                    ]
+                  },
+                  {
+                    "unique_name": "definition_activity_02PWYU1BDAZFH4oLpAdzHVJH339jjIGxqAi",
+                    "name": "Condition Branch",
+                    "title": "Failed",
+                    "type": "logic.condition_block",
+                    "base_type": "activity",
+                    "properties": {
+                      "condition": {
+                        "left_operand": "$activity.definition_activity_02PWYR4SHQDM04KYVMDDlPcA0GzywHKJpQv.output.variable_workflow_02OARCIDZUHTS6S6pyxdKh160xJIbrR3His$",
+                        "operator": "ne",
+                        "right_operand": 201
+                      },
+                      "continue_on_failure": false,
+                      "description": "Executes when administrator creation fails (non-201 HTTP response), logging a failure message.",
+                      "display_name": "Failed",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "actions": [
+                      {
+                        "unique_name": "definition_activity_02PWYUYRKJM6U6Lcj1R3FunpBKMwi8d5GAC",
+                        "name": "Set Variables",
+                        "title": "Log Failure Message",
+                        "type": "core.set_multiple_variables",
+                        "base_type": "activity",
+                        "properties": {
+                          "continue_on_failure": false,
+                          "description": "Logs a failure message when an administrator creation fails in the destination organization.",
+                          "display_name": "Log Failure Message",
+                          "skip_execution": false,
+                          "variables_to_update": [
+                            {
+                              "variable_to_update": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02R1E2S3U4L5T6V7A8R9I0A1B2L3E4T5E6F$",
+                              "variable_value_new": "$workflow.definition_workflow_02T1E2S3T4W5O6R7K8F9L0O1W2T3E4S5T6Z.output.variable_workflow_02R1E2S3U4L5T6V7A8R9I0A1B2L3E4T5E6F$ \nFailed to add $activity.definition_activity_02PWYQU1KL89C3UBf15beESYyAatrw3unTA.input.source_array[@].name$. $activity.definition_activity_02PWYR4SHQDM04KYVMDDlPcA0GzywHKJpQv.output.variable_workflow_02OARCIDZV5QW2i1J3Veen3RLaKwj19Vk8h$"
+                            }
+                          ]
+                        },
+                        "object_type": "definition_activity"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "categories": [
+      "category_1BMfMXSnJMyt5Ihqi7rWJr5N8cf"
+    ]
+  },
+  "atomic_workflows": [
+    "definition_workflow_02OARCID71E6G7dts7OEcdFt7dCb4fzGlnW",
+    "definition_workflow_02OARCIDZTAM87ey01OcZjWHaBkb8MX53sA"
+  ],
+  "dependent_workflows": [
+    "definition_workflow_02M605GS81XN44qr4RBWrJ6Zazk7k0ArIYX",
+    "definition_workflow_02OARCID71E6G7dts7OEcdFt7dCb4fzGlnW",
+    "definition_workflow_02OARCIDZTAM87ey01OcZjWHaBkb8MX53sA"
+  ]
+}

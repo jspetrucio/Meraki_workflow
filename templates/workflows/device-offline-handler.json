@@ -1,0 +1,108 @@
+{
+  "workflow": {
+    "unique_name": "definition_workflow_2XTLIk6wkLqnVXQzuZmugYMRwc",
+    "name": "device-offline-handler",
+    "title": "Device Offline Handler",
+    "type": "generic.workflow",
+    "base_type": "workflow",
+    "variables": [
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "input",
+          "name": "device_serial",
+          "type": "datatype.string",
+          "description": "Serial do device que ficou offline",
+          "is_required": true,
+          "is_invisible": false
+        },
+        "unique_name": "variable_workflow_Pw45rJQucSIyOseSURTAxqMWrv",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.integer",
+        "properties": {
+          "value": 300,
+          "scope": "local",
+          "name": "wait_time",
+          "type": "datatype.integer",
+          "description": "Tempo de espera em segundos antes de notificar",
+          "is_required": false,
+          "is_invisible": false
+        },
+        "unique_name": "variable_workflow_Reevjf5h5wzm4c3e4Cw8gVbpDF",
+        "object_type": "variable_workflow"
+      }
+    ],
+    "properties": {
+      "atomic": {
+        "is_atomic": false
+      },
+      "delete_workflow_instance": false,
+      "description": "Notifica quando device fica offline por mais de X minutos",
+      "display_name": "Device Offline Handler",
+      "runtime_user": {
+        "target_default": true
+      },
+      "target": {
+        "no_target": true
+      }
+    },
+    "object_type": "definition_workflow",
+    "actions": [
+      {
+        "unique_name": "definition_activity_C1eYAAaw39UiI7twHJrQKRJZjK",
+        "name": "wait",
+        "title": "wait",
+        "type": "core.sleep",
+        "base_type": "activity",
+        "properties": {
+          "duration": "$vars.wait_time$"
+        },
+        "object_type": "definition_activity"
+      },
+      {
+        "unique_name": "definition_activity_ZXpsotQevxffNhrVezInJf6xU9",
+        "name": "check_status",
+        "title": "check_status",
+        "type": "meraki.get_device_status",
+        "base_type": "activity",
+        "properties": {
+          "serial": "$input.device_serial$"
+        },
+        "object_type": "definition_activity"
+      },
+      {
+        "unique_name": "definition_activity_g79rMZ3MYXdjVdqdrkdBXxdCHS",
+        "name": "notify_slack",
+        "title": "notify_slack",
+        "type": "slack.post_message",
+        "base_type": "activity",
+        "properties": {
+          "channel": "#jose-alerts",
+          "message": "Device $input.device_serial$ offline por mais de 5 minutos!",
+          "skip_execution": false,
+          "condition": {
+            "left_operand": "$actions.check_status.status$",
+            "operator": "eq",
+            "right_operand": "offline"
+          }
+        },
+        "object_type": "definition_activity"
+      }
+    ],
+    "triggers": [
+      {
+        "unique_name": "definition_trigger_oUu9fc05QNLik6IZq5DdzfWwjp",
+        "type": "trigger.webhook",
+        "base_type": "trigger",
+        "properties": {
+          "event": "device.status.change",
+          "status": "offline"
+        },
+        "object_type": "definition_trigger"
+      }
+    ]
+  }
+}

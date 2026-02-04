@@ -59,6 +59,13 @@ from .workflow import (
     list_workflows,
     save_workflow,
 )
+from .template_loader import (
+    TemplateLoader,
+    TemplateNotFoundError,
+    TemplateValidationError,
+    WorkflowBuildError,
+    create_workflow_from_template,
+)
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -563,6 +570,194 @@ def workflow_list(client):
     console.print(table)
 
 
+# ==================== TEMPLATE ====================
+
+
+@cli.group()
+def template():
+    """Gerenciar templates de workflow (Clone + Patch)."""
+    pass
+
+
+@template.command("list")
+def template_list():
+    """Lista templates disponiveis em templates/workflows/."""
+    loader = TemplateLoader()
+    templates = loader.list_templates()
+
+    if not templates:
+        console.print("[yellow]Nenhum template encontrado em templates/workflows/[/yellow]")
+        console.print("\nExporte workflows do Meraki Dashboard para usar como templates.")
+        return
+
+    table = Table(title="Templates de Workflow")
+    table.add_column("#", style="dim")
+    table.add_column("Nome", style="cyan")
+    table.add_column("Variaveis", style="yellow")
+    table.add_column("Acoes", style="green")
+    table.add_column("Descricao")
+
+    for i, t in enumerate(templates, 1):
+        # Truncar descricao
+        desc = t.description[:40] + "..." if len(t.description) > 40 else t.description
+        table.add_row(
+            str(i),
+            t.name,
+            str(len(t.variables)),
+            str(t.actions_count),
+            desc or "-"
+        )
+
+    console.print(table)
+    console.print("\n[dim]Use: meraki template info <nome> para detalhes[/dim]")
+
+
+@template.command("info")
+@click.argument("name")
+def template_info(name):
+    """Exibe detalhes de um template."""
+    try:
+        loader = TemplateLoader()
+        wf = loader.load(name)
+
+        console.print(Panel(f"[bold]{wf.original_name}[/bold]", title="Template"))
+
+        # Descricao
+        if wf.description:
+            console.print(f"\n[cyan]Descricao:[/cyan] {wf.description}")
+
+        # Variaveis
+        variables = wf.get_variables()
+        if variables:
+            console.print(f"\n[cyan]Variaveis ({len(variables)}):[/cyan]")
+            for var in variables:
+                req = "[required]" if var["required"] else ""
+                default = f" = {var['value']}" if var["value"] else ""
+                console.print(f"  • {var['name']} ({var['type']}) {req}{default}")
+                if var.get("description"):
+                    console.print(f"    {var['description']}")
+        else:
+            console.print("\n[cyan]Variaveis:[/cyan] Nenhuma")
+
+        # Uso
+        console.print("\n[cyan]Como usar:[/cyan]")
+        console.print(f"  meraki template clone '{wf.original_name}' --client CLIENTE --name 'Novo Nome'")
+
+    except TemplateNotFoundError as e:
+        console.print(f"[red]Template nao encontrado: {name}[/red]")
+        console.print("\n[dim]Use: meraki template list para ver templates disponiveis[/dim]")
+
+
+@template.command("clone")
+@click.argument("template_name")
+@click.option("--client", "-c", required=True, help="Nome do cliente")
+@click.option("--name", "-n", required=True, help="Nome do novo workflow")
+@click.option("--description", "-d", help="Descricao do workflow")
+@click.option("--var", "-v", multiple=True, help="Variavel no formato chave=valor")
+@click.pass_context
+def template_clone(ctx, template_name, client, name, description, var):
+    """Cria novo workflow a partir de template (Clone + Patch).
+
+    Exemplo:
+        meraki template clone "Device Offline Handler" -c acme -n "ACME Offline Alert" -v slack_channel=#acme-alerts
+    """
+    try:
+        # Parsear variaveis
+        variables = {}
+        for v in var:
+            if "=" in v:
+                key, value = v.split("=", 1)
+                variables[key.strip()] = value.strip()
+            else:
+                console.print(f"[yellow]Variavel ignorada (formato invalido): {v}[/yellow]")
+                console.print("[dim]Use: -v chave=valor[/dim]")
+
+        # Criar workflow
+        with console.status("[bold green]Clonando template..."):
+            path = create_workflow_from_template(
+                template_name=template_name,
+                client=client,
+                workflow_name=name,
+                description=description,
+                variables=variables if variables else None,
+            )
+
+        console.print(f"[green]✓ Workflow criado: {path}[/green]")
+
+        # Mostrar variaveis definidas
+        if variables:
+            console.print("\n[cyan]Variaveis definidas:[/cyan]")
+            for k, v in variables.items():
+                console.print(f"  • {k} = {v}")
+
+        # Instrucoes de import
+        console.print(
+            Panel(
+                "[bold]Proximo passo:[/bold]\n\n"
+                "1. Acesse o Meraki Dashboard\n"
+                "2. Va em Organization > Configure > Workflows\n"
+                "3. Clique em 'Import Workflow'\n"
+                f"4. Selecione o arquivo: {path}\n"
+                "5. Revise e ative o workflow",
+                title="Importar no Dashboard",
+                style="yellow",
+            )
+        )
+
+        # Log no changelog
+        log_change(
+            client=client,
+            change_type=ChangeType.WORKFLOW,
+            action="template_clone",
+            details={
+                "template": template_name,
+                "name": name,
+                "variables": variables,
+            },
+        )
+
+    except TemplateNotFoundError:
+        console.print(f"[red]Template nao encontrado: {template_name}[/red]")
+        console.print("\n[dim]Use: meraki template list para ver templates disponiveis[/dim]")
+
+    except WorkflowBuildError as e:
+        console.print(f"[red]Erro ao construir workflow: {e}[/red]")
+
+    except TemplateValidationError as e:
+        console.print(f"[red]Erro de validacao: {e}[/red]")
+
+    except Exception as e:
+        console.print(f"[red]Erro: {e}[/red]")
+        if ctx.obj["DEBUG"]:
+            raise
+
+
+@template.command("validate")
+@click.argument("file_path", type=click.Path(exists=True))
+def template_validate(file_path):
+    """Valida um arquivo JSON de workflow."""
+    try:
+        loader = TemplateLoader()
+        wf = loader.load_from_path(Path(file_path))
+
+        is_valid, errors = wf.validate()
+
+        if is_valid:
+            console.print(f"[green]✓ Workflow valido: {wf.original_name}[/green]")
+
+            # Mostrar resumo
+            variables = wf.get_variables()
+            console.print(f"\n  Variaveis: {len(variables)}")
+        else:
+            console.print(f"[red]✗ Workflow invalido[/red]")
+            console.print("\n[red]Erros encontrados:[/red]")
+            for err in errors:
+                console.print(f"  • {err}")
+
+    except Exception as e:
+        console.print(f"[red]Erro ao validar: {e}[/red]")
+
+
 # ==================== REPORT ====================
 
 
@@ -592,6 +787,20 @@ def report_discovery(ctx, client, pdf):
             # Salvar HTML
             html_path = save_html(rep)
             console.print(f"[green]✓ HTML salvo: {html_path}[/green]")
+
+            # Iniciar Report Server Visual (se não for PDF)
+            if not pdf:
+                try:
+                    from .report_server import generate_and_serve
+                    if click.confirm("\nDeseja abrir o dashboard visual agora?", default=True):
+                        # Pega o caminho do JSON salvo no discovery (ultimo snapshot)
+                        snapshots = list_snapshots(client)
+                        if snapshots:
+                            latest_json = snapshots[0]
+                            generate_and_serve(str(latest_json), open_browser=True, save_html=False)
+                except ImportError:
+                    console.print("[yellow]Aviso: report_server não encontrado para visualização interativa[/yellow]")
+
 
             # Gerar PDF se solicitado
             if pdf:

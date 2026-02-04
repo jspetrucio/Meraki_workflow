@@ -1,0 +1,298 @@
+{
+  "name": "Meraki Scheduled Discovery",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule - Weekly Monday 6AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.meraki.com/api/v1/organizations/{{ $vars.MERAKI_ORG_ID }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Cisco-Meraki-API-Key",
+              "value": "={{ $vars.MERAKI_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-org",
+      "name": "Meraki - Get Organization",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.meraki.com/api/v1/organizations/{{ $vars.MERAKI_ORG_ID }}/networks",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Cisco-Meraki-API-Key",
+              "value": "={{ $vars.MERAKI_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-networks",
+      "name": "Meraki - Get Networks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.meraki.com/api/v1/organizations/{{ $vars.MERAKI_ORG_ID }}/devices/statuses",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Cisco-Meraki-API-Key",
+              "value": "={{ $vars.MERAKI_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-device-statuses",
+      "name": "Meraki - Get Device Statuses",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate discovery data\nconst org = $('Meraki - Get Organization').first().json;\nconst networks = $('Meraki - Get Networks').all().map(i => i.json);\nconst devices = $('Meraki - Get Device Statuses').all().map(i => i.json);\n\n// Count device statuses\nconst devicesByStatus = devices.reduce((acc, d) => {\n  acc[d.status] = (acc[d.status] || 0) + 1;\n  return acc;\n}, {});\n\n// Count devices by model\nconst devicesByModel = devices.reduce((acc, d) => {\n  const model = d.model || 'Unknown';\n  acc[model] = (acc[model] || 0) + 1;\n  return acc;\n}, {});\n\n// Find offline devices\nconst offlineDevices = devices.filter(d => d.status !== 'online');\n\n// Build discovery report\nconst report = {\n  timestamp: new Date().toISOString(),\n  organization: {\n    id: org.id,\n    name: org.name\n  },\n  summary: {\n    total_networks: networks.length,\n    total_devices: devices.length,\n    devices_online: devicesByStatus['online'] || 0,\n    devices_offline: devicesByStatus['offline'] || 0,\n    devices_alerting: devicesByStatus['alerting'] || 0\n  },\n  devices_by_model: devicesByModel,\n  issues: offlineDevices.map(d => ({\n    device: d.name,\n    serial: d.serial,\n    status: d.status,\n    network: d.networkId\n  }))\n};\n\nreturn [{ json: report }];"
+      },
+      "id": "aggregate-data",
+      "name": "Aggregate Discovery Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1130, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-issues",
+              "leftValue": "={{ $json.issues.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-issues",
+      "name": "IF Has Issues",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1350, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $vars.EMAIL_FROM }}",
+        "toEmail": "={{ $vars.EMAIL_TO }}",
+        "subject": "=⚠️ Meraki Discovery Report - {{ $json.issues.length }} Issues Found",
+        "html": "=<h1>Meraki Weekly Discovery Report</h1>\n<h2>Organization: {{ $json.organization.name }}</h2>\n<p>Report generated: {{ $json.timestamp }}</p>\n\n<h3>Summary</h3>\n<table border=\"1\" cellpadding=\"5\">\n  <tr><td><strong>Total Networks</strong></td><td>{{ $json.summary.total_networks }}</td></tr>\n  <tr><td><strong>Total Devices</strong></td><td>{{ $json.summary.total_devices }}</td></tr>\n  <tr><td><strong>Online</strong></td><td style=\"color:green\">{{ $json.summary.devices_online }}</td></tr>\n  <tr><td><strong>Offline</strong></td><td style=\"color:red\">{{ $json.summary.devices_offline }}</td></tr>\n  <tr><td><strong>Alerting</strong></td><td style=\"color:orange\">{{ $json.summary.devices_alerting }}</td></tr>\n</table>\n\n<h3>⚠️ Issues Found ({{ $json.issues.length }})</h3>\n<table border=\"1\" cellpadding=\"5\">\n  <tr><th>Device</th><th>Serial</th><th>Status</th></tr>\n  {{ $json.issues.map(i => `<tr><td>${i.device}</td><td>${i.serial}</td><td style=\"color:red\">${i.status}</td></tr>`).join('') }}\n</table>\n\n<p><em>This is an automated report from Meraki Workflow N8N</em></p>",
+        "options": {}
+      },
+      "id": "email-with-issues",
+      "name": "Email - Report with Issues",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1570, 200],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credential",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $vars.EMAIL_FROM }}",
+        "toEmail": "={{ $vars.EMAIL_TO }}",
+        "subject": "=✅ Meraki Discovery Report - All Systems Healthy",
+        "html": "=<h1>Meraki Weekly Discovery Report</h1>\n<h2>Organization: {{ $json.organization.name }}</h2>\n<p>Report generated: {{ $json.timestamp }}</p>\n\n<h3>Summary</h3>\n<table border=\"1\" cellpadding=\"5\">\n  <tr><td><strong>Total Networks</strong></td><td>{{ $json.summary.total_networks }}</td></tr>\n  <tr><td><strong>Total Devices</strong></td><td>{{ $json.summary.total_devices }}</td></tr>\n  <tr><td><strong>Online</strong></td><td style=\"color:green\">{{ $json.summary.devices_online }}</td></tr>\n</table>\n\n<h3>✅ No Issues Found</h3>\n<p>All devices are operating normally.</p>\n\n<p><em>This is an automated report from Meraki Workflow N8N</em></p>",
+        "options": {}
+      },
+      "id": "email-no-issues",
+      "name": "Email - Report No Issues",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1570, 400],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credential",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Meraki Scheduled Discovery\n\nWeekly discovery report of Meraki infrastructure.\n\n### Variables Required:\n- `MERAKI_API_KEY`: Your Meraki API key\n- `MERAKI_ORG_ID`: Organization ID\n- `EMAIL_FROM`: Sender email\n- `EMAIL_TO`: Recipient email\n\n### Schedule:\nRuns weekly on Monday at 6:00 AM\n\n### Reports:\n- Summary of networks and devices\n- Device counts by status\n- List of offline/alerting devices"
+      },
+      "id": "sticky-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [230, 80]
+    }
+  ],
+  "connections": {
+    "Schedule - Weekly Monday 6AM": {
+      "main": [
+        [
+          {
+            "node": "Meraki - Get Organization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meraki - Get Organization": {
+      "main": [
+        [
+          {
+            "node": "Meraki - Get Networks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meraki - Get Networks": {
+      "main": [
+        [
+          {
+            "node": "Meraki - Get Device Statuses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meraki - Get Device Statuses": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Discovery Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Discovery Data": {
+      "main": [
+        [
+          {
+            "node": "IF Has Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Has Issues": {
+      "main": [
+        [
+          {
+            "node": "Email - Report with Issues",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email - Report No Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateId": "meraki-discovery-scheduled-v1",
+    "instanceId": "meraki-workflow-squad"
+  },
+  "tags": [
+    {
+      "name": "meraki",
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-02-04T00:00:00.000Z"
+    },
+    {
+      "name": "discovery",
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-02-04T00:00:00.000Z"
+    }
+  ],
+  "variables": [
+    {
+      "key": "MERAKI_API_KEY",
+      "value": "YOUR_API_KEY",
+      "type": "string"
+    },
+    {
+      "key": "MERAKI_ORG_ID",
+      "value": "YOUR_ORG_ID",
+      "type": "string"
+    },
+    {
+      "key": "EMAIL_FROM",
+      "value": "noreply@company.com",
+      "type": "string"
+    },
+    {
+      "key": "EMAIL_TO",
+      "value": "network-team@company.com",
+      "type": "string"
+    }
+  ]
+}

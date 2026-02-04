@@ -267,16 +267,6 @@ def check_permissive_acls(acls):
 ### CLI Output
 Formato texto para terminal durante visita ao cliente.
 
-### HTML Report
-```python
-from scripts.report import generate_html
-
-html_path = generate_html(
-    discovery_data,
-    output_path=f"clients/{client}/reports/{date}.html"
-)
-```
-
 ### PDF Report
 ```python
 from scripts.report import generate_pdf
@@ -333,3 +323,38 @@ Passa: workflows recomendados com contexto
 
 ### Para code-reviewer
 Passa: scripts criados para revisao
+---
+
+## Integração com Report Designer
+
+Após completar o discovery e salvar o JSON, **sempre** gerar o relatório visual:
+
+### Opção 1: Via subprocess (recomendado)
+```python
+import subprocess
+from datetime import datetime
+
+# Após salvar o discovery JSON
+client_name = "jose-org"  # ou variável do contexto
+date = datetime.now().strftime("%Y-%m-%d")
+json_path = f"clients/{client_name}/discovery/{date}.json"
+
+# Gera relatório e abre no Safari
+subprocess.run(["python", "scripts/report_server.py", json_path])
+```
+
+### Opção 2: Via import
+```python
+from scripts.report_server import generate_and_serve
+
+generate_and_serve(f"clients/{client_name}/discovery/{date}.json")
+```
+
+### Fluxo Completo
+1. Executar discovery completo
+2. Salvar JSON em `clients/{client}/discovery/{date}.json`
+3. **Chamar report_server.py automaticamente**
+4. Safari abre com relatório visual em localhost:8080
+5. Usuário visualiza, Ctrl+C para encerrar
+
+> **IMPORTANTE**: Sempre perguntar ao usuário se deseja visualizar o relatório antes de iniciar o servidor.

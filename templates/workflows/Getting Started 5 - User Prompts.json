@@ -1,0 +1,508 @@
+{
+  "workflow": {
+    "unique_name": "definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A",
+    "name": "Getting Started 5 - User Prompts",
+    "title": "Getting Started 5 - User Prompts",
+    "type": "generic.workflow",
+    "base_type": "workflow",
+    "variables": [
+      {
+        "schema_id": "datatype.integer",
+        "properties": {
+          "value": 200,
+          "scope": "output",
+          "name": "Status Code",
+          "type": "datatype.integer",
+          "description": "The Status Code returned from the Workflows",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": ""
+        },
+        "unique_name": "variable_workflow_02QLX1E2JSU2I69GxD0CYIi7rEUh1x1Z3zx",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "output",
+          "name": "Result",
+          "type": "datatype.string",
+          "description": "If a Match is found from the list of Users, the email of that address is returned.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02O427U6E145B44G3ugYW0Kf27dR2MrzP4g",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "output",
+          "name": "Error Message",
+          "type": "datatype.string",
+          "description": "If the workflow encounters an error, this value will be filled out. ",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02RHKLGWTAMK13VqgQO41UHH7UfiknHaSVL",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "No match found.",
+          "scope": "output",
+          "name": "Status Message",
+          "type": "datatype.string",
+          "description": "Summary of Workflow Execution\n\nDefault is no match found.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02RHJX4EWVW3D6nlNFx9wpvTJMN8f41WDsl",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "variable_type_array_01JhSTW61I3ZU2IfL7dwQox83eFDzE1qUiA",
+        "properties": {
+          "value": [],
+          "scope": "local",
+          "name": "User List",
+          "type": "datatype.array",
+          "description": "This is a variable of type \"Array\". The array is just a list of strings. \nFor example:\n[\"hello\", \"world\"]",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": ""
+        },
+        "unique_name": "variable_workflow_02O42OIGN46XM4NVyQ42aNZiR5z0l1AaZiJ",
+        "object_type": "variable_workflow"
+      },
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "users",
+          "scope": "local",
+          "name": "Operation",
+          "type": "datatype.string",
+          "description": "What Operation do you want to run against our JSON Placeholder Service. This workflow is designed as an example to show a single use case, \"users\", and is therefore set as the default operation.",
+          "is_required": false,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "text"
+        },
+        "unique_name": "variable_workflow_02O427U6E1O0R3KnnU0QoMwinwfVZaX4TRf",
+        "object_type": "variable_workflow"
+      }
+    ],
+    "properties": {
+      "atomic": {
+        "is_atomic": false
+      },
+      "delete_workflow_instance": false,
+      "description": "This is entry 5 in the Getting Started Series. The focus is on creating a task to present a User Prompt for more information during a Workflows Run.\n\nThe workflow builds on the previous Getting Started workflows by using a Web Service that will return data based on the operations passed.\nIn this case, we are asking for information on Users.\n\nThe Workflow will retrieve the full list of users, and then present this list to the Operator in order to determine which user they are interested in.\nThe activity, \"Create Prompt\" is used to build a formatted drop-down menu with the list of these names.\n\nThe selection is then compared against the entries to find and return the corresponding email address of the username selected.\n\nPrerequisites:\n- User must have 'admin' role to respond to prompts\n\nLimitations:\n- Currently supports only 'users' operation\n- Prompt expires after 72 hours\n\nDependencies:\n- JSON Placeholder Web Service target",
+      "display_name": "Getting Started 5 - User Prompts",
+      "runtime_user": {
+        "target_default": true
+      },
+      "target": {
+        "target_type": "web-service.endpoint",
+        "target_id": "definition_target_02O32E6O7CZ734kTsSOj5TNayxWqgl7lH6W",
+        "execute_on_workflow_target": true
+      }
+    },
+    "object_type": "definition_workflow",
+    "actions": [
+      {
+        "unique_name": "definition_activity_02O427U95N2YX0AbAR87yYHC6aDfWC3Ky8f",
+        "name": "HTTP Request",
+        "title": "JSON Placeholder Web Request",
+        "type": "web-service.http_request",
+        "base_type": "activity",
+        "properties": {
+          "action_timeout": 180,
+          "allow_auto_redirect": true,
+          "allow_headers_redirect": false,
+          "continue_on_error_status_code": false,
+          "continue_on_failure": true,
+          "description": "This Web Service Request will make an HTTP Request to the JSON Placeholder Web Service returning all Users.\n\nThe Operation requested is passed as a local variable. ",
+          "display_name": "JSON Placeholder Web Request",
+          "method": "GET",
+          "relative_url": "/$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.local.variable_workflow_02O427U6E1O0R3KnnU0QoMwinwfVZaX4TRf$",
+          "runtime_user": {
+            "target_default": true
+          },
+          "skip_execution": false,
+          "target": {
+            "use_workflow_target": true
+          }
+        },
+        "object_type": "definition_activity"
+      },
+      {
+        "unique_name": "definition_activity_02O427U9YGQD32G3ACkUh3TgKs9D2TyfwVd",
+        "name": "Condition Block",
+        "title": "Check the HTTP Request for Errors",
+        "type": "logic.if_else",
+        "base_type": "activity",
+        "properties": {
+          "conditions": [],
+          "continue_on_failure": false,
+          "description": "In theory this should not happen as the Operation variable is locally assigned to \"users\", however it is best practice to error check your calls.",
+          "display_name": "Check the HTTP Request for Errors",
+          "skip_execution": false
+        },
+        "object_type": "definition_activity",
+        "blocks": [
+          {
+            "unique_name": "definition_activity_02O427UARDVRR6JmXxHzxVCGVU2wWkWpLgn",
+            "name": "Condition Branch",
+            "title": "Web Service Error Condition",
+            "type": "logic.condition_block",
+            "base_type": "activity",
+            "properties": {
+              "condition": {
+                "left_operand": "$activity.definition_activity_02O427U95N2YX0AbAR87yYHC6aDfWC3Ky8f.output.status_code$",
+                "operator": "ne",
+                "right_operand": 200
+              },
+              "continue_on_failure": false,
+              "description": "The Web Service did not recognize the request. Fall through to Error handle.",
+              "display_name": "Web Service Error Condition",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "actions": [
+              {
+                "unique_name": "definition_activity_02O427UC1L6Q94mMlbIkTAWIElGixjsSgdC",
+                "name": "Set Variables",
+                "title": "Set Output Variables",
+                "type": "core.set_multiple_variables",
+                "base_type": "activity",
+                "properties": {
+                  "continue_on_failure": false,
+                  "description": "Set Variables for the operator to understand what has occurred. ",
+                  "display_name": "Set Output Variables",
+                  "skip_execution": false,
+                  "variables_to_update": [
+                    {
+                      "variable_to_update": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.output.variable_workflow_02O427U6E145B44G3ugYW0Kf27dR2MrzP4g$",
+                      "variable_value_new": "Workflow Failed."
+                    },
+                    {
+                      "variable_to_update": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.output.variable_workflow_02QLX1E2JSU2I69GxD0CYIi7rEUh1x1Z3zx$",
+                      "variable_value_new": "$activity.definition_activity_02O427U95N2YX0AbAR87yYHC6aDfWC3Ky8f.output.status_code$"
+                    },
+                    {
+                      "variable_to_update": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.output.variable_workflow_02RHKLGWTAMK13VqgQO41UHH7UfiknHaSVL$",
+                      "variable_value_new": "$activity.definition_activity_02O427U95N2YX0AbAR87yYHC6aDfWC3Ky8f.output.error.message$"
+                    }
+                  ]
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02O427UCTKI7X0RHYIx6TvSd1qq2v2k3BBX",
+                "name": "Completed",
+                "title": "End Workflow",
+                "type": "logic.completed",
+                "base_type": "activity",
+                "properties": {
+                  "completion_type": "failed-completed",
+                  "continue_on_failure": false,
+                  "description": "Use the Completed Action to end the workflow gracefully. ",
+                  "display_name": "End Workflow",
+                  "result_message": "Web Service Call Failed.",
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "unique_name": "definition_activity_02O427UDH3I495f7ujjceqL2h9bdyr40vtf",
+        "name": "Condition Block",
+        "title": "Parse Based on Operation Type",
+        "type": "logic.if_else",
+        "base_type": "activity",
+        "properties": {
+          "conditions": [],
+          "continue_on_failure": false,
+          "description": "This workflow only currently handles a single Operation type, \"users\", however best practices are being shown how this can be easily expanded to other operations in the future.",
+          "display_name": "Parse Based on Operation Type",
+          "skip_execution": false
+        },
+        "object_type": "definition_activity",
+        "blocks": [
+          {
+            "unique_name": "definition_activity_02O427UE7PW881ppx44Mc780zWSWvLjTLxH",
+            "name": "Condition Branch",
+            "title": "Users Branch",
+            "type": "logic.condition_block",
+            "base_type": "activity",
+            "properties": {
+              "condition": {
+                "left_operand": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.local.variable_workflow_02O427U6E1O0R3KnnU0QoMwinwfVZaX4TRf$",
+                "operator": "eq",
+                "right_operand": "users"
+              },
+              "continue_on_failure": false,
+              "description": "This is the use case for a Web Service request with a \"users\" operation.",
+              "display_name": "Users Branch",
+              "skip_execution": false
+            },
+            "object_type": "definition_activity",
+            "actions": [
+              {
+                "unique_name": "definition_activity_02O427UF8OPDM77ySeCr0N3FCWLQZkwYt3l",
+                "name": "JSONPath Query",
+                "title": "JSONPath Query all Names from Results",
+                "type": "corejava.jsonpathquery",
+                "base_type": "activity",
+                "properties": {
+                  "action_timeout": 180,
+                  "continue_on_failure": false,
+                  "description": "JSONPath Query to retrieve all the names from the JSON structure returned from the Web Service Call.",
+                  "display_name": "JSONPath Query all Names from Results",
+                  "input_json": "$activity.definition_activity_02O427U95N2YX0AbAR87yYHC6aDfWC3Ky8f.output.response_body$",
+                  "jsonpath_queries": [
+                    {
+                      "jsonpath_query": "$[*].name",
+                      "jsonpath_query_name": "name",
+                      "jsonpath_query_type": "string",
+                      "set_default_value": false,
+                      "zdate_type_format": "yyyy-MM-dd'T'HH:mm:ssZ"
+                    }
+                  ],
+                  "skip_execution": false
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02O427UG8UYE25LYl4m96HjSYFLJcpFXcWr",
+                "name": "Read Table from JSON",
+                "title": "Store Usernames and Email Addresses in a Table",
+                "type": "corejava.read_table_from_json",
+                "base_type": "activity",
+                "properties": {
+                  "action_timeout": 180,
+                  "continue_on_failure": false,
+                  "description": "Using \"Read Table from JSON\" activity, store the names and email from the Web Service data. This table structure enables efficient iteration through entries in subsequent loop operations.",
+                  "display_name": "Store Usernames and Email Addresses in a Table",
+                  "input_json": "$activity.definition_activity_02O427U95N2YX0AbAR87yYHC6aDfWC3Ky8f.output.response_body$",
+                  "jsonpath_query": "$",
+                  "persist_output": false,
+                  "populate_columns": false,
+                  "skip_execution": false,
+                  "table_columns": [
+                    {
+                      "column_name": "name",
+                      "column_type": "string"
+                    },
+                    {
+                      "column_name": "email",
+                      "column_type": "string"
+                    }
+                  ]
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02O427UHN37OB1qWuNQNNHn4NUerj9wXFK8",
+                "name": "Set Variables",
+                "title": "Put Names into a List for Upcoming User Prompt ",
+                "type": "core.set_multiple_variables",
+                "base_type": "activity",
+                "properties": {
+                  "continue_on_failure": false,
+                  "description": "The workflow has already shown how we can put Names in a Table. Here the list of names from the JSON Path Query is explicitly being saved to a local variable of type array. An array is just a formatted list of strings that other activities in the workflow expect. Specifically, the User Prompt to follow. ",
+                  "display_name": "Put Names into a List for Upcoming User Prompt ",
+                  "skip_execution": false,
+                  "variables_to_update": [
+                    {
+                      "variable_to_update": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.local.variable_workflow_02O42OIGN46XM4NVyQ42aNZiR5z0l1AaZiJ$",
+                      "variable_value_new": "$activity.definition_activity_02O427UF8OPDM77ySeCr0N3FCWLQZkwYt3l.output.jsonpath_queries.name$"
+                    }
+                  ]
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02O42EMSG1HZ77I2i7X6vY2P7oeeQaUdmRW",
+                "name": "Create Prompt",
+                "title": "Prompt Operator For username from List",
+                "type": "task.prompt_request",
+                "base_type": "activity",
+                "properties": {
+                  "assignee_roles": [
+                    "admin"
+                  ],
+                  "assignees": [
+                    "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.output.started_by$"
+                  ],
+                  "continue_on_failure": false,
+                  "description": "Using the \"Create Prompt\" activity from the \"Task\" panel on the left, the workflow will present a User Input screen for the Operator. \n\nThe Role defines the user expected to respond to the Workflow request for data.\n\nThe designer has the option to add additional email addresses for users that can continue the workflow and will be notified when the WF is paused.\n\nThe section, \"Add prompt title and body text\", formats the Title characteristics of the input screen to be shown.\n\nThe \"Add form elements\" describe the form. In this case, the form will be a dropdown list, labeled \"Usernames\", and will show all the names we retrieved from the Web Service.\n\nWhen the workflow reaches this activity it will be paused. There are 2 ways to respond to the prompt:\n1. Within the Designer the Operator will see a \"View Task\" Button that can be selected. \n2.Operators can continue the workflow by navigating to Automation/User Tasks/Prompts and selecting the pended workflow where the User Screen will be presented. \n\n",
+                  "display_name": "Prompt Operator For username from List",
+                  "expiration_date": {
+                    "is_relative_time": true,
+                    "relative_time": {
+                      "duration": 72,
+                      "time_units": "hours"
+                    }
+                  },
+                  "form_elements": [
+                    {
+                      "allow_multiselect": false,
+                      "form_element": "select",
+                      "form_label": "Usernames",
+                      "form_option_label_key": "",
+                      "form_source_array": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.local.variable_workflow_02O42OIGN46XM4NVyQ42aNZiR5z0l1AaZiJ$"
+                    }
+                  ],
+                  "prompt_body": "Contains Usernames from Web Service",
+                  "prompt_title": "Please Select a Username from the list",
+                  "skip_execution": false,
+                  "task_owner": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.output.started_by$",
+                  "task_requestor": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.output.started_by$",
+                  "wait_for_prompt_response": true
+                },
+                "object_type": "definition_activity"
+              },
+              {
+                "unique_name": "definition_activity_02O427UINL30V6QRNfmMR4Lfmdm1t39YY0Q",
+                "name": "For Each",
+                "title": "Traverse the Table of Entries for a Match to the User Prompt",
+                "type": "logic.for_each",
+                "base_type": "activity",
+                "properties": {
+                  "continue_on_failure": false,
+                  "description": "ForEach block",
+                  "display_name": "Traverse the Table of Entries for a Match to the User Prompt",
+                  "skip_execution": false,
+                  "source_array": "$activity.definition_activity_02O427UG8UYE25LYl4m96HjSYFLJcpFXcWr.output.read_table_from_json$"
+                },
+                "object_type": "definition_activity",
+                "actions": [
+                  {
+                    "unique_name": "definition_activity_02O427UK6MUFY6Dk923Kcsttdoo1vaEFkM0",
+                    "name": "Condition Block",
+                    "title": "Find a Match for User and Email",
+                    "type": "logic.if_else",
+                    "base_type": "activity",
+                    "properties": {
+                      "conditions": [],
+                      "continue_on_failure": false,
+                      "description": "If-Else condition block",
+                      "display_name": "Find a Match for User and Email",
+                      "skip_execution": false
+                    },
+                    "object_type": "definition_activity",
+                    "blocks": [
+                      {
+                        "unique_name": "definition_activity_02O427UL48R0Z55qTjXK5F8gApYdHtZ7dae",
+                        "name": "Condition Branch",
+                        "title": "Conditional Branch",
+                        "type": "logic.condition_block",
+                        "base_type": "activity",
+                        "properties": {
+                          "condition": {
+                            "left_operand": "$activity.definition_activity_02O427UINL30V6QRNfmMR4Lfmdm1t39YY0Q.input.source_array[@].name$",
+                            "operator": "eq",
+                            "right_operand": "$activity.definition_activity_02O42EMSG1HZ77I2i7X6vY2P7oeeQaUdmRW.output.prompt_response.Usernames$"
+                          },
+                          "continue_on_failure": false,
+                          "description": "Does the Name in the Table Match the Name Selected by the User Prompt selection.",
+                          "display_name": "Conditional Branch",
+                          "skip_execution": false
+                        },
+                        "object_type": "definition_activity",
+                        "actions": [
+                          {
+                            "unique_name": "definition_activity_02O427UMIJW6X08NDy8XOIBY0OrgBdmcBW7",
+                            "name": "Set Variables",
+                            "title": "Match Found, Return the Email Address of User",
+                            "type": "core.set_multiple_variables",
+                            "base_type": "activity",
+                            "properties": {
+                              "continue_on_failure": false,
+                              "description": "Store the Matching Result in our Output Variable.",
+                              "display_name": "Match Found, Return the Email Address of User",
+                              "skip_execution": false,
+                              "variables_to_update": [
+                                {
+                                  "variable_to_update": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.output.variable_workflow_02O427U6E145B44G3ugYW0Kf27dR2MrzP4g$",
+                                  "variable_value_new": "$activity.definition_activity_02O427UINL30V6QRNfmMR4Lfmdm1t39YY0Q.input.source_array[@].email$"
+                                },
+                                {
+                                  "variable_to_update": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.output.variable_workflow_02QLX1E2JSU2I69GxD0CYIi7rEUh1x1Z3zx$",
+                                  "variable_value_new": 200
+                                },
+                                {
+                                  "variable_to_update": "$workflow.definition_workflow_02O427U5XQEIX0MjV9QYgAdW8Nwn49ymo4A.output.variable_workflow_02RHJX4EWVW3D6nlNFx9wpvTJMN8f41WDsl$",
+                                  "variable_value_new": "Email Address Returned for Request input: $activity.definition_activity_02O42EMSG1HZ77I2i7X6vY2P7oeeQaUdmRW.output.prompt_response.Usernames$"
+                                }
+                              ]
+                            },
+                            "object_type": "definition_activity"
+                          },
+                          {
+                            "unique_name": "definition_activity_02RHKO3PF4JPM1EnFVz42vy8K0uYRwDe3s5",
+                            "name": "Break",
+                            "title": "Exit the Loop",
+                            "type": "logic.break",
+                            "base_type": "activity",
+                            "properties": {
+                              "continue_on_failure": false,
+                              "description": "Break action\nNo need to continue looking for matches. ",
+                              "display_name": "Exit the Loop",
+                              "skip_execution": false
+                            },
+                            "object_type": "definition_activity"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "categories": [
+      "category_1BMfMXSnJMyt5Ihqi7rWJr5N8cf"
+    ]
+  },
+  "targets": {
+    "definition_target_02O32E6O7CZ734kTsSOj5TNayxWqgl7lH6W": {
+      "unique_name": "definition_target_02O32E6O7CZ734kTsSOj5TNayxWqgl7lH6W",
+      "name": "JSON Placeholder Web Service",
+      "title": "JSON Placeholder Web Service",
+      "type": "web-service.endpoint",
+      "base_type": "target",
+      "object_type": "definition_target",
+      "properties": {
+        "description": "This is for our learning series",
+        "disable_certificate_validation": false,
+        "display_name": "JSON Placeholder Web Service",
+        "host": "jsonplaceholder.typicode.com",
+        "ignore_proxy": false,
+        "is_https_proxy": false,
+        "no_runtime_user": true,
+        "port": 443,
+        "protocol": "https"
+      }
+    }
+  }
+}

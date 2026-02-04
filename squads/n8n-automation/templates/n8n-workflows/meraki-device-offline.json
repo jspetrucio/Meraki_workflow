@@ -1,0 +1,259 @@
+{
+  "name": "Meraki Device Offline Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "meraki-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Meraki Alert",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "meraki-device-alert"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-offline",
+              "leftValue": "={{ $json.alertType }}",
+              "rightValue": "device went down",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-offline",
+      "name": "IF Device Offline",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "channel": {
+          "__rl": true,
+          "value": "={{ $vars.SLACK_CHANNEL }}",
+          "mode": "name"
+        },
+        "text": "=🔴 **Meraki Device Offline Alert**\n\n**Device:** {{ $json.deviceName }}\n**Serial:** {{ $json.deviceSerial }}\n**Network:** {{ $json.networkName }}\n**Organization:** {{ $json.organizationName }}\n**Time:** {{ $json.occurredAt }}\n\n**Details:**\n{{ $json.alertData }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "slack-notify",
+      "name": "Slack - Send Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [690, 200],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-credential",
+          "name": "Slack API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "content": "## Meraki Device Offline Alert\n\nThis workflow receives Meraki webhook alerts and sends Slack notifications when a device goes offline.\n\n### Setup Required:\n1. Create Slack credential with Bot Token\n2. Set workflow variable `SLACK_CHANNEL`\n3. Configure Meraki Dashboard Alerts to send to this webhook URL\n\n### Meraki Dashboard Config:\n1. Network-wide > Alerts\n2. Add HTTP Server: [N8N Webhook URL]\n3. Select alert: \"A device goes offline\""
+      },
+      "id": "sticky-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [230, 80]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-critical",
+              "leftValue": "={{ $json.deviceSerial }}",
+              "rightValue": "={{ $vars.CRITICAL_DEVICES }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-critical",
+      "name": "IF Critical Device",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [690, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.PAGERDUTY_EVENTS_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"routing_key\": \"{{ $vars.PAGERDUTY_ROUTING_KEY }}\",\n  \"event_action\": \"trigger\",\n  \"payload\": {\n    \"summary\": \"Critical Meraki device offline: {{ $json.deviceName }}\",\n    \"severity\": \"critical\",\n    \"source\": \"{{ $json.networkName }}\",\n    \"custom_details\": {\n      \"device_serial\": \"{{ $json.deviceSerial }}\",\n      \"network_name\": \"{{ $json.networkName }}\",\n      \"occurred_at\": \"{{ $json.occurredAt }}\"\n    }\n  }\n}",
+        "options": {}
+      },
+      "id": "pagerduty-alert",
+      "name": "PagerDuty - Create Incident",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [910, 400]
+    }
+  ],
+  "connections": {
+    "Webhook - Meraki Alert": {
+      "main": [
+        [
+          {
+            "node": "IF Device Offline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Device Offline": {
+      "main": [
+        [
+          {
+            "node": "Slack - Send Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF Critical Device",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Send Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Critical Device": {
+      "main": [
+        [
+          {
+            "node": "PagerDuty - Create Incident",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "PagerDuty - Create Incident": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateId": "meraki-device-offline-v1",
+    "instanceId": "meraki-workflow-squad"
+  },
+  "tags": [
+    {
+      "name": "meraki",
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-02-04T00:00:00.000Z"
+    },
+    {
+      "name": "alerting",
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-02-04T00:00:00.000Z"
+    }
+  ],
+  "variables": [
+    {
+      "key": "SLACK_CHANNEL",
+      "value": "#network-alerts",
+      "type": "string"
+    },
+    {
+      "key": "CRITICAL_DEVICES",
+      "value": "Q2XX-CORE-001,Q2XX-CORE-002",
+      "type": "string"
+    },
+    {
+      "key": "PAGERDUTY_EVENTS_URL",
+      "value": "https://events.pagerduty.com/v2/enqueue",
+      "type": "string"
+    },
+    {
+      "key": "PAGERDUTY_ROUTING_KEY",
+      "value": "YOUR_ROUTING_KEY",
+      "type": "string"
+    }
+  ]
+}

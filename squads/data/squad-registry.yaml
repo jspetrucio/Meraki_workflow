@@ -1,0 +1,788 @@
+# Squad Registry
+# Purpose: Central registry of all squads in the AIOS ecosystem
+# Usage: Load on squad-creator activation to check for duplicates and understand ecosystem
+# Updated: 2026-02-02
+
+metadata:
+  version: "1.9.0"
+  last_updated: "2026-02-03"
+  maintainer: "squad-creator"
+  # Totals (updated by *refresh-registry)
+  total_squads: 29
+  total_agents: 192  # +14 contabilidade
+  total_tasks: 396   # +54 contabilidade
+  total_checklists: 121  # +6 contabilidade
+  total_workflows: 69    # +5 contabilidade
+  total_templates: 176   # +7 contabilidade
+  total_data_files: 97
+
+# ============================================================================
+# SQUAD-CREATOR SPECIALISTS
+# These are meta-agents that help CREATE other agents/squads
+# ============================================================================
+
+specialists:
+  oalanicolas:
+    name: "Alan Nicolas"
+    id: "oalanicolas"
+    title: "Mind Cloning Architect & DNA Extraction Specialist"
+    path: "squads/squad-creator/agents/oalanicolas.md"
+    domain: "mind-cloning"
+    tier: 1
+    invoke_when:
+      - "Need to extract Voice DNA or Thinking DNA"
+      - "Need to curate sources (classify ouro vs bronze)"
+      - "Need to validate clone fidelity (85-97%)"
+      - "Need Playbook + Framework + Swipe File trinity"
+      - "Clone is weak/generic and needs diagnosis"
+    commands:
+      - "*extract-dna {mind} - Extrair DNA Mental™ completo"
+      - "*assess-sources - Avaliar fontes (ouro vs bronze)"
+      - "*design-clone - Arquitetar clone com estágios"
+      - "*validate-clone - Validar fidelidade"
+      - "*diagnose-clone - Diagnosticar clone fraco"
+    philosophy: "Se entrar cocô, sai cocô. Curadoria > Volume."
+    synergy_with: "@pedro-valerio (validates process after DNA is extracted)"
+
+  pedro_valerio:
+    name: "Pedro Valério"
+    id: "pedro-valerio"
+    title: "Process Absolutist & Automation Architect"
+    path: "squads/squad-creator/agents/pedro-valerio.md"
+    domain: "process-design"
+    tier: 0  # Diagnostic/Audit
+    invoke_when:
+      - "Need to audit workflow for process failures"
+      - "Need to create veto conditions for checkpoints"
+      - "Need to identify gaps de tempo in handoffs"
+      - "Need to ensure fluxo unidirecional"
+      - "Process allows wrong paths (caminhos errados)"
+    commands:
+      - "*audit {workflow} - Auditar por falhas de processo"
+      - "*design-heuristic - Criar decision heuristic com veto"
+      - "*find-automation - Identificar automações faltando"
+      - "*gap-analysis - Mapear gaps de tempo"
+      - "*veto-check - Validar checkpoints"
+    philosophy: "A melhor coisa é impossibilitar caminhos."
+    synergy_with: "@oalanicolas (extracts DNA, Pedro validates process)"
+
+# ============================================================================
+# SQUADS BY DOMAIN
+# ============================================================================
+
+squads:
+  # --------------------------------------------------------------------------
+  # CONTENT & MARKETING
+  # --------------------------------------------------------------------------
+  copy:
+    path: "squads/copy/"
+    domain: "copywriting"
+    purpose: "Sales copy, ads, emails, landing pages"
+    keywords: ["copywriting", "sales", "ads", "email", "landing page", "VSL", "headlines"]
+    agents: 25
+    tasks: 59
+    workflows: 14
+    checklists: 17
+    templates: 23
+    data_files: 4
+    highlights:
+      - "25 legendary copywriters (Gary Halbert, Eugene Schwartz, etc.)"
+      - "Mind clones with real documented frameworks"
+      - "Gold standard for agent quality"
+    example_use: "Write a sales page using Gary Halbert's framework"
+    quality_reference: true
+
+  creator-os:
+    path: "squads/creator-os/"
+    domain: "content_creation"
+    purpose: "AI-orchestrated system for content creation, marketing intelligence, and educational products"
+    keywords: ["course", "curriculum", "lesson", "education", "teaching", "e-learning", "blog", "funnel", "social content"]
+    agents: 5
+    tasks: 22
+    workflows: 3
+    checklists: 4
+    templates: 16
+    data_files: 8
+    highlights:
+      - "Course architect agent"
+      - "Pedagogical frameworks"
+      - "Full funnel (TOFU/MOFU/BOFU)"
+      - "Multi-format generation (blog, social, video, courses)"
+      - "MMOS integration for voice preservation"
+    example_use: "Create a curriculum for a Python course"
+
+  books:
+    path: "squads/books/"
+    domain: "content"
+    purpose: "Pipeline completo para geração e revisão de resumos de livros premium com IA"
+    keywords: ["book", "summary", "reading", "analysis", "notes"]
+    agents: 1
+    tasks: 19
+    workflows: 1
+    checklists: 2
+    templates: 1
+    data_files: 11
+    highlights:
+      - "Extraction and synthesis"
+      - "Quality gates for summaries"
+      - "Premium book summary pipeline"
+    example_use: "Summarize 'Thinking Fast and Slow'"
+
+  storytelling:
+    path: "squads/storytelling/"
+    domain: "narrative"
+    purpose: "Story structure, narrative hooks, storytelling"
+    keywords: ["story", "narrative", "plot", "hook", "storytelling", "writing", "hero's journey", "story grid"]
+    agents: 13
+    tasks: 13
+    workflows: 1
+    checklists: 1
+    highlights:
+      - "13 master storytellers (Joseph Campbell, Donald Miller, Dan Harmon, etc.)"
+      - "Narrative frameworks (Hero's Journey, Story Grid, Save the Cat, etc.)"
+      - "Story Chief orchestrator"
+      - "TED Talk crafting (Nancy Duarte)"
+      - "Business storytelling (Kindra Hall, Oren Klaff)"
+    example_use: "Create a compelling origin story for a brand"
+
+  ralph:
+    path: "squads/ralph/"
+    domain: "product_requirements"
+    purpose: "Autonomous development loop with compound learning and AIOS agent delegation"
+    keywords: ["PRD", "product", "requirements", "specification", "documentation", "autonomous"]
+    agents: 1
+    tasks: 8
+    workflows: 1
+    checklists: 2
+    templates: 12
+    data_files: 2
+    highlights:
+      - "Autonomous development loop"
+      - "Compound learning"
+      - "AIOS agent delegation"
+    example_use: "Generate a PRD for a mobile app feature"
+
+  activecampaign:
+    path: "squads/activecampaign/"
+    domain: "email_marketing"
+    purpose: "Email marketing automation with ActiveCampaign"
+    keywords: ["email", "marketing", "automation", "activecampaign", "nurture", "campaigns"]
+    agents: 1
+    tasks: 0
+    workflows: 0
+    checklists: 0
+    has_readme: true
+    highlights:
+      - "ActiveCampaign MCP integration"
+      - "Email marketing orchestrator"
+      - "Integration with Copy squad"
+    example_use: "Create email nurture sequence"
+
+  marketing:
+    path: "squads/marketing/"
+    domain: "creative_direction"
+    purpose: "Creative direction, briefings, visual strategy"
+    keywords: ["creative", "direction", "briefing", "visual", "branding", "design"]
+    agents: 1
+    tasks: 0
+    workflows: 0
+    checklists: 0
+    highlights:
+      - "Creative Director (Chris Do, Aaron Draplin, Casey Neistat, Peter McKinnon)"
+      - "Team coordination (human + AI)"
+      - "Stylescape creation"
+    example_use: "Create briefing for video production team"
+
+  media-squad:
+    path: "squads/media-squad/"
+    domain: "media_operations"
+    purpose: "Complete marketing team: perpetual + launches"
+    keywords: ["media", "marketing", "ads", "social", "content", "traffic", "automation"]
+    agents: 21
+    tasks: 0
+    workflows: 0
+    checklists: 0
+    highlights:
+      - "21 marketing specialists"
+      - "Media Chief orchestrator"
+      - "Perpetual + launch operations"
+      - "Multi-platform (Meta, TikTok, YouTube, LinkedIn, X)"
+    example_use: "Execute perpetual content strategy"
+
+  # --------------------------------------------------------------------------
+  # TECHNICAL
+  # --------------------------------------------------------------------------
+  db-sage:
+    path: "squads/db-sage/"
+    domain: "databases"
+    purpose: "Expert database agent for PostgreSQL and Supabase - schema design, migrations, RLS policies, performance tuning"
+    keywords: ["database", "SQL", "migration", "schema", "postgres", "supabase", "DBA", "RLS"]
+    agents: 2
+    tasks: 28
+    workflows: 7
+    checklists: 8
+    templates: 9
+    data_files: 7
+    highlights:
+      - "Supabase-focused patterns"
+      - "Safety-first approach (backups, dry-runs)"
+      - "Gold standard for technical squads"
+      - "RLS policy expertise"
+    example_use: "Design a schema for a multi-tenant SaaS"
+    quality_reference: true
+
+  design:
+    path: "squads/design/"
+    domain: "design_systems"
+    purpose: "Complete design squad with 9 expert agents covering brand strategy, DesignOps, design business, logo design, thumbnails/YouTube, photography, and design systems"
+    keywords: ["design system", "components", "tokens", "UI", "UX", "accessibility", "a11y", "brand", "logo", "thumbnail", "photography"]
+    agents: 9
+    tasks: 66
+    workflows: 11
+    checklists: 22
+    templates: 10
+    data_files: 9
+    highlights:
+      - "9 expert agents (Chris Do, Marty Neumeier, Aaron Draplin, Brad Frost, etc.)"
+      - "Atomic design patterns"
+      - "Accessibility compliance (WCAG)"
+      - "Design token management"
+      - "Brand strategy & visual identity"
+    example_use: "Audit a design system for accessibility"
+
+  etl:
+    path: "squads/etl/"
+    domain: "data_pipelines"
+    purpose: "Data collection, transformation, loading"
+    keywords: ["ETL", "data pipeline", "transformation", "collection", "data engineering"]
+    agents: 0
+    tasks: 0
+    workflows: 0
+    checklists: 3
+    pack_type: "scripts"
+    highlights:
+      - "Scripts-only pack (no agents)"
+      - "Blog collection utilities"
+      - "100% success rate proven"
+    example_use: "Collect blog posts for MMOS research"
+
+  monitor:
+    path: "squads/monitor/"
+    domain: "observability"
+    purpose: "Analytics, monitoring, exports"
+    keywords: ["monitoring", "analytics", "observability", "metrics", "logs"]
+    agents: 1
+    tasks: 3
+    workflows: 0
+    checklists: 0
+    highlights:
+      - "Server management"
+      - "Analytics dashboards"
+    example_use: "Set up monitoring for a production system"
+
+  cybersecurity:
+    path: "squads/cybersecurity/"
+    domain: "security"
+    purpose: "Threat analysis, security audits, pentesting"
+    keywords: ["security", "cybersecurity", "pentest", "audit", "OWASP", "vulnerability"]
+    agents: 14
+    tasks: 20
+    workflows: 3
+    checklists: 6
+    templates: 1
+    data_files: 2
+    highlights:
+      - "14 security specialists (Peter Kim, Georgia Weidman, Omar Santos, etc.)"
+      - "OWASP compliance"
+      - "Pentesting frameworks"
+      - "Specialized tools: Fuzzer, Cartographer, Ripper, Dirber"
+    example_use: "Perform a security audit on an API"
+
+  meta-ads:
+    path: "squads/meta-ads/"
+    domain: "paid_media"
+    purpose: "Meta Ads management and optimization"
+    keywords: ["meta", "ads", "facebook", "instagram", "paid", "traffic"]
+    agents: 3
+    tasks: 0
+    workflows: 0
+    checklists: 0
+    highlights:
+      - "Ads analyst, scale optimizer, fiscal"
+      - "Meta platform focus"
+    example_use: "Optimize Meta Ads campaigns"
+
+  media-buy:
+    path: "squads/media-buy/"
+    domain: "paid_media"
+    purpose: "Elite paid traffic experts: Meta, Google, YouTube with documented frameworks"
+    keywords: ["media buy", "paid traffic", "ads", "PPC", "Meta Ads", "Google Ads", "YouTube Ads", "scaling", "ROAS", "CPA"]
+    agents: 8
+    tasks: 10
+    workflows: 0
+    checklists: 2
+    tier: "gold"
+    badges:
+      - "minds-over-bots"
+      - "documented-frameworks"
+    highlights:
+      - "8 elite minds with documented frameworks"
+      - "Tier 0: Molly Pittman (Traffic Engine), Depesh Mandalia (BPM Method)"
+      - "Tier 1: Kasim Aslam (Google), Tom Breeze (YouTube), Nicholas Kusmich (Lead Gen)"
+      - "Tier 2: Ralph Burns (Scaling/DPI²), Pedro Sobral (Brasil/ABC)"
+      - "Cross-platform orchestration"
+    example_use: "Create scaling strategy for Meta Ads using BPM Method"
+    quality_reference: true
+
+  media-buyer-squad-pack:
+    path: "squads/media-buyer-squad-pack-v2.1.0/"
+    domain: "paid_media"
+    purpose: "Operational media buying pack with specialized roles"
+    keywords: ["media buyer", "ads", "creative analysis", "performance", "pixel"]
+    agents: 5
+    tasks: 0
+    workflows: 0
+    checklists: 0
+    highlights:
+      - "5 operational specialists"
+      - "Creative Analyst, Performance Analyst"
+      - "Ad Midas, Media Buyer, Pixel Specialist"
+    example_use: "Analyze creative performance across campaigns"
+
+  # --------------------------------------------------------------------------
+  # BUSINESS & OPERATIONS
+  # --------------------------------------------------------------------------
+  legal:
+    path: "squads/legal/"
+    domain: "law"
+    purpose: "Contracts, compliance, tax law"
+    keywords: ["legal", "law", "contract", "compliance", "tax", "lawyer", "attorney", "VC", "negotiation", "LGPD"]
+    agents: 15
+    tasks: 5
+    workflows: 1
+    checklists: 7
+    templates: 1
+    data_files: 1
+    highlights:
+      - "15 legal specialists (Ken Adams, Brad Feld, Pierpaolo Bottini, etc.)"
+      - "Brazilian + International specialists"
+      - "Contract drafting & review"
+      - "VC negotiation & term sheets"
+      - "LGPD compliance"
+    example_use: "Review a SaaS service agreement"
+
+  data:
+    path: "squads/data/"
+    domain: "analytics"
+    purpose: "Cohort analysis, attribution, CLV, growth metrics"
+    keywords: ["analytics", "data", "cohort", "attribution", "CLV", "growth", "metrics", "churn", "community"]
+    agents: 7
+    tasks: 12
+    workflows: 6
+    checklists: 7
+    templates: 10
+    highlights:
+      - "7 data specialists (Avinash Kaushik, Peter Fader, Nick Mehta, Sean Ellis, etc.)"
+      - "Growth metrics focus"
+      - "Customer analytics"
+      - "Community health measurement (David Spinks)"
+      - "Cohort-based analytics (Wes Kao)"
+    example_use: "Calculate customer lifetime value"
+
+  hybrid-ops:
+    path: "squads/hybrid-ops-squad/"
+    domain: "processes"
+    purpose: "Mapeamento, automação e otimização de processos de negócio combinando execução humana e AI-assisted workflows"
+    keywords: ["workflow", "process", "automation", "SOP", "operations", "BPMN", "ClickUp"]
+    agents: 9
+    tasks: 12
+    workflows: 3
+    checklists: 1
+    templates: 2
+    highlights:
+      - "9 process specialists"
+      - "Human-AI handoff patterns"
+      - "ClickUp implementation"
+      - "BPMN 2.0 expertise"
+      - "Pedro Valério decision heuristics"
+    example_use: "Design a customer onboarding workflow"
+
+  contabilidade:
+    path: "squads/contabilidade/"
+    domain: "accounting"
+    purpose: "Squad especializado em contabilidade para MEI e Simples Nacional. Permite que 1 contador gerencie 100+ clientes/mes."
+    keywords: ["contabilidade", "contador", "mei", "simples nacional", "fiscal", "trabalhista", "imposto", "das", "pgdas", "esocial", "folha", "cnpj", "receita federal"]
+    agents: 14
+    tasks: 54
+    workflows: 5
+    checklists: 6
+    templates: 7
+    data_files: 0
+    status: "in_development"
+    highlights:
+      - "14 agents across 4 tiers"
+      - "54 workflows covering 9 categories"
+      - "69% automation potential"
+      - "Brazilian tax/accounting focus (MEI, Simples Nacional)"
+      - "Integration with Portal Simples, e-CAC, eSocial"
+    example_use: "Emitir DAS de todos os clientes MEI do mes"
+    elite_minds:
+      - "Roberto Dias Duarte (RDD10+, Big Brother Fiscal)"
+      - "Anderson Hernandes (Contabilidade Online)"
+      - "Fellipe Guerra (Gestao Tributaria Pratica)"
+      - "Pedro Nery (CCAV)"
+      - "Nibo (Automacao Operacional)"
+
+  compound:
+    path: "squads/compound/"
+    domain: "learning"
+    purpose: "Extrai padrões, decisões e lições de conversas e handoffs para acumular no CLAUDE.md"
+    keywords: ["learning", "session", "knowledge", "compound", "extraction", "CLAUDE.md"]
+    agents: 1
+    tasks: 3
+    workflows: 0
+    checklists: 0
+    templates: 1
+    highlights:
+      - "Learning extraction"
+      - "Compound knowledge"
+      - "CLAUDE.md enrichment"
+    example_use: "Extract learnings from a coding session"
+
+  spy:
+    path: "squads/spy/"
+    domain: "research"
+    purpose: "Competitive intelligence and research"
+    keywords: ["spy", "research", "intelligence", "competitive", "analysis"]
+    agents: 2
+    tasks: 2
+    workflows: 0
+    checklists: 1
+    templates: 1
+    data_files: 2
+    highlights:
+      - "Research head agent"
+      - "Competitive intelligence"
+    example_use: "Research competitor strategies"
+
+  # --------------------------------------------------------------------------
+  # PEOPLE & PSYCHOLOGY
+  # --------------------------------------------------------------------------
+  mmos:
+    path: "squads/mmos/"
+    domain: "mind_mapping"
+    purpose: "Industrial pipeline for mapping and replicating cognitive architectures of geniuses into LLMs"
+    keywords: ["mind", "clone", "personality", "profiling", "system prompt", "MMOS", "DNA Mental"]
+    agents: 10
+    tasks: 31
+    workflows: 3
+    checklists: 17
+    templates: 61
+    data_files: 21
+    quality_score: 10.0
+    tier: "gold"
+    badges:
+      - "quality-reference"
+      - "minds-over-bots-exemplar"
+      - "multi-phase-pipeline"
+      - "vocabulary-consistency"
+    highlights:
+      - "DNA Mental™ 8-layer cognitive architecture"
+      - "94% clone fidelity"
+      - "6-phase workflow (Viability → Research → Analysis → Synthesis → Implementation → Testing)"
+      - "10 specialized agents"
+    example_use: "Create a mind clone of a business expert"
+    quality_reference: true
+
+  innerlens:
+    path: "squads/innerlens/"
+    domain: "psychology"
+    purpose: "Fast Big Five personality analysis from digital content"
+    keywords: ["psychology", "traits", "profiling", "personality", "Big Five"]
+    agents: 4
+    tasks: 5
+    workflows: 1
+    checklists: 3
+    templates: 2
+    highlights:
+      - "Privacy-focused approach"
+      - "Big Five analysis"
+      - "Fast screening (<2 min)"
+      - "75%+ accuracy"
+      - "MMOS AI cloning enhancement"
+    example_use: "Analyze communication patterns for traits"
+
+  hr:
+    path: "squads/hr/"
+    domain: "human_resources"
+    purpose: "Hiring, culture, people operations"
+    keywords: ["HR", "hiring", "culture", "people", "recruiting", "onboarding", "talent"]
+    agents: 8
+    tasks: 4
+    workflows: 0
+    checklists: 2
+    templates: 2
+    data_files: 2
+    highlights:
+      - "8 HR specialists"
+      - "Hiring frameworks"
+      - "Culture documentation"
+      - "Talent classification & detection"
+      - "Strengths identification"
+    example_use: "Design an interview process"
+
+  # --------------------------------------------------------------------------
+  # META & FRAMEWORKS
+  # --------------------------------------------------------------------------
+  squad-creator:
+    path: "squads/squad-creator/"
+    domain: "meta"
+    purpose: "Create new squads for any domain"
+    keywords: ["squad", "create", "new", "domain", "expansion"]
+    agents: 2
+    tasks: 16
+    workflows: 5
+    checklists: 8
+    templates: 10
+    data_files: 10
+    highlights:
+      - "Mind research loop"
+      - "Validation system"
+      - "Registry management"
+      - "Squad analytics dashboard"
+    example_use: "Create a finance squad"
+    is_meta: true
+
+  tools:
+    path: "squads/tools/"
+    domain: "frameworks"
+    purpose: "Crie, revise, analise e extraia ferramentas cognitivas (frameworks, mental models) com qualidade garantida (95%+)"
+    keywords: ["framework", "mental model", "tools", "extraction", "cognitive tools"]
+    agents: 7
+    tasks: 1
+    workflows: 4
+    checklists: 2
+    templates: 2
+    data_files: 2
+    highlights:
+      - "7 framework specialists"
+      - "Framework creation patterns"
+      - "Mental model extraction"
+      - "Farnam Street mental models database"
+    example_use: "Extract a framework from a book"
+
+  multi-lens-framework:
+    path: "squads/multi-lens-framework/"
+    domain: "analysis"
+    purpose: "Framework genérico para análise multidimensional usando 12 lentes mentais"
+    keywords: ["lens", "analysis", "perspective", "framework", "12 lenses", "wisdom"]
+    agents: 1
+    tasks: 2
+    workflows: 0
+    checklists: 0
+    templates: 1
+    data_files: 1
+    highlights:
+      - "12 mental lenses"
+      - "Multi-domain applicable"
+      - "Philosophy: 'Um problema visto por uma lente é informação. Visto por 12 é sabedoria.'"
+    example_use: "Analyze a business decision from multiple lenses"
+
+  alan:
+    path: "squads/alan/"
+    domain: "personal"
+    purpose: "Personal productivity and memory management"
+    keywords: ["personal", "memory", "cleanup", "productivity"]
+    agents: 0
+    tasks: 1
+    workflows: 0
+    checklists: 0
+    pack_type: "utility"
+    highlights:
+      - "Memory cleanup task"
+      - "Personal utilities"
+    example_use: "Clean up memory storage"
+    is_meta: true
+
+# ============================================================================
+# DOMAIN INDEX (for quick lookup)
+# ============================================================================
+
+domain_index:
+  # Copywriting
+  copywriting: "copy"
+  sales_copy: "copy"
+  ads: "copy"
+  email_marketing: ["copy", "activecampaign"]
+  landing_pages: "copy"
+
+  # Content
+  courses: "creator-os"
+  curriculum: "creator-os"
+  lessons: "creator-os"
+  education: "creator-os"
+  e-learning: "creator-os"
+  books: "books"
+  summaries: "books"
+  storytelling: "storytelling"
+  narrative: "storytelling"
+
+  # Product
+  PRD: "ralph"
+  product_requirements: "ralph"
+
+  # Technical
+  database: "db-sage"
+  SQL: "db-sage"
+  postgres: "db-sage"
+  supabase: "db-sage"
+  migrations: "db-sage"
+  design_system: "design"
+  components: "design"
+  UI: "design"
+  UX: "design"
+  accessibility: "design"
+  ETL: "etl"
+  data_pipeline: "etl"
+  monitoring: "monitor"
+  observability: "monitor"
+  security: "cybersecurity"
+  pentest: "cybersecurity"
+  OWASP: "cybersecurity"
+
+  # Marketing/Media
+  media: "media-squad"
+  marketing: ["media-squad", "marketing"]
+  creative_direction: "marketing"
+  meta_ads: ["meta-ads", "media-buy"]
+  facebook_ads: ["meta-ads", "media-buy"]
+  traffic: ["media-squad", "meta-ads", "media-buy"]
+  paid_traffic: "media-buy"
+  google_ads: "media-buy"
+  youtube_ads: "media-buy"
+  media_buy: ["media-buy", "media-buyer-squad-pack"]
+  scaling_ads: "media-buy"
+  PPC: "media-buy"
+  ROAS: "media-buy"
+  CPA_optimization: "media-buy"
+  creative_analysis: "media-buyer-squad-pack"
+  pixel_tracking: "media-buyer-squad-pack"
+
+  # Business
+  legal: "legal"
+  contracts: "legal"
+  compliance: "legal"
+  tax: "legal"
+  analytics: "data"
+  cohort: "data"
+  CLV: "data"
+  attribution: "data"
+  workflows: "hybrid-ops"
+  processes: "hybrid-ops"
+  SOP: "hybrid-ops"
+  automation: ["hybrid-ops", "activecampaign"]
+  learning: "compound"
+  research: "spy"
+  competitive_intelligence: "spy"
+
+  # People
+  mind_clone: "mmos"
+  personality: ["mmos", "innerlens"]
+  system_prompt: "mmos"
+  psychology: "innerlens"
+  traits: "innerlens"
+  Big_Five: "innerlens"
+  HR: "hr"
+  hiring: "hr"
+  recruiting: "hr"
+
+  # Meta
+  squad_creation: "squad-creator"
+  new_squad: "squad-creator"
+  frameworks: "tools"
+  mental_models: "tools"
+  multi_perspective: "multi-lens-framework"
+  lens_analysis: "multi-lens-framework"
+  personal: "alan"
+  memory_cleanup: "alan"
+
+  # Contabilidade
+  contabilidade: "contabilidade"
+  contador: "contabilidade"
+  mei: "contabilidade"
+  simples_nacional: "contabilidade"
+  fiscal: "contabilidade"
+  trabalhista: "contabilidade"
+  imposto: "contabilidade"
+  das: "contabilidade"
+  pgdas: "contabilidade"
+  esocial: "contabilidade"
+  folha_pagamento: "contabilidade"
+  cnpj: "contabilidade"
+  receita_federal: "contabilidade"
+  dctfweb: "contabilidade"
+  irpf: "contabilidade"
+
+# ============================================================================
+# GAP ANALYSIS (domains without squads)
+# ============================================================================
+
+gaps:
+  - domain: "finance"
+    keywords: ["finance", "investment", "trading", "portfolio", "stocks"]
+    potential_minds: ["Warren Buffett", "Ray Dalio", "Howard Marks"]
+    priority: "high"
+
+  - domain: "health"
+    keywords: ["health", "medical", "wellness", "fitness", "nutrition"]
+    potential_minds: ["Andrew Huberman", "Peter Attia", "Rhonda Patrick"]
+    priority: "medium"
+
+  - domain: "sales"
+    keywords: ["sales", "negotiation", "closing", "B2B", "enterprise"]
+    potential_minds: ["Zig Ziglar", "Grant Cardone", "Jeb Blount"]
+    priority: "high"
+
+  - domain: "customer_success"
+    keywords: ["customer success", "retention", "onboarding", "churn"]
+    potential_minds: ["Lincoln Murphy", "Nick Mehta"]
+    priority: "medium"
+
+  - domain: "product_management"
+    keywords: ["product", "PM", "roadmap", "prioritization", "discovery"]
+    potential_minds: ["Marty Cagan", "Teresa Torres", "Melissa Perri"]
+    priority: "medium"
+
+# ============================================================================
+# QUALITY REFERENCES (squads to learn from)
+# ============================================================================
+
+quality_references:
+  - squad: "copy"
+    reason: "Gold standard for mind clones with real frameworks"
+    learn: "How to create agents based on real experts"
+    score: 9.2
+
+  - squad: "mmos"
+    reason: "Gold standard for multi-phase pipelines"
+    learn:
+      - "Multi-phase workflow with checkpoints"
+      - "Vocabulary consistency in output_examples"
+      - "Human checkpoint design"
+    score: 10.0
+
+  - squad: "db-sage"
+    reason: "Gold standard for technical/focused squads"
+    learn: "Safety-first technical patterns"
+    score: 8.8
+
+# ============================================================================
+# NAMING CONVENTIONS
+# ============================================================================
+
+conventions:
+  squad_folder: "kebab-case"  # e.g., squad-creator, db-sage
+  agent_files: "kebab-case.md"  # e.g., gary-halbert.md
+  task_files: "kebab-case.md"  # e.g., create-sales-page.md
+  config_name: "must match folder"  # config.yaml name = folder name
+  slashPrefix: "camelCase"  # e.g., squadCreator, dbSage
