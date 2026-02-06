@@ -1,0 +1,195 @@
+name: Release Tauri App
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            target: 'aarch64-apple-darwin'
+          - platform: 'macos-latest'
+            target: 'x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04'
+            target: 'x86_64-unknown-linux-gnu'
+          - platform: 'windows-latest'
+            target: 'x86_64-pc-windows-msvc'
+
+    runs-on: ${{ matrix.platform }}
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: rust-${{ matrix.target }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            rust-${{ matrix.target }}-
+
+      - name: Cache Node.js dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.npm
+          key: node-${{ matrix.platform }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            node-${{ matrix.platform }}-
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          echo "clean=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Sync version across project files
+        shell: bash
+        run: |
+          if [ -f scripts/sync-version.sh ]; then
+            bash scripts/sync-version.sh ${{ steps.version.outputs.clean }}
+          else
+            echo "Warning: scripts/sync-version.sh not found, skipping version sync"
+          fi
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Setup code signing (macOS)
+        if: matrix.platform == 'macos-latest' && false
+        # Code signing disabled for internal distribution
+        # To enable: remove '&& false' and configure secrets
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: |
+          # Decode and import certificate
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions build.keychain
+          rm certificate.p12
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # macOS code signing (if enabled)
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'CNL v${{ steps.version.outputs.clean }}'
+          releaseBody: |
+            ## CNL v${{ steps.version.outputs.clean }}
+
+            ### Downloads
+            See the assets below for your platform.
+
+            ### What's Changed
+            See the commit history for details.
+
+            ---
+            Built with Tauri 2.0
+          releaseDraft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+          args: --target ${{ matrix.target }}
+
+  notify-homebrew:
+    needs: build-and-release
+    runs-on: ubuntu-22.04
+    if: success() && !contains(github.ref_name, '-rc') && !contains(github.ref_name, '-beta') && !contains(github.ref_name, '-alpha')
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          echo "clean=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get release assets
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the release ID
+          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases/tags/${{ github.ref_name }} --jq '.id')
+
+          # Get asset download URL (example for macOS universal)
+          ASSET_URL=$(gh api repos/${{ github.repository }}/releases/$RELEASE_ID/assets --jq '.[0].browser_download_url')
+
+          echo "asset_url=$ASSET_URL" >> $GITHUB_OUTPUT
+
+      - name: Calculate SHA256
+        id: sha
+        run: |
+          # Download the asset and calculate SHA256
+          curl -L "${{ steps.release.outputs.asset_url }}" -o release-asset
+          SHA256=$(sha256sum release-asset | awk '{print $1}')
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+
+      - name: Trigger Homebrew formula update
+        if: github.repository == 'jspetrucio/Meraki_workflow'
+        # Only trigger if homebrew-cnl repo exists
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_PAT }}
+        run: |
+          gh api repos/jspetrucio/homebrew-cnl/dispatches \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -f event_type="new-release" \
+            -f client_payload[version]="${{ steps.version.outputs.clean }}" \
+            -f client_payload[download_url]="${{ steps.release.outputs.asset_url }}" \
+            -f client_payload[sha256]="${{ steps.sha.outputs.sha256 }}" || echo "Homebrew repo not configured"

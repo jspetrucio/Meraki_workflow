@@ -1,0 +1,99 @@
+CNL Chat Interface - Component Hierarchy
+=========================================
+
+App
+ └─ ChatView (main container)
+     ├─ Header
+     │   ├─ Title: "Chat"
+     │   └─ ConnectionStatus (🟢 connected / 🟡 connecting / 🔴 disconnected)
+     │
+     ├─ ScrollArea (message list)
+     │   └─ MessageItem[] (for each message)
+     │       ├─ MessageBubble (text messages)
+     │       │   ├─ Agent avatar + name (left side)
+     │       │   ├─ Content bubble
+     │       │   │   └─ Markdown rendering (via renderMarkdown())
+     │       │   ├─ Timestamp (relative)
+     │       │   └─ User avatar (right side)
+     │       │
+     │       ├─ StreamingText (for streaming messages)
+     │       │   ├─ Progressive markdown
+     │       │   └─ Typing cursor animation
+     │       │
+     │       ├─ DataRenderer (for {type: "data"})
+     │       │   ├─ CodeBlock (code format)
+     │       │   │   ├─ Language badge
+     │       │   │   ├─ Copy button
+     │       │   │   └─ Syntax-highlighted code
+     │       │   ├─ TableView (table format)
+     │       │   │   └─ HTML table with headers
+     │       │   ├─ HtmlReportViewer (html format)
+     │       │   │   ├─ Expand/Collapse button
+     │       │   │   └─ Sandboxed iframe
+     │       │   ├─ DiffView (diff format)
+     │       │   │   └─ Color-coded +/- lines
+     │       │   └─ JsonView (json format)
+     │       │       ├─ Expand/Collapse button
+     │       │       └─ Pretty-printed JSON
+     │       │
+     │       └─ ConfirmDialog (for {type: "confirm"})
+     │           ├─ Warning icon + title
+     │           ├─ Danger level badge (low/medium/high)
+     │           ├─ Action description
+     │           ├─ Preview box
+     │           ├─ "CONFIRM" input (for danger_level=high)
+     │           └─ Buttons (Confirm / Cancel)
+     │
+     ├─ ScrollToBottomButton (floating, conditional)
+     │   └─ ChevronDown icon
+     │
+     └─ ChatInput (fixed at bottom)
+         ├─ Textarea (auto-resize)
+         └─ SendButton / StopButton (conditional)
+
+Hooks Used:
+-----------
+useChat()
+ ├─ sendMessage(content)
+ ├─ sendConfirmResponse(requestId, approved)
+ ├─ connectionStatus
+ └─ isStreaming
+
+useWebSocket()
+ ├─ Auto-connect on mount
+ ├─ Handle WebSocket messages:
+ │   ├─ "stream" → appendToLastAssistant()
+ │   ├─ "data" → addMessage() with data
+ │   ├─ "confirm" → addMessage() with confirmRequest
+ │   ├─ "agent_status" → (future: typing indicator)
+ │   ├─ "error" → addMessage() with error
+ │   └─ "done" → setStreaming(false)
+ ├─ Ping/pong keepalive (30s interval)
+ └─ Auto-reconnect (3s delay)
+
+Zustand Store (chatStore):
+---------------------------
+- sessions[]
+- activeSessionId
+- isStreaming
+- activeMessages() → Message[]
+- addMessage()
+- appendToLastAssistant()
+- setStreaming()
+- createSession()
+
+WebSocket Protocol:
+-------------------
+Client → Server:
+ - {type: "message", content, session_id}
+ - {type: "confirm_response", request_id, approved}
+ - {type: "ping"}
+
+Server → Client:
+ - {type: "stream", content, agent}
+ - {type: "data", format, data, language}
+ - {type: "confirm", action, preview, danger_level, request_id}
+ - {type: "agent_status", ...}
+ - {type: "error", error/message}
+ - {type: "done"}
+ - {type: "pong"}

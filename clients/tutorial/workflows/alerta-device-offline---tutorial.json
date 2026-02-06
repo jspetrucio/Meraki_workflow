@@ -1,0 +1,111 @@
+{
+  "workflow": {
+    "unique_name": "definition_workflow_02rDaUJP9XSdbR33RVDWjxrCHnlWPTJLpIph5",
+    "name": "Alerta Device Offline - Tutorial",
+    "title": "Alerta Device Offline - Tutorial",
+    "type": "generic.workflow",
+    "base_type": "workflow",
+    "variables": [
+      {
+        "schema_id": "datatype.string",
+        "properties": {
+          "value": "",
+          "scope": "input",
+          "name": "webhook_body",
+          "type": "datatype.string",
+          "is_required": true,
+          "display_on_wizard": false,
+          "is_invisible": false,
+          "variable_string_format": "json"
+        },
+        "unique_name": "variable_workflow_02HwuImJzCeoD7Vhex39y4r9txFSM2gjAgiAD",
+        "object_type": "variable_workflow"
+      }
+    ],
+    "properties": {
+      "atomic": {
+        "is_atomic": false
+      },
+      "delete_workflow_instance": false,
+      "description": "Base template: webhook_body + sleep (edite e adicione steps depois).",
+      "display_name": "Alerta Device Offline - Tutorial",
+      "runtime_user": {
+        "target_default": true
+      },
+      "target": {
+        "no_target": true
+      }
+    },
+    "object_type": "definition_workflow",
+    "actions": [
+      {
+        "unique_name": "definition_activity_027box1Xe9tkfrNR4uSMiiPyNDFDmEL0R8erO",
+        "name": "HTTP Request",
+        "title": "HTTP Request",
+        "type": "web-service.http_request",
+        "base_type": "activity",
+        "properties": {
+          "action_timeout": 180,
+          "allow_auto_redirect": true,
+          "allow_headers_redirect": false,
+          "continue_on_error_status_code": false,
+          "continue_on_failure": false,
+          "description": "HTTP Request",
+          "display_name": "HTTP Request",
+          "method": "GET",
+          "runtime_user": {
+            "target_default": true
+          },
+          "skip_execution": false,
+          "target": {
+            "use_workflow_target": true
+          }
+        },
+        "object_type": "definition_activity"
+      },
+      {
+        "unique_name": "definition_activity_02H65m1WyFx5wL7zI8yL5OhxMTVwmGMooY0Aq",
+        "name": "JSONPath Query",
+        "title": "JSONPath Query",
+        "type": "corejava.jsonpathquery",
+        "base_type": "activity",
+        "properties": {
+          "action_timeout": 180,
+          "continue_on_failure": false,
+          "description": "JSONPath Query to get value in JSON",
+          "display_name": "JSONPath Query",
+          "input_json": "$workflow.definition_workflow_02rDaUJP9XSdbR33RVDWjxrCHnlWPTJLpIph5.input.variable_workflow_02HwuImJzCeoD7Vhex39y4r9txFSM2gjAgiAD$",
+          "jsonpath_queries": [
+            {
+              "jsonpath_query": "$.deviceSerial",
+              "jsonpath_query_name": "device_serial",
+              "jsonpath_query_type": "string",
+              "set_default_value": false,
+              "zdate_type_format": "yyyy-MM-dd'T'HH:mm:ssZ"
+            }
+          ],
+          "skip_execution": false
+        },
+        "object_type": "definition_activity"
+      },
+      {
+        "unique_name": "definition_activity_02yYc5fLivbcbaNCRFVXfbsbeHRIWFjkC4WF2",
+        "name": "Sleep",
+        "title": "Sleep",
+        "type": "core.sleep",
+        "base_type": "activity",
+        "properties": {
+          "continue_on_failure": false,
+          "description": "Sleep",
+          "display_name": "Sleep",
+          "skip_execution": false,
+          "sleep_interval": 300
+        },
+        "object_type": "definition_activity"
+      }
+    ],
+    "categories": [
+      "category_1BMfMXSnJMyt5Ihqi7rWJr5N8cf"
+    ]
+  }
+}

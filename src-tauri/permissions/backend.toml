@@ -1,0 +1,11 @@
+[backend]
+default = []
+description = "Backend management permissions"
+
+[[backend.permission]]
+identifier = "allow-check-health"
+description = "Allows checking backend health status"
+
+[[backend.permission]]
+identifier = "allow-check-running"
+description = "Allows checking if backend is running"

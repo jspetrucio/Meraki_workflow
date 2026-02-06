@@ -1,0 +1,149 @@
+{
+  "name": "CNL - Device Offline Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cnl-device-webhook",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "node-webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "cnl-device-webhook"
+    },
+    {
+      "parameters": {
+        "url": "{{CNL_BASE_URL}}/api/v1/discovery/snapshots/latest",
+        "method": "GET",
+        "options": {}
+      },
+      "id": "node-get-latest-snapshot",
+      "name": "Get Latest Snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const devices = $input.item.json.devices || [];\nconst offline = devices.filter(d => d.status === 'offline');\n\nif (offline.length === 0) {\n  return [];\n}\n\nreturn offline.map(device => ({\n  json: {\n    serial: device.serial,\n    name: device.name,\n    model: device.model,\n    network: device.network_name,\n    last_seen: device.lastSeen,\n    offline_count: offline.length\n  }\n}));"
+      },
+      "id": "node-filter-offline",
+      "name": "Filter Offline Devices",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.offline_count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-check-offline",
+      "name": "Check Offline Count",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@cnl.local",
+        "toEmail": "{{NOTIFICATION_EMAIL}}",
+        "subject": "CNL Alert - Devices Offline",
+        "text": "=⚠️ {{ $json.offline_count }} device(s) are currently offline:\n\nDevice: {{ $json.name }}\nSerial: {{ $json.serial }}\nModel: {{ $json.model }}\nNetwork: {{ $json.network }}\nLast Seen: {{ $json.last_seen }}\n\nView details: {{CNL_BASE_URL}}/devices/{{ $json.serial }}",
+        "options": {}
+      },
+      "id": "node-email-alert",
+      "name": "Send Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "webhookUri": "={{SLACK_WEBHOOK}}",
+        "text": "=:warning: *Device Offline Alert*\n\n*Device:* {{ $json.name }}\n*Serial:* {{ $json.serial }}\n*Network:* {{ $json.network }}\n*Last Seen:* {{ $json.last_seen }}\n\nTotal offline: {{ $json.offline_count }}",
+        "otherOptions": {}
+      },
+      "id": "node-slack-alert",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Latest Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Latest Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Filter Offline Devices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Offline Devices": {
+      "main": [
+        [
+          {
+            "node": "Check Offline Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Offline Count": {
+      "main": [
+        [
+          {
+            "node": "Send Email Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

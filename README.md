@@ -7,16 +7,31 @@
 
 ---
 
-## Quick Start (Para seu colega)
+## Quick Start
 
-### 1. Clone o Repositorio
+### Opcao 1: npm/npx (Rapido!)
+
+```bash
+# Via npx (sem instalacao)
+npx @cisco/cnl --help
+
+# Ou instalar globalmente
+npm install -g @cisco/cnl
+cnl --help
+```
+
+**Requisitos:** Node.js 18+ e Python 3.10+ instalados.
+
+### Opcao 2: Desenvolvimento com Claude Code
+
+#### 1. Clone o Repositorio
 
 ```bash
 git clone https://github.com/jspetrucio/Meraki_workflow.git
 cd Meraki_workflow
 ```
 
-### 2. Abra com Claude Code
+#### 2. Abra com Claude Code
 
 ```bash
 claude
@@ -43,6 +58,49 @@ claude
 | **Workflows** | Gerar JSON de automacao para importar no Dashboard |
 | **Relatorios** | HTML/PDF profissionais para apresentar ao cliente |
 | **Multi-cliente** | Suporte a multiplas organizacoes Meraki isoladas |
+| **Desktop App** | Aplicacao nativa com Tauri (CNL - Cisco Neural Language) |
+
+---
+
+## 🖥️ CNL Desktop App (Novo!)
+
+Uma aplicacao desktop nativa construida com **Tauri 2.0** que integra:
+- **React Frontend** - Interface moderna e responsiva
+- **FastAPI Backend** - API Python rodando como processo auxiliar
+- **Tauri Shell** - Aplicacao nativa para macOS/Windows/Linux
+
+### Quick Start - Desktop App
+
+```bash
+# Instalar Rust (primeira vez apenas)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Instalar dependencias
+npm install
+
+# Rodar em modo desenvolvimento
+npm run dev
+```
+
+📖 **Guia completo:** [TAURI_SETUP.md](TAURI_SETUP.md)
+
+### Arquitetura
+
+```
+┌─────────────────────────────────────────┐
+│      CNL Desktop Application             │
+│                                          │
+│  ┌─────────────┐   ┌─────────────────┐  │
+│  │   Rust      │───│  FastAPI        │  │
+│  │   (Tauri)   │   │  (Python)       │  │
+│  └──────┬──────┘   └─────────────────┘  │
+│         │                                │
+│  ┌──────▼──────────────────────────┐    │
+│  │    React Frontend (Vite)        │    │
+│  │    Modern UI + WebSocket        │    │
+│  └─────────────────────────────────┘    │
+└─────────────────────────────────────────┘
+```
 
 ---
 
@@ -75,7 +133,34 @@ curl -H "X-Cisco-Meraki-API-Key: SUA_API_KEY" \
 
 ---
 
-## Instalacao Manual (se necessario)
+## Instalacao
+
+### Opcao 1: Via Homebrew (macOS/Linux) - Recomendado
+
+```bash
+# Adicionar tap
+brew tap cisco/cnl
+
+# Instalar
+brew install cnl
+
+# Verificar
+cnl --help
+```
+
+**Nota:** Aguardando publicacao no PyPI e tap repository.
+
+### Opcao 2: Via pip (Recomendado)
+
+```bash
+# Instalar do PyPI (quando publicado)
+pip install cnl
+
+# Ou instalar localmente
+pip install -e .
+```
+
+### Opcao 3: Manual (Desenvolvimento)
 
 Se Claude nao conseguir instalar automaticamente:
 

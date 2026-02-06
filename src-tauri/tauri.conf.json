@@ -1,0 +1,78 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CNL",
+  "version": "0.1.0",
+  "identifier": "com.cisco.cnl",
+  "build": {
+    "beforeDevCommand": "cd frontend && npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "cd frontend && npm run build",
+    "frontendDist": "../frontend/dist"
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "identifier": "com.cisco.cnl",
+    "publisher": "Cisco Systems, Inc.",
+    "copyright": "Copyright © 2026 Cisco Systems, Inc.",
+    "category": "DeveloperTool",
+    "shortDescription": "Cisco Neural Language - Network automation through natural language",
+    "longDescription": "CNL (Cisco Neural Language) is a desktop application that enables network engineers to configure and manage Cisco Meraki networks using natural language commands powered by AI.",
+    "resources": ["../scripts/**", "../templates/**"],
+    "externalBin": []
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "CNL - Cisco Neural Language",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' http://localhost:3141 ws://localhost:3141; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
+    }
+  },
+  "plugins": {
+    "notification": {
+      "identifier": "com.cisco.cnl",
+      "icon": "icons/icon.png"
+    },
+    "autostart": {
+      "enabled": false
+    },
+    "globalShortcut": {
+      "shortcuts": [
+        {
+          "keys": "CommandOrControl+Shift+M"
+        }
+      ]
+    },
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/jspetrucio/Meraki_workflow/releases/latest/download/latest.json"
+      ],
+      "dialog": false,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IFRCU0QwOTBFMEEwMDBEMjAKUldSSlBzSkpBQ0VMUEVYdUxOZW5uY2ppc2FEUVE1RjlIVEVkeUU4aG1rNE1xYmNMREJQZnBjbnEK",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

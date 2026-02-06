@@ -1,0 +1,212 @@
+{
+  "name": "Meraki Client Roaming Detector - JOSE_HQ",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 1 Minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.meraki.com/api/v1/networks/L_3705899543372511235/wireless/clients",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "timespan",
+              "value": "300"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-clients",
+      "name": "Get Wireless Clients",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "meraki-api-key",
+          "name": "Meraki API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Armazena estado dos clientes para detectar roaming\nconst previousState = $getWorkflowStaticData('global').clientState || {};\nconst currentClients = $input.all().map(item => item.json);\nconst alerts = [];\n\nfor (const client of currentClients) {\n  const mac = client.mac;\n  const currentAP = client.recentDeviceSerial;\n  const apName = client.recentDeviceName || currentAP;\n  \n  if (previousState[mac] && previousState[mac].ap !== currentAP) {\n    // Cliente fez roaming!\n    alerts.push({\n      type: 'ROAMING_DETECTED',\n      clientMac: mac,\n      clientName: client.description || client.dhcpHostname || 'Unknown',\n      ssid: client.ssid,\n      previousAP: previousState[mac].apName,\n      previousAPSerial: previousState[mac].ap,\n      newAP: apName,\n      newAPSerial: currentAP,\n      timestamp: new Date().toISOString(),\n      network: 'JOSE_HQ'\n    });\n  }\n  \n  // Atualiza estado\n  previousState[mac] = {\n    ap: currentAP,\n    apName: apName,\n    lastSeen: new Date().toISOString()\n  };\n}\n\n// Salva estado para pr\u00f3xima execu\u00e7\u00e3o\n$getWorkflowStaticData('global').clientState = previousState;\n\n// Retorna apenas se houver roaming\nif (alerts.length > 0) {\n  return alerts.map(a => ({ json: a }));\n}\n\nreturn []; // Nenhum roaming detectado\n"
+      },
+      "id": "detect-roaming",
+      "name": "Detect Roaming",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-roaming",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "ROAMING_DETECTED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-roaming",
+      "name": "If Roaming Detected",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "#network-alerts",
+        "text": "=\ud83d\udeb6 *Cliente Roaming Detectado - JOSE_HQ*\n\n*Cliente:* {{ $json.clientName }}\n*MAC:* `{{ $json.clientMac }}`\n*SSID:* {{ $json.ssid }}\n\n\ud83d\udccd *Movimento:*\n`{{ $json.previousAP }}` \u2192 `{{ $json.newAP }}`\n\n\ud83d\udd50 {{ $json.timestamp }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "slack-alert",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        200
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-credentials",
+          "name": "Slack API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Meraki Client Roaming Detector\n\nEste workflow detecta quando clientes wireless fazem roaming entre APs na rede JOSE_HQ.\n\n### Como funciona:\n1. A cada 1 minuto, busca lista de clientes wireless\n2. Compara AP atual com AP anterior (estado armazenado)\n3. Se cliente mudou de AP \u2192 Envia alerta no Slack\n\n### Configura\u00e7\u00e3o necess\u00e1ria:\n1. **Meraki API Key**: Credencial HTTP Header Auth\n   - Header Name: `X-Cisco-Meraki-API-Key`\n   - Header Value: Sua API Key\n2. **Slack**: Configure credencial Slack API\n\n### Network ID: L_3705899543372511235 (JOSE_HQ)"
+      },
+      "id": "sticky-note",
+      "name": "Documentation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "=\ud83d\udcdd *Log:* {{ $json.clientName }} roamed from {{ $json.previousAP }} to {{ $json.newAP }}"
+      },
+      "id": "log-roaming",
+      "name": "Log Roaming Event",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Every 1 Minute": {
+      "main": [
+        [
+          {
+            "node": "Get Wireless Clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Wireless Clients": {
+      "main": [
+        [
+          {
+            "node": "Detect Roaming",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Roaming": {
+      "main": [
+        [
+          {
+            "node": "If Roaming Detected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Roaming Detected": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Roaming Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

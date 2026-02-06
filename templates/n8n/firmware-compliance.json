@@ -1,0 +1,127 @@
+{
+  "name": "CNL - Firmware Compliance Check",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtDayOfWeek": 0,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "node-schedule-weekly",
+      "name": "Schedule Weekly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{CNL_BASE_URL}}/api/v1/discovery/full",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-run-discovery",
+      "name": "Run Discovery",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Known good firmware versions by model\nconst knownGoodVersions = {\n  'MS': '15.21',\n  'MR': '29.7',\n  'MX': '18.107',\n  'MV': '4.17',\n  'MG': '1.8'\n};\n\nconst devices = $input.item.json.devices || [];\nconst nonCompliant = [];\n\nfor (const device of devices) {\n  const modelPrefix = device.model?.substring(0, 2);\n  const expectedVersion = knownGoodVersions[modelPrefix];\n  \n  if (expectedVersion && device.firmware !== expectedVersion) {\n    nonCompliant.push({\n      serial: device.serial,\n      name: device.name,\n      model: device.model,\n      current_firmware: device.firmware,\n      expected_firmware: expectedVersion,\n      network: device.network_name\n    });\n  }\n}\n\nreturn [{\n  json: {\n    total_devices: devices.length,\n    non_compliant_count: nonCompliant.length,\n    compliance_rate: ((devices.length - nonCompliant.length) / devices.length * 100).toFixed(2),\n    non_compliant_devices: nonCompliant\n  }\n}];"
+      },
+      "id": "node-check-firmware",
+      "name": "Check Firmware Versions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\nconst timestamp = new Date().toISOString();\n\nlet report = `# CNL Firmware Compliance Report\\n\\n`;\nreport += `Generated: ${timestamp}\\n\\n`;\nreport += `## Summary\\n\\n`;\nreport += `- Total Devices: ${data.total_devices}\\n`;\nreport += `- Non-Compliant: ${data.non_compliant_count}\\n`;\nreport += `- Compliance Rate: ${data.compliance_rate}%\\n\\n`;\n\nif (data.non_compliant_count > 0) {\n  report += `## Non-Compliant Devices\\n\\n`;\n  report += `| Device | Model | Current | Expected | Network |\\n`;\n  report += `|--------|-------|---------|----------|---------|\\n`;\n  \n  for (const device of data.non_compliant_devices) {\n    report += `| ${device.name} | ${device.model} | ${device.current_firmware} | ${device.expected_firmware} | ${device.network} |\\n`;\n  }\n} else {\n  report += `✅ All devices are firmware compliant!\\n`;\n}\n\nreturn [{\n  json: {\n    ...data,\n    report_text: report,\n    timestamp: timestamp\n  }\n}];"
+      },
+      "id": "node-generate-report",
+      "name": "Generate Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@cnl.local",
+        "toEmail": "{{NOTIFICATION_EMAIL}}",
+        "subject": "CNL Weekly Firmware Compliance Report",
+        "text": "={{ $json.report_text }}",
+        "options": {}
+      },
+      "id": "node-email-report",
+      "name": "Send Report Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Weekly": {
+      "main": [
+        [
+          {
+            "node": "Run Discovery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Discovery": {
+      "main": [
+        [
+          {
+            "node": "Check Firmware Versions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Firmware Versions": {
+      "main": [
+        [
+          {
+            "node": "Generate Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Report": {
+      "main": [
+        [
+          {
+            "node": "Send Report Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,5 @@
+include README.md
+include requirements.txt
+recursive-include templates *.json
+recursive-include .claude/agents *.md
+recursive-include frontend/dist *

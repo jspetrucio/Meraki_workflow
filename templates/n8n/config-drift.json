@@ -1,0 +1,179 @@
+{
+  "name": "CNL - Config Drift Detection",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "node-schedule-midnight",
+      "name": "Schedule Midnight",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{CNL_BASE_URL}}/api/v1/discovery/compare",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "compare_with",
+              "value": "baseline"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-compare-config",
+      "name": "Compare Configuration",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.has_drift }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-check-drift",
+      "name": "Check for Drift",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\nconst changes = data.changes || [];\n\nlet details = `# Configuration Drift Detected\\n\\n`;\ndetails += `Detected: ${new Date().toISOString()}\\n\\n`;\ndetails += `## Summary\\n\\n`;\ndetails += `Total Changes: ${changes.length}\\n\\n`;\n\nif (changes.length > 0) {\n  details += `## Changes\\n\\n`;\n  \n  for (const change of changes) {\n    details += `### ${change.category} - ${change.item_name}\\n\\n`;\n    details += `**Type:** ${change.change_type}\\n`;\n    details += `**Network:** ${change.network_name}\\n\\n`;\n    \n    if (change.change_type === 'modified') {\n      details += `**Changes:**\\n`;\n      for (const [key, value] of Object.entries(change.diff || {})) {\n        details += `- ${key}: \\`${value.old}\\` → \\`${value.new}\\`\\n`;\n      }\n    } else if (change.change_type === 'added') {\n      details += `**New item added**\\n`;\n    } else if (change.change_type === 'removed') {\n      details += `**Item removed**\\n`;\n    }\n    details += `\\n`;\n  }\n}\n\nreturn [{\n  json: {\n    ...data,\n    drift_details: details,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "node-format-drift",
+      "name": "Format Drift Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@cnl.local",
+        "toEmail": "{{NOTIFICATION_EMAIL}}",
+        "subject": "=CNL Alert - Configuration Drift Detected ({{ $json.changes.length }} changes)",
+        "text": "={{ $json.drift_details }}",
+        "options": {}
+      },
+      "id": "node-email-drift",
+      "name": "Send Drift Alert Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1050, 150]
+    },
+    {
+      "parameters": {
+        "webhookUri": "={{SLACK_WEBHOOK}}",
+        "text": "=:rotating_light: *Configuration Drift Detected*\\n\\n{{ $json.changes.length }} change(s) detected from baseline.\\n\\nView details: {{CNL_BASE_URL}}/reports/drift",
+        "otherOptions": {}
+      },
+      "id": "node-slack-drift",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1050, 250]
+    },
+    {
+      "parameters": {
+        "content": "=No configuration drift detected. System matches baseline.",
+        "options": {}
+      },
+      "id": "node-no-drift",
+      "name": "No Drift",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [850, 400]
+    }
+  ],
+  "connections": {
+    "Schedule Midnight": {
+      "main": [
+        [
+          {
+            "node": "Compare Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare Configuration": {
+      "main": [
+        [
+          {
+            "node": "Check for Drift",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Drift": {
+      "main": [
+        [
+          {
+            "node": "Format Drift Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Drift",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Drift Details": {
+      "main": [
+        [
+          {
+            "node": "Send Drift Alert Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

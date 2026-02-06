@@ -1,0 +1,19 @@
+# docker/docker-compose.yml
+# Single-service Docker Compose configuration for CNL
+
+services:
+  cnl:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3141:3141"
+    volumes:
+      # Mount credentials directories
+      - ~/.cnl:/home/cnl/.cnl
+      - ~/.meraki:/home/cnl/.meraki
+    environment:
+      # Server configuration
+      - CNL_HOST=0.0.0.0
+      - CNL_PORT=3141
+    restart: unless-stopped

@@ -1,0 +1,6 @@
+# Temporary files
+*.tar.gz
+*.tmp
+
+# Test installations
+test-install/

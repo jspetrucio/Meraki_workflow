@@ -1,0 +1,126 @@
+{
+  "name": "CNL - Security Audit",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "node-schedule-daily",
+      "name": "Schedule Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{CNL_BASE_URL}}/api/v1/discovery/full",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-run-discovery",
+      "name": "Run Discovery",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\nconst findings = [];\n\n// Check SSIDs for security issues\nif (data.ssids) {\n  for (const ssid of data.ssids) {\n    // Open authentication\n    if (ssid.auth_mode === 'open' && ssid.enabled) {\n      findings.push({\n        severity: 'high',\n        category: 'wireless',\n        issue: 'Open SSID detected',\n        details: `SSID \"${ssid.name}\" has no authentication`,\n        network: ssid.network_name,\n        recommendation: 'Enable WPA2/WPA3 authentication'\n      });\n    }\n    \n    // Weak encryption\n    if (ssid.encryption_mode === 'wep' && ssid.enabled) {\n      findings.push({\n        severity: 'critical',\n        category: 'wireless',\n        issue: 'WEP encryption detected',\n        details: `SSID \"${ssid.name}\" uses deprecated WEP encryption`,\n        network: ssid.network_name,\n        recommendation: 'Upgrade to WPA2 or WPA3'\n      });\n    }\n    \n    // WPA (not WPA2)\n    if (ssid.encryption_mode === 'wpa' && ssid.enabled) {\n      findings.push({\n        severity: 'medium',\n        category: 'wireless',\n        issue: 'WPA encryption detected',\n        details: `SSID \"${ssid.name}\" uses older WPA encryption`,\n        network: ssid.network_name,\n        recommendation: 'Upgrade to WPA2 or WPA3'\n      });\n    }\n  }\n}\n\n// Check firewall rules\nif (data.firewall_rules) {\n  for (const rule of data.firewall_rules) {\n    // Telnet allowed\n    if (rule.protocol === 'tcp' && rule.dest_port === '23' && rule.policy === 'allow') {\n      findings.push({\n        severity: 'high',\n        category: 'firewall',\n        issue: 'Telnet port open',\n        details: `Rule \"${rule.comment || 'unnamed'}\" allows telnet (port 23)`,\n        network: rule.network_name,\n        recommendation: 'Block telnet and use SSH instead'\n      });\n    }\n    \n    // Any/any allow rule\n    if (rule.policy === 'allow' && rule.protocol === 'any' && rule.dest_cidr === 'any') {\n      findings.push({\n        severity: 'medium',\n        category: 'firewall',\n        issue: 'Overly permissive firewall rule',\n        details: `Rule \"${rule.comment || 'unnamed'}\" allows all traffic`,\n        network: rule.network_name,\n        recommendation: 'Implement principle of least privilege'\n      });\n    }\n  }\n}\n\n// Check switch ACLs\nif (data.switch_acls) {\n  for (const acl of data.switch_acls) {\n    if (acl.policy === 'allow' && acl.protocol === 'any') {\n      findings.push({\n        severity: 'low',\n        category: 'switch',\n        issue: 'Permissive ACL detected',\n        details: `ACL allows all protocols`,\n        network: acl.network_name,\n        recommendation: 'Restrict to required protocols only'\n      });\n    }\n  }\n}\n\nconst critical = findings.filter(f => f.severity === 'critical').length;\nconst high = findings.filter(f => f.severity === 'high').length;\nconst medium = findings.filter(f => f.severity === 'medium').length;\nconst low = findings.filter(f => f.severity === 'low').length;\n\nreturn [{\n  json: {\n    scan_timestamp: new Date().toISOString(),\n    total_findings: findings.length,\n    critical_count: critical,\n    high_count: high,\n    medium_count: medium,\n    low_count: low,\n    findings: findings\n  }\n}];"
+      },
+      "id": "node-security-check",
+      "name": "Security Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\n\nlet report = `# CNL Security Audit Report\\n\\n`;\nreport += `Generated: ${data.scan_timestamp}\\n\\n`;\nreport += `## Summary\\n\\n`;\nreport += `Total Findings: ${data.total_findings}\\n\\n`;\nreport += `- 🔴 Critical: ${data.critical_count}\\n`;\nreport += `- 🟠 High: ${data.high_count}\\n`;\nreport += `- 🟡 Medium: ${data.medium_count}\\n`;\nreport += `- 🔵 Low: ${data.low_count}\\n\\n`;\n\nif (data.total_findings > 0) {\n  report += `## Findings\\n\\n`;\n  \n  const bySeverity = ['critical', 'high', 'medium', 'low'];\n  for (const severity of bySeverity) {\n    const severityFindings = data.findings.filter(f => f.severity === severity);\n    if (severityFindings.length === 0) continue;\n    \n    report += `### ${severity.toUpperCase()}\\n\\n`;\n    for (const finding of severityFindings) {\n      report += `**${finding.issue}** (${finding.category})\\n`;\n      report += `- Network: ${finding.network}\\n`;\n      report += `- Details: ${finding.details}\\n`;\n      report += `- Recommendation: ${finding.recommendation}\\n\\n`;\n    }\n  }\n} else {\n  report += `✅ No security issues detected!\\n`;\n}\n\nreturn [{\n  json: {\n    ...data,\n    report_text: report\n  }\n}];"
+      },
+      "id": "node-generate-report",
+      "name": "Generate Security Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "security@cnl.local",
+        "toEmail": "{{NOTIFICATION_EMAIL}}",
+        "subject": "=CNL Security Audit - {{ $json.total_findings }} Finding(s)",
+        "text": "={{ $json.report_text }}",
+        "options": {}
+      },
+      "id": "node-email-report",
+      "name": "Send Security Report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Daily": {
+      "main": [
+        [
+          {
+            "node": "Run Discovery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Discovery": {
+      "main": [
+        [
+          {
+            "node": "Security Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Check": {
+      "main": [
+        [
+          {
+            "node": "Generate Security Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Security Report": {
+      "main": [
+        [
+          {
+            "node": "Send Security Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

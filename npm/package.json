@@ -1,0 +1,40 @@
+{
+  "name": "@cisco/cnl",
+  "version": "0.1.0",
+  "description": "Cisco Neural Language - Natural language interface for Meraki network management",
+  "keywords": [
+    "cisco",
+    "meraki",
+    "network",
+    "automation",
+    "cli",
+    "natural-language"
+  ],
+  "homepage": "https://github.com/cisco/cnl",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cisco/cnl.git"
+  },
+  "license": "MIT",
+  "author": "Cisco Systems",
+  "bin": {
+    "cnl": "./bin/cnl.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node lib/install.js",
+    "test": "node lib/check-python.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ]
+}

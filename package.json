@@ -1,0 +1,17 @@
+{
+  "name": "cnl-meraki-workflow",
+  "version": "0.1.0",
+  "description": "CNL - Cisco Neural Language: Network automation through natural language",
+  "private": true,
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "backend:dev": "python3 -m uvicorn scripts.server:app --host 127.0.0.1 --port 3141 --reload"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

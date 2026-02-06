@@ -1,0 +1,15 @@
+# Rust
+target/
+Cargo.lock
+
+# Tauri
+WixTools/
+gen/
+
+# Build artifacts
+*.app
+*.dmg
+*.deb
+*.rpm
+*.msi
+*.exe

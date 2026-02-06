@@ -1,0 +1,75 @@
+# .dockerignore
+# Exclude files from Docker build context for security and efficiency
+
+# VCS
+.git/
+.gitignore
+.github/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Project-specific exclusions (large or irrelevant to runtime)
+clients/
+docs/
+tests/
+examples/
+backups/
+.aios-core/
+.claude/projects/
+Context/
+squads/
+src-tauri/
+
+# Secrets (CRITICAL: Never copy into image)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+.meraki/
+credentials
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Build artifacts
+*.md
+!README.md
+BRAINSTORM_*.md
+CHANGELOG_*.md
+CHECKPOINT.md
+CLI_*.md
+GIT_*.md
+IMPLEMENTATION_*.md
+PRD*.md
+QUICK_DEPLOY.sh
+WORKFLOW_*.md
+splendid-growing-octopus.md

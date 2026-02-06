@@ -74,12 +74,27 @@ logger = logging.getLogger(__name__)
 # ==================== CLI Root ====================
 
 
-@click.group()
+@click.group(invoke_without_command=True)
 @click.option("--debug/--no-debug", default=False, help="Ativar modo debug")
 @click.option("--profile", "-p", default="default", help="Profile de credenciais")
+@click.option("--cli", is_flag=True, help="CLI-only mode (no web UI)")
+@click.option("--version", is_flag=True, help="Show version and exit")
 @click.pass_context
-def cli(ctx, debug, profile):
-    """Meraki Workflow - Automacao de redes via linguagem natural."""
+def cli(ctx, debug, profile, cli_mode, version):
+    """CNL (Cisco Neural Language) - Automacao de redes via linguagem natural.
+
+    Run without arguments to start the web UI server.
+    Use --cli flag for CLI-only mode.
+    """
+    # Handle version flag
+    if version:
+        try:
+            from .__version__ import __version__
+            click.echo(f"cnl {__version__}")
+        except ImportError:
+            click.echo("cnl 0.1.0")
+        return
+
     ctx.ensure_object(dict)
     ctx.obj["DEBUG"] = debug
     ctx.obj["PROFILE"] = profile
@@ -92,6 +107,23 @@ def cli(ctx, debug, profile):
         )
     else:
         logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    # If no subcommand provided and not in CLI-only mode, launch server
+    if ctx.invoked_subcommand is None and not cli_mode:
+        console.print("[bold green]Starting CNL Server...[/bold green]")
+        console.print("\nAccess the web interface at: [cyan]http://localhost:3141[/cyan]")
+        console.print("Press Ctrl+C to stop the server\n")
+
+        try:
+            from .server import run_server
+            run_server(host="127.0.0.1", port=3141)
+        except ImportError as e:
+            console.print(f"[red]Error: Cannot start server - {e}[/red]")
+            console.print("\nUse --cli flag for CLI-only mode")
+            sys.exit(1)
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Server stopped[/yellow]")
+            sys.exit(0)
 
 
 # ==================== PROFILES ====================
@@ -1004,6 +1036,31 @@ def client_info(name):
     if snapshots:
         latest = max(snapshots, key=lambda p: p.stat().st_mtime)
         console.print(f"\n[cyan]Ultimo snapshot:[/cyan] {latest.name}")
+
+
+# ==================== SERVE ====================
+
+
+@cli.command()
+@click.option("--host", default="127.0.0.1", help="Host to bind to")
+@click.option("--port", default=3141, type=int, help="Port to bind to")
+def serve(host, port):
+    """Start the CNL web server."""
+    console.print(f"[bold green]Starting CNL Server on {host}:{port}...[/bold green]")
+    console.print(f"\nAccess the web interface at: [cyan]http://{host}:{port}[/cyan]")
+    console.print("Press Ctrl+C to stop the server\n")
+
+    try:
+        from .server import run_server
+        run_server(host=host, port=port)
+    except ImportError as e:
+        console.print(f"[red]Error: Cannot start server - {e}[/red]")
+        console.print("\nMake sure FastAPI and uvicorn are installed:")
+        console.print("  pip install fastapi uvicorn")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Server stopped[/yellow]")
+        sys.exit(0)
 
 
 # ==================== Entry Point ====================

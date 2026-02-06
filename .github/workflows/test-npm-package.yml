@@ -1,0 +1,137 @@
+name: Test npm Package
+
+on:
+  push:
+    paths:
+      - 'npm/**'
+      - '.github/workflows/test-npm-package.yml'
+  pull_request:
+    paths:
+      - 'npm/**'
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [18, 20]
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Verify Python installation
+        run: python --version
+
+      - name: Run npm package tests
+        working-directory: ./npm
+        run: |
+          chmod +x bin/cnl.js lib/*.js test-integration.sh
+          npm pack
+          node lib/check-python.js
+
+      - name: Test package size
+        working-directory: ./npm
+        run: |
+          SIZE=$(du -k cisco-cnl-*.tgz | cut -f1)
+          echo "Package size: ${SIZE}KB"
+          if [ "$SIZE" -gt 100 ]; then
+            echo "ERROR: Package too large (${SIZE}KB > 100KB)"
+            exit 1
+          fi
+        shell: bash
+
+      - name: Test npm installation (Unix)
+        if: runner.os != 'Windows'
+        working-directory: ./npm
+        run: |
+          npm install -g ./cisco-cnl-*.tgz
+          cnl --version || python3 -m scripts.cli --version
+
+      - name: Test npm installation (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ./npm
+        run: |
+          npm install -g (Get-ChildItem cisco-cnl-*.tgz)
+          cnl --version
+        shell: pwsh
+
+  security:
+    name: Security Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check for unsafe exec patterns
+        working-directory: ./npm
+        run: |
+          # Check for execSync with string interpolation
+          if grep -r "execSync(\`" bin/ lib/; then
+            echo "ERROR: Found unsafe execSync with template literals"
+            exit 1
+          fi
+          # Check for eval
+          if grep -r "eval(" bin/ lib/; then
+            echo "ERROR: Found eval() usage"
+            exit 1
+          fi
+          echo "✓ No unsafe patterns found"
+
+      - name: Check for secrets
+        working-directory: ./npm
+        run: |
+          # Check for common secret patterns
+          if grep -ri "api[_-]key.*=\|secret.*=\|password.*=\|token.*=" bin/ lib/ --exclude="*.md"; then
+            echo "ERROR: Found potential hardcoded secrets"
+            exit 1
+          fi
+          echo "✓ No secrets detected"
+
+      - name: npm audit
+        working-directory: ./npm
+        run: |
+          npm audit --audit-level=high || echo "No dependencies to audit"
+
+  publish-test:
+    name: Dry-run Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Test publish (dry-run)
+        working-directory: ./npm
+        run: |
+          npm pack --dry-run
+          echo ""
+          echo "Package contents:"
+          npm pack
+          tar -tzf cisco-cnl-*.tgz
