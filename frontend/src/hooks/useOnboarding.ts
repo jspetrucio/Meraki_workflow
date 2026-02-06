@@ -127,20 +127,11 @@ export function useOnboarding() {
   };
 
   const completeOnboarding = async (): Promise<boolean> => {
-    try {
-      const result = await fetchWithErrorHandling(
-        api.put('/v1/settings', {
-          onboarding_complete: true,
-        })
-      );
-      if (result.success) {
-        setOnboardingComplete(true);
-      }
-      return result.success;
-    } catch (error) {
-      console.error('Failed to mark onboarding complete:', error);
-      return false;
-    }
+    // Onboarding is "complete" when both meraki_profile and ai_api_key exist.
+    // The backend checks this via GET /v1/settings/onboarding-status.
+    // No separate flag needs to be written — just mark local state as done.
+    setOnboardingComplete(true);
+    return true;
   };
 
   const updateFormData = useCallback((updates: Partial<OnboardingFormData>) => {
