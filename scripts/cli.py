@@ -77,7 +77,7 @@ logger = logging.getLogger(__name__)
 @click.group(invoke_without_command=True)
 @click.option("--debug/--no-debug", default=False, help="Ativar modo debug")
 @click.option("--profile", "-p", default="default", help="Profile de credenciais")
-@click.option("--cli", is_flag=True, help="CLI-only mode (no web UI)")
+@click.option("--cli", "cli_mode", is_flag=True, help="CLI-only mode (no web UI)")
 @click.option("--version", is_flag=True, help="Show version and exit")
 @click.pass_context
 def cli(ctx, debug, profile, cli_mode, version):

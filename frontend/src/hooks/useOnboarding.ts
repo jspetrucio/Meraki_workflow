@@ -96,12 +96,13 @@ export function useOnboarding() {
     }
   };
 
-  const saveMerakiCredentials = async (apiKey: string, orgId: string): Promise<boolean> => {
+  const saveMerakiCredentials = async (_apiKey: string, _orgId: string): Promise<boolean> => {
     try {
+      // Meraki credentials are validated via /v1/credentials/validate (already done).
+      // Save the profile setting so the backend knows which profile to use.
       const result = await fetchWithErrorHandling(
-        api.post('/v1/credentials/provider/meraki', {
-          api_key: apiKey,
-          org_id: orgId,
+        api.patch('/v1/settings', {
+          meraki_profile: 'default',
         })
       );
       return result.success;

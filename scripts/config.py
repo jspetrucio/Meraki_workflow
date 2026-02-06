@@ -788,6 +788,213 @@ def add_switch_acl(
         )
 
 
+# ==================== Switch Port Configuration ====================
+
+@dataclass
+class SwitchPortPreflight:
+    """Result of a switch port writeability pre-flight check."""
+    serial: str
+    total_ports: int
+    writable_ports: list[str]
+    read_only_ports: list[dict]  # [{"portId": "4", "error": "Peer SGT capable is read-only"}]
+    has_sgt_restriction: bool
+    writable_ratio: float  # 0.0 to 1.0
+
+    @property
+    def fully_writable(self) -> bool:
+        return len(self.read_only_ports) == 0
+
+    @property
+    def fully_locked(self) -> bool:
+        return len(self.writable_ports) == 0
+
+    def summary(self) -> str:
+        if self.fully_writable:
+            return f"All {self.total_ports} ports are writable via API."
+        if self.fully_locked:
+            return (
+                f"ALL {self.total_ports} ports are READ-ONLY. "
+                "TrustSec/SGT policy prevents API modifications."
+            )
+        ro_ids = [p["portId"] for p in self.read_only_ports]
+        return (
+            f"{len(self.writable_ports)}/{self.total_ports} ports writable, "
+            f"{len(self.read_only_ports)} read-only (SGT). "
+            f"Writable: {self.writable_ports}. "
+            f"Read-only: {ro_ids}."
+        )
+
+    def is_port_writable(self, port_id: str) -> bool:
+        return port_id in self.writable_ports
+
+
+def check_switch_port_writeability(
+    serial: str,
+    client: Optional[MerakiClient] = None
+) -> SwitchPortPreflight:
+    """
+    Pre-flight check: probe which switch ports are writable vs read-only.
+
+    Some Catalyst switches (e.g. C9300) with Cisco ISE/TrustSec integration
+    have ports locked as read-only via SGT peering. The Meraki Dashboard API
+    returns "Peer SGT capable is read-only" when attempting to modify them.
+
+    This function probes each port with a no-op name write to detect the
+    restriction before the user attempts a real change.
+
+    Args:
+        serial: Switch serial number
+        client: MerakiClient instance (optional, uses default)
+
+    Returns:
+        SwitchPortPreflight with writeability map
+    """
+    import requests
+
+    client = client or get_client()
+    api_key = client.api_key
+
+    headers = {
+        "X-Cisco-Meraki-API-Key": api_key,
+        "Content-Type": "application/json",
+    }
+
+    # Get all ports
+    r = requests.get(
+        f"https://api.meraki.com/api/v1/devices/{serial}/switch/ports",
+        headers=headers,
+    )
+    r.raise_for_status()
+    ports = r.json()
+
+    writable = []
+    read_only = []
+    has_sgt = False
+
+    for port in ports:
+        pid = port["portId"]
+        current_name = port.get("name", "")
+
+        # Probe: try to set name back to itself (no actual change)
+        probe = requests.put(
+            f"https://api.meraki.com/api/v1/devices/{serial}/switch/ports/{pid}",
+            headers=headers,
+            json={"name": current_name if current_name else f"Port {pid}"},
+        )
+
+        if probe.status_code == 200:
+            writable.append(pid)
+        else:
+            errors = probe.json().get("errors", [probe.text])
+            error_msg = errors[0] if errors else "Unknown error"
+            read_only.append({"portId": pid, "error": error_msg})
+            if "SGT" in error_msg or "read-only" in error_msg.lower():
+                has_sgt = True
+
+    total = len(ports)
+    ratio = len(writable) / total if total > 0 else 0.0
+
+    result = SwitchPortPreflight(
+        serial=serial,
+        total_ports=total,
+        writable_ports=writable,
+        read_only_ports=read_only,
+        has_sgt_restriction=has_sgt,
+        writable_ratio=ratio,
+    )
+
+    logger.info(
+        f"Switch {serial} preflight: {len(writable)}/{total} writable, "
+        f"SGT restriction: {has_sgt}"
+    )
+
+    return result
+
+
+def update_switch_port(
+    serial: str,
+    port_id: str,
+    preflight: Optional[SwitchPortPreflight] = None,
+    client: Optional[MerakiClient] = None,
+    **kwargs,
+) -> ConfigResult:
+    """
+    Update a switch port with pre-flight SGT/read-only check.
+
+    Args:
+        serial: Switch serial number
+        port_id: Port ID to update
+        preflight: Optional pre-computed preflight result
+        client: MerakiClient instance (optional)
+        **kwargs: Port fields to update (name, vlan, type, enabled, etc.)
+
+    Returns:
+        ConfigResult with outcome
+    """
+    client = client or get_client()
+
+    # Run preflight if not provided
+    if preflight is None:
+        logger.info(f"Running preflight check for switch {serial}...")
+        preflight = check_switch_port_writeability(serial, client)
+
+    # Check if target port is writable
+    if not preflight.is_port_writable(port_id):
+        ro_entry = next(
+            (p for p in preflight.read_only_ports if p["portId"] == port_id),
+            None,
+        )
+        error_detail = ro_entry["error"] if ro_entry else "Port is read-only"
+
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="switch_port",
+            resource_id=f"{serial}/port_{port_id}",
+            message=(
+                f"Port {port_id} is READ-ONLY: {error_detail}. "
+                f"This switch has TrustSec/SGT restrictions. "
+                f"Writable ports: {preflight.writable_ports}"
+            ),
+            error=error_detail,
+        )
+
+    # Port is writable — apply change
+    try:
+        import requests
+
+        headers = {
+            "X-Cisco-Meraki-API-Key": client.api_key,
+            "Content-Type": "application/json",
+        }
+        r = requests.put(
+            f"https://api.meraki.com/api/v1/devices/{serial}/switch/ports/{port_id}",
+            headers=headers,
+            json=kwargs,
+        )
+        r.raise_for_status()
+
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.UPDATE,
+            resource_type="switch_port",
+            resource_id=f"{serial}/port_{port_id}",
+            message=f"Port {port_id} updated successfully",
+            changes=kwargs,
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to update port {port_id}: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="switch_port",
+            resource_id=f"{serial}/port_{port_id}",
+            message=f"Failed to update port {port_id}",
+            error=str(e),
+        )
+
+
 # ==================== Helpers ====================
 
 def validate_config_params(

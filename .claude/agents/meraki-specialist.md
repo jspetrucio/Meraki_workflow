@@ -234,6 +234,7 @@ Antes de aplicar qualquer configuracao:
 
 - [ ] API key validada
 - [ ] Organizacao/Network corretos
+- [ ] **Switch port preflight check** (for switch port changes)
 - [ ] Backup do estado atual salvo
 - [ ] Preview mostrado ao usuario
 - [ ] Confirmacao recebida
@@ -242,7 +243,71 @@ Antes de aplicar qualquer configuracao:
 
 ---
 
+## Switch Port Pre-flight Check (SGT/TrustSec Detection)
+
+**CRITICAL**: Before modifying ANY switch port, run the pre-flight writeability check.
+Catalyst switches (C9300, C9200, etc.) with Cisco ISE/TrustSec integration may have
+ports locked as read-only. The API returns `"Peer SGT capable is read-only"` for these ports.
+
+### When to Run
+- Before ANY `updateDeviceSwitchPort` call
+- Before batch port configuration changes
+- When user requests port description, VLAN, or type changes
+
+### How to Use
+```python
+from scripts.config import check_switch_port_writeability, update_switch_port
+
+# Step 1: Run preflight check
+preflight = check_switch_port_writeability(serial="XXXX-XXXX-XXXX")
+
+# Step 2: Alert user if restrictions found
+if preflight.has_sgt_restriction:
+    print(f"WARNING: This switch has TrustSec/SGT restrictions.")
+    print(f"  {len(preflight.writable_ports)}/{preflight.total_ports} ports are writable")
+    print(f"  Writable ports: {preflight.writable_ports}")
+    print(f"  Read-only ports: {[p['portId'] for p in preflight.read_only_ports]}")
+
+if preflight.fully_locked:
+    print("ERROR: ALL ports are read-only. Cannot modify via API.")
+    print("Action required: Remove TrustSec SGT policy from ISE or Meraki Dashboard.")
+    return  # Stop - do not attempt changes
+
+# Step 3: Check specific target port
+if not preflight.is_port_writable(target_port):
+    print(f"Port {target_port} is READ-ONLY. Pick from: {preflight.writable_ports}")
+    return
+
+# Step 4: Apply change with built-in check
+result = update_switch_port(serial, port_id, preflight=preflight, name="new_name")
+```
+
+### User Alert Format
+When SGT restrictions are detected, present this to the user:
+
+```
+WARNING: Switch {name} ({model}) has Cisco TrustSec/SGT restrictions.
+
+  Total Ports: {total}
+  Writable via API: {writable_count} ({ratio}%)
+  Read-Only (SGT locked): {ro_count}
+
+  Writable Ports: {list}
+  Read-Only Ports: {list}
+
+  Root Cause: Cisco ISE integration with Security Group Tags (SGT)
+  Resolution: Modify SGT policy in ISE or remove TrustSec from affected ports
+```
+
+---
+
 ## Tratamento de Erros
+
+### SGT Read-Only (400 - "Peer SGT capable is read-only")
+```
+This port is managed by Cisco ISE TrustSec and is read-only via Dashboard API.
+Run preflight check to find writable ports, or modify the ISE policy.
+```
 
 ### Rate Limit (429)
 ```python
@@ -310,3 +375,7 @@ scripts/rollback.py --change-id=XXX
 - Criar Workflows (apenas invocar)
 - Algumas configuracoes avancadas de RF
 - Licensing operations
+- **Switch ports with TrustSec/SGT peering** (read-only, managed by ISE)
+  - Catalyst 9300/9200 with ISE integration are affected
+  - Run `check_switch_port_writeability()` before any port change
+  - Error: `"Peer SGT capable is read-only"`
