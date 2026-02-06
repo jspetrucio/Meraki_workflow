@@ -22,8 +22,10 @@ Usage:
 import asyncio
 import json
 import logging
+import re
 import time
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
@@ -89,13 +91,49 @@ class ErrorResponse(BaseModel):
     code: str
 
 
+# ==================== Lifespan ====================
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage server startup and shutdown lifecycle."""
+    global _start_time, _ai_engine
+    _start_time = time.time()
+
+    logger.info(f"CNL Server v{__version__} starting")
+    logger.info(f"Server started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+    # Load settings
+    manager = SettingsManager()
+    settings = manager.load()
+    logger.info(f"Settings loaded - Port: {settings.port}, Profile: {settings.meraki_profile}")
+
+    # Initialize AI engine if configured
+    if settings.ai_api_key:
+        try:
+            _ai_engine = AIEngine(settings)
+            logger.info(f"AI Engine initialized: {settings.ai_provider}/{settings.ai_model}")
+        except Exception as exc:
+            logger.warning(f"Failed to initialize AI Engine: {exc}")
+            _ai_engine = None
+    else:
+        logger.info("AI Engine not configured (no API key)")
+
+    yield
+
+    # Shutdown
+    uptime = time.time() - _start_time
+    logger.info(f"CNL Server shutting down after {uptime:.2f}s uptime")
+
+
 # ==================== FastAPI App ====================
 
 
 app = FastAPI(
     title="CNL",
     version=__version__,
-    description="Conversational Network Language API Server"
+    description="Conversational Network Language API Server",
+    lifespan=lifespan
 )
 
 # CORS for local development
@@ -108,8 +146,8 @@ app.add_middleware(
         "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Session-ID"],
 )
 
 
@@ -195,42 +233,6 @@ async def generic_exception_handler(request: Request, exc: Exception):
             "code": "INTERNAL_ERROR"
         }
     )
-
-
-# ==================== Startup/Shutdown Events ====================
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize server on startup."""
-    global _start_time, _ai_engine
-    _start_time = time.time()
-
-    logger.info(f"CNL Server v{__version__} starting")
-    logger.info(f"Server started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
-
-    # Load settings
-    manager = SettingsManager()
-    settings = manager.load()
-    logger.info(f"Settings loaded - Port: {settings.port}, Profile: {settings.meraki_profile}")
-
-    # Initialize AI engine if configured
-    if settings.ai_api_key:
-        try:
-            _ai_engine = AIEngine(settings)
-            logger.info(f"AI Engine initialized: {settings.ai_provider}/{settings.ai_model}")
-        except Exception as exc:
-            logger.warning(f"Failed to initialize AI Engine: {exc}")
-            _ai_engine = None
-    else:
-        logger.info("AI Engine not configured (no API key)")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up on shutdown."""
-    uptime = time.time() - _start_time
-    logger.info(f"CNL Server shutting down after {uptime:.2f}s uptime")
 
 
 # ==================== Health Endpoints ====================
@@ -361,6 +363,30 @@ class ConnectionManager:
 _connection_manager = ConnectionManager()
 
 
+# ==================== WebSocket Helpers ====================
+
+
+_SESSION_ID_PATTERN = re.compile(r'^[a-zA-Z0-9\-]{1,64}$')
+
+
+def _validate_session_id(raw_id: str | None) -> str:
+    """
+    Validate and sanitize session ID.
+
+    Accepts alphanumeric strings with hyphens, max 64 chars.
+    If the provided ID is invalid or missing, generates a new UUID.
+
+    Args:
+        raw_id: Raw session ID from client message.
+
+    Returns:
+        Validated session ID string.
+    """
+    if raw_id and _SESSION_ID_PATTERN.match(raw_id):
+        return raw_id
+    return str(uuid.uuid4())
+
+
 # ==================== WebSocket Endpoint ====================
 
 
@@ -454,7 +480,7 @@ async def websocket_chat_endpoint(websocket: WebSocket):
             # Handle message
             elif msg_type == "message":
                 content = raw.get("content", "").strip()
-                session_id = raw.get("session_id") or str(uuid.uuid4())
+                session_id = _validate_session_id(raw.get("session_id"))
 
                 # Input validation
                 if not content:

@@ -109,7 +109,7 @@ async def get_workflows(client: str):
 
     except Exception as e:
         logger.exception(f"Failed to list workflows: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.post("")
@@ -197,7 +197,7 @@ async def create_workflow(request: WorkflowCreateRequest):
         raise
     except Exception as e:
         logger.exception(f"Workflow creation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.get("/templates")
@@ -296,4 +296,4 @@ async def create_from_template(request: WorkflowTemplateRequest):
         raise
     except Exception as e:
         logger.exception(f"Workflow creation from template failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")

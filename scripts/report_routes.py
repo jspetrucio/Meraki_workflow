@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from scripts.api import get_client
 from scripts.discovery import full_discovery, load_snapshot
 from scripts.report import generate_discovery_report, save_html
+from scripts.path_validation import validate_path_within_base, validate_path_component
 
 logger = logging.getLogger(__name__)
 
@@ -80,12 +81,15 @@ async def get_reports(client: str):
         List of report files with metadata
     """
     try:
+        validate_path_component(client, "client")
         reports = await asyncio.to_thread(list_report_files, client)
         return {"reports": reports}
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"Failed to list reports: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.get("/{client}/{filename}")
@@ -104,17 +108,21 @@ async def get_report_file(client: str, filename: str):
         404: Report not found
     """
     try:
-        report_path = Path("clients") / client / "reports" / filename
+        validate_path_component(client, "client")
+        validate_path_component(filename, "filename")
 
-        if not report_path.exists():
+        report_path = Path("clients") / client / "reports" / filename
+        validated_path = validate_path_within_base(str(report_path))
+
+        if not validated_path.exists():
             raise HTTPException(
                 status_code=404,
-                detail=f"Report not found: {filename}"
+                detail="Report not found."
             )
 
         # Serve HTML file
         return FileResponse(
-            path=str(report_path),
+            path=str(validated_path),
             media_type="text/html",
             filename=filename
         )
@@ -123,7 +131,7 @@ async def get_report_file(client: str, filename: str):
         raise
     except Exception as e:
         logger.exception(f"Failed to serve report: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.post("/{client}/generate")
@@ -145,15 +153,17 @@ async def generate_report(client: str, request: ReportGenerateRequest):
         502: Meraki API error (if running new discovery)
     """
     try:
+        validate_path_component(client, "client")
+
         # Load or create discovery result
         if request.snapshot_path:
-            # Use existing snapshot
-            snapshot_path = Path(request.snapshot_path)
+            # Use existing snapshot - validate path
+            snapshot_path = validate_path_within_base(request.snapshot_path)
 
             if not snapshot_path.exists():
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Snapshot not found: {request.snapshot_path}"
+                    detail="Snapshot not found."
                 )
 
             logger.info(f"Generating report from snapshot: {snapshot_path}")
@@ -197,4 +207,4 @@ async def generate_report(client: str, request: ReportGenerateRequest):
         raise
     except Exception as e:
         logger.exception(f"Report generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
