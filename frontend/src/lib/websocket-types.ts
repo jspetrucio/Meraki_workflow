@@ -1,14 +1,12 @@
 export interface WebSocketMessage {
-  type: 'message' | 'stream' | 'data' | 'confirm' | 'agent_status' | 'error' | 'done' | 'confirm_response' | 'ping' | 'pong';
+  type: 'message' | 'stream' | 'data' | 'confirm' | 'confirmation_required' | 'classification' | 'agent_status' | 'error' | 'done' | 'confirm_response' | 'ping' | 'pong' | 'function_result' | 'function_error';
   content?: string;
+  chunk?: string;
   session_id?: string;
   request_id?: string;
   approved?: boolean;
   data?: unknown;
-  agent?: {
-    name: string;
-    icon: string;
-  };
+  agent?: string | { name: string; icon: string };
   action?: string;
   preview?: unknown;
   danger_level?: 'low' | 'medium' | 'high';
@@ -16,6 +14,11 @@ export interface WebSocketMessage {
   language?: string;
   error?: string;
   message?: string;
+  confidence?: number;
+  reasoning?: string;
+  status?: string;
+  function?: string;
+  result?: unknown;
 }
 
 export interface SendMessageOptions {

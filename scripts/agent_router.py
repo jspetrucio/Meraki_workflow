@@ -10,13 +10,17 @@ Executes agent functions via asyncio.to_thread() for sync module integration.
 """
 
 import asyncio
+import dataclasses
+import inspect
 import json
 import logging
 import re
+from enum import Enum
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import AsyncGenerator, Optional
 
+from scripts.agent_tools import get_agent_tools
 from scripts.ai_engine import AIEngine, AIEngineError
 from scripts.settings import Settings, SettingsManager
 
@@ -459,11 +463,39 @@ async def classify_intent(
 # ==================== Function Execution ====================
 
 
+def _serialize_result(obj):
+    """
+    Recursively serialize a function return value to JSON-safe types.
+
+    Handles dataclasses, Path, Enum, objects with to_dict(), and
+    nested lists/dicts.
+    """
+    if obj is None or isinstance(obj, (str, int, float, bool)):
+        return obj
+    if isinstance(obj, Path):
+        return str(obj)
+    if isinstance(obj, Enum):
+        return obj.value
+    if hasattr(obj, "to_dict"):
+        return _serialize_result(obj.to_dict())
+    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+        return _serialize_result(dataclasses.asdict(obj))
+    if isinstance(obj, dict):
+        return {str(k): _serialize_result(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_serialize_result(item) for item in obj]
+    return str(obj)
+
+
 async def _execute_function(
     func_name: str, args: dict
 ) -> tuple[bool, Optional[dict], Optional[str]]:
     """
     Execute a function from the registry via asyncio.to_thread().
+
+    Auto-injects ``client``, ``client_name``, and ``org_id`` when the
+    target function accepts them and they are not already provided by
+    the caller.
 
     Args:
         func_name: Name of the function to execute
@@ -480,12 +512,41 @@ async def _execute_function(
         return False, None, error
 
     try:
+        sig = inspect.signature(func)
+        params = sig.parameters
+
+        # Auto-inject client if the function accepts it and it wasn't provided
+        if "client" in params and "client" not in args:
+            try:
+                from scripts.api import get_client
+
+                settings = SettingsManager.load()
+                profile = settings.meraki_profile or "default"
+                args["client"] = get_client(profile=profile)
+            except Exception as exc:
+                logger.warning(f"Could not auto-inject client: {exc}")
+
+        # Auto-inject client_name from settings
+        if "client_name" in params and "client_name" not in args:
+            try:
+                settings = SettingsManager.load()
+                if settings.meraki_profile:
+                    args["client_name"] = settings.meraki_profile
+            except Exception as exc:
+                logger.warning(f"Could not auto-inject client_name: {exc}")
+
+        # Auto-inject org_id from client
+        if "org_id" in params and "org_id" not in args:
+            client = args.get("client")
+            if client and hasattr(client, "org_id"):
+                args["org_id"] = client.org_id
+
         # Execute via asyncio.to_thread() to avoid blocking
-        logger.debug(f"Executing function: {func_name} with args: {args}")
+        logger.debug(f"Executing function: {func_name} with args: {list(args.keys())}")
         result = await asyncio.to_thread(func, **args)
 
         logger.info(f"Function {func_name} executed successfully")
-        return True, {"result": str(result)}, None
+        return True, {"result": _serialize_result(result)}, None
 
     except Exception as exc:
         error = f"Function {func_name} failed: {type(exc).__name__}: {exc}"
@@ -573,21 +634,11 @@ async def process_message(
         }
         return
 
-    # Build tool definitions from agent functions
-    tools = []
-    for func_name in agent.functions:
-        # Simple tool definition (in production, would load from schema)
-        tools.append({
-            "type": "function",
-            "function": {
-                "name": func_name,
-                "description": f"Execute {func_name}",
-                "parameters": {
-                    "type": "object",
-                    "properties": {},
-                },
-            },
-        })
+    # Build tool definitions from agent_tools.py schemas
+    try:
+        tools = get_agent_tools(agent.name)
+    except ValueError:
+        tools = []
 
     # Call AI Engine with function-calling
     try:
