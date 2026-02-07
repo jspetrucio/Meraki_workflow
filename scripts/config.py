@@ -23,6 +23,7 @@ Uso:
 
 import json
 import logging
+import requests
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -1018,6 +1019,235 @@ def validate_config_params(
         return True, f"Network validada: {network.get('name')}"
     except APIError as e:
         return False, f"Network invalida: {e}"
+
+
+# ==================== Task Executor Support Functions (Story 7.4) ====================
+
+
+def detect_catalyst_mode(
+    serial: str,
+    client: Optional[MerakiClient] = None,
+) -> dict:
+    """
+    Detect Catalyst switch management mode.
+
+    Queries device info to determine if it's native Meraki, managed, or monitored.
+    Monitored mode blocks write operations.
+
+    Args:
+        serial: Device serial number
+        client: MerakiClient instance (optional, uses default)
+
+    Returns:
+        Dict with serial, mode, writable, and optional error
+    """
+    try:
+        client = client or get_client()
+        api_key = client.api_key
+        headers = {
+            "X-Cisco-Meraki-API-Key": api_key,
+            "Content-Type": "application/json",
+        }
+
+        r = requests.get(
+            f"https://api.meraki.com/api/v1/devices/{serial}",
+            headers=headers,
+        )
+        r.raise_for_status()
+        device = r.json()
+
+        model = device.get("model", "").upper()
+        firmware = device.get("firmware", "")
+
+        # Classification logic
+        if model.startswith("C9") or model.startswith("CAT"):
+            # Catalyst models
+            if "monitor" in firmware.lower() or device.get("tags", []) and "monitor-only" in device.get("tags", []):
+                mode = "monitored"
+                writable = False
+            else:
+                mode = "managed"
+                writable = True
+        else:
+            mode = "native_meraki"
+            writable = True
+
+        return {"serial": serial, "mode": mode, "writable": writable}
+
+    except Exception as exc:
+        logger.warning(f"detect_catalyst_mode failed for {serial}: {exc}")
+        return {"serial": serial, "mode": "unknown", "writable": False, "error": str(exc)}
+
+
+def sgt_preflight_check(
+    serial: str,
+    client: Optional[MerakiClient] = None,
+) -> dict:
+    """
+    SGT preflight check — wrapper over check_switch_port_writeability.
+
+    Returns a simplified dict with writeability summary.
+
+    Args:
+        serial: Switch serial number
+        client: MerakiClient instance (optional, uses default)
+
+    Returns:
+        Dict with serial, has_sgt_restriction, writable/read-only counts, ratio
+    """
+    try:
+        preflight = check_switch_port_writeability(serial, client=client)
+
+        result = {
+            "serial": serial,
+            "has_sgt_restriction": preflight.has_sgt_restriction,
+            "writable_ports": len(preflight.writable_ports),
+            "read_only_ports": len(preflight.read_only_ports),
+            "writable_ratio": preflight.writable_ratio,
+        }
+
+        if preflight.has_sgt_restriction and preflight.writable_ratio < 0.5:
+            result["warning"] = "Most ports are SGT-locked"
+
+        return result
+
+    except Exception as exc:
+        logger.warning(f"sgt_preflight_check failed for {serial}: {exc}")
+        return {
+            "serial": serial,
+            "has_sgt_restriction": False,
+            "writable_ports": 0,
+            "read_only_ports": 0,
+            "writable_ratio": 0.0,
+            "error": str(exc),
+        }
+
+
+def check_license(
+    serial: str,
+    client: Optional[MerakiClient] = None,
+) -> dict:
+    """
+    Check device license level.
+
+    Args:
+        serial: Device serial number
+        client: MerakiClient instance (optional, uses default)
+
+    Returns:
+        Dict with serial, license_type, features_available
+    """
+    try:
+        client = client or get_client()
+        api_key = client.api_key
+        org_id = client.org_id if hasattr(client, "org_id") else None
+
+        if not org_id:
+            return {
+                "serial": serial,
+                "license_type": "unknown",
+                "features_available": [],
+                "error": "No org_id available",
+            }
+
+        headers = {
+            "X-Cisco-Meraki-API-Key": api_key,
+            "Content-Type": "application/json",
+        }
+
+        r = requests.get(
+            f"https://api.meraki.com/api/v1/organizations/{org_id}/licensing/coterm/licenses",
+            headers=headers,
+        )
+
+        if r.status_code == 200:
+            licenses = r.json()
+            # Find license matching this device
+            device_license = None
+            for lic in licenses:
+                counts = lic.get("counts", [])
+                for count in counts:
+                    if serial in str(count.get("model", "")):
+                        device_license = lic
+                        break
+
+            if device_license:
+                edition = device_license.get("editions", [{}])[0].get("edition", "standard").lower()
+                if "enterprise" in edition:
+                    license_type = "enterprise"
+                elif "advanced" in edition:
+                    license_type = "advanced"
+                else:
+                    license_type = "standard"
+
+                features = [e.get("edition", "") for e in device_license.get("editions", [])]
+                return {
+                    "serial": serial,
+                    "license_type": license_type,
+                    "features_available": features,
+                }
+
+        return {
+            "serial": serial,
+            "license_type": "unknown",
+            "features_available": [],
+        }
+
+    except Exception as exc:
+        logger.warning(f"check_license failed for {serial}: {exc}")
+        return {
+            "serial": serial,
+            "license_type": "unknown",
+            "features_available": [],
+            "error": str(exc),
+        }
+
+
+def backup_current_state(
+    resource_type: str,
+    targets: dict,
+    client_name: str,
+    client: Optional[MerakiClient] = None,
+) -> dict:
+    """
+    Generic backup wrapper over backup_config.
+
+    Args:
+        resource_type: Type of resource (network, ssid, vlan, firewall, switch_acl)
+        targets: Target parameters (e.g., {"network_id": "N_123"})
+        client_name: Client name for backup directory
+        client: MerakiClient instance (optional)
+
+    Returns:
+        Dict with backup_path, resource_type, timestamp, targets
+    """
+    from datetime import datetime as _dt
+
+    network_id = targets.get("network_id", "unknown")
+
+    try:
+        backup_path = backup_config(
+            network_id=network_id,
+            client_name=client_name,
+            resource_type=resource_type,
+            client=client,
+        )
+
+        return {
+            "backup_path": str(backup_path),
+            "resource_type": resource_type,
+            "timestamp": _dt.now().isoformat(),
+            "targets": targets,
+        }
+    except Exception as exc:
+        logger.warning(f"backup_current_state failed: {exc}")
+        return {
+            "backup_path": "",
+            "resource_type": resource_type,
+            "timestamp": _dt.now().isoformat(),
+            "targets": targets,
+            "error": str(exc),
+        }
 
 
 if __name__ == "__main__":

@@ -64,6 +64,20 @@ _session_manager: SessionManager = SessionManager()
 # Global AI engine instance (initialized on startup)
 _ai_engine: Optional[AIEngine] = None
 
+# Global settings instance (lazy-loaded)
+_settings = None
+
+def _get_settings():
+    """Get current settings (lazy-loaded)."""
+    global _settings
+    if _settings is None:
+        try:
+            manager = SettingsManager()
+            _settings = manager.load()
+        except Exception:
+            _settings = None
+    return _settings
+
 
 # ==================== Response Models ====================
 
@@ -452,6 +466,9 @@ async def websocket_chat_endpoint(websocket: WebSocket):
         return
 
     session_id: Optional[str] = None
+    # Gate confirmation storage for task executor (CRITICAL-2)
+    pending_confirmations: dict[str, asyncio.Event] = {}
+    pending_denial_flags: dict[str, dict] = {}
 
     try:
         # Accept connection (will be registered with session_id later)
@@ -531,8 +548,19 @@ async def websocket_chat_endpoint(websocket: WebSocket):
                             message=content,
                             session_id=session_id,
                             ai_engine=_ai_engine,
-                            session_context=context
+                            session_context=context,
+                            settings=_get_settings(),
                         ):
+                            # Gate confirmation interception (CRITICAL-2)
+                            if chunk.get("type") == "confirmation_required" and "_event" in chunk:
+                                event = chunk.pop("_event")
+                                rid = chunk.get("request_id", "")
+                                if rid:
+                                    pending_confirmations[rid] = event
+                                    pending_denial_flags[rid] = chunk.get("_session_context", {})
+
+                            # Remove internal fields before sending to client
+                            chunk.pop("_session_context", None)
                             await websocket.send_json(chunk)
 
                             # If this is a stream chunk, accumulate for assistant message
@@ -571,20 +599,31 @@ async def websocket_chat_endpoint(websocket: WebSocket):
                     "agent": "system"
                 })
 
-            # Handle confirmation response
+            # Handle confirmation response (gate step — CRITICAL-2)
             elif msg_type == "confirm_response":
-                # TODO: Implement confirmation flow
                 request_id = raw.get("request_id")
                 approved = raw.get("approved", False)
 
                 logger.info(f"Confirmation response: request_id={request_id}, approved={approved}")
 
-                # For now, just acknowledge
-                await websocket.send_json({
-                    "type": "stream",
-                    "chunk": f"Confirmation {'approved' if approved else 'denied'}",
-                    "agent": "system"
-                })
+                if request_id and request_id in pending_confirmations:
+                    event = pending_confirmations.pop(request_id)
+                    ctx = pending_denial_flags.pop(request_id, {})
+                    if not approved:
+                        # Set denial flag so executor checks and aborts
+                        ctx[f"gate_denied_{request_id}"] = True
+                    event.set()
+                    await websocket.send_json({
+                        "type": "stream",
+                        "chunk": f"Gate {'approved' if approved else 'denied'}",
+                        "agent": "system"
+                    })
+                else:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": f"No pending confirmation for request_id={request_id}",
+                        "code": "NO_PENDING_CONFIRMATION"
+                    })
 
             # Unknown message type
             else:

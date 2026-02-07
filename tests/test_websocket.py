@@ -257,7 +257,7 @@ class TestConfirmationFlow:
     """Tests for confirmation requests and responses."""
 
     def test_confirmation_response_approved(self):
-        """Test confirmation response with approval."""
+        """Test confirmation response with unknown request_id returns error."""
         with client.websocket_connect("/ws/chat") as ws:
             ws.send_json({
                 "type": "confirm_response",
@@ -266,11 +266,11 @@ class TestConfirmationFlow:
             })
 
             data = ws.receive_json()
-            assert data["type"] == "stream"
-            assert "approved" in data["chunk"].lower()
+            assert data["type"] == "error"
+            assert data["code"] == "NO_PENDING_CONFIRMATION"
 
     def test_confirmation_response_denied(self):
-        """Test confirmation response with denial."""
+        """Test confirmation response denial with unknown request_id returns error."""
         with client.websocket_connect("/ws/chat") as ws:
             ws.send_json({
                 "type": "confirm_response",
@@ -279,8 +279,8 @@ class TestConfirmationFlow:
             })
 
             data = ws.receive_json()
-            assert data["type"] == "stream"
-            assert "denied" in data["chunk"].lower()
+            assert data["type"] == "error"
+            assert data["code"] == "NO_PENDING_CONFIRMATION"
 
 
 # ==================== Session Management Tests ====================
