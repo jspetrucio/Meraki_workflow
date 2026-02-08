@@ -93,13 +93,17 @@ class TestTaskFileParsing:
         assert task.risk_level == RiskLevel.HIGH
 
     def test_rollback_steps(self):
-        """AC#8: rollback has gate for backup selection."""
+        """AC#8: rollback has gate for backup selection + preview + confirm."""
         task = parse_task_file(TASKS_DIR / "meraki-specialist" / "rollback.md")
-        assert len(task.steps) == 5
+        assert len(task.steps) == 7
         step_names = [s.name for s in task.steps]
         assert "select_backup" in step_names
+        assert "generate_preview" in step_names
+        assert "confirm_rollback" in step_names
         gate_step = next(s for s in task.steps if s.name == "select_backup")
         assert gate_step.type == StepType.GATE
+        confirm_step = next(s for s in task.steps if s.name == "confirm_rollback")
+        assert confirm_step.type == StepType.GATE
 
     def test_executar_especifico_parses(self):
         """AC#9: executar-especifico.md has valid frontmatter."""
@@ -179,13 +183,13 @@ class TestSafetyPattern:
         assert cat_step.tool == "detect_catalyst_mode"
 
     def test_sgt_preflight_tool(self):
-        """sgt_preflight uses check_switch_port_writeability tool."""
+        """sgt_preflight uses sgt_preflight_check tool (matching FUNCTION_REGISTRY)."""
         task = parse_task_file(
             TASKS_DIR / "meraki-specialist" / "configure-switching.md"
         )
         sgt_step = next(s for s in task.steps if s.name == "sgt_preflight_check")
         assert sgt_step.type == StepType.TOOL
-        assert sgt_step.tool == "check_switch_port_writeability"
+        assert sgt_step.tool == "sgt_preflight_check"
 
 
 # ==================== Trigger Keywords Tests ====================
@@ -384,10 +388,11 @@ class TestHooks:
         assert task.hooks.get("pre") == "pre-task"
         assert task.hooks.get("post") == "post-task"
 
-    def test_executar_no_hooks(self):
-        """executar-especifico (fallback) has no hooks."""
+    def test_executar_has_hooks(self):
+        """executar-especifico (high-risk fallback) has pre/post hooks for safety."""
         task = parse_task_file(TASKS_DIR / "meraki-specialist" / "executar-especifico.md")
-        assert task.hooks == {} or task.hooks is None or len(task.hooks) == 0
+        assert task.hooks.get("pre") == "pre-task"
+        assert task.hooks.get("post") == "post-task"
 
 
 # ==================== Body Content Tests ====================

@@ -19,7 +19,7 @@
   - Se genérico: "reverte a última mudança" → pegar último entry
   - Se ambíguo: listar últimas mudanças e perguntar qual reverter
 - **Mostrar:**
-```
+```text
 Encontrei estas mudanças recentes:
 
   1. [14:32] ACL "block-telnet" criada em 5 switches
@@ -42,7 +42,7 @@ Qual mudança quer reverter?
 - **Type:** agent
 - **Output:** `change-preview` schema (inverso)
 - **Format:**
-```
+```text
 Vou reverter a seguinte mudança:
 
   Mudança original: ACL "block-telnet" criada em 5 switches

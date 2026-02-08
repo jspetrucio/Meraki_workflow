@@ -12,7 +12,7 @@ steps:
     description: "Parse user request to identify switching configuration changes needed"
   - name: resolve_targets
     type: tool
-    tool: get_network_details
+    tool: discover_networks
     description: "Identify switches, ports, and VLANs involved"
   - name: catalyst_detection
     type: tool
@@ -22,7 +22,7 @@ steps:
     description: "Detect if switch is Catalyst in monitored mode (blocks writes)"
   - name: sgt_preflight_check
     type: tool
-    tool: check_switch_port_writeability
+    tool: sgt_preflight_check
     args_from:
       serial: resolve_targets.result.serial
     description: "Check for TrustSec/SGT port restrictions before any changes"
@@ -39,17 +39,11 @@ steps:
     type: gate
     message_template: "Review the switching configuration changes above. Apply these changes?"
   - name: apply_changes
-    type: tool
-    tool: apply_config
-    args_from:
-      network_id: resolve_targets.result.id
-    description: "Apply switching configuration changes"
+    type: agent
+    description: "Apply switching configuration changes via appropriate API endpoints"
   - name: verify
-    type: tool
-    tool: verify_config
-    args_from:
-      network_id: resolve_targets.result.id
-    description: "Verify applied switching configuration matches expected state"
+    type: agent
+    description: "Verify applied switching configuration by re-reading current state"
 ---
 
 # Meraki Specialist - Configure Switching
@@ -57,6 +51,7 @@ steps:
 Configure MS (Switch) and Catalyst managed-mode switching settings.
 
 ## Scope
+
 - VLANs (create, update, delete)
 - ACLs (Access Control Lists)
 - Switch port configuration (type, VLAN, name)

@@ -6,15 +6,15 @@ risk_level: low
 steps:
   - name: resolve_targets
     type: tool
-    tool: get_network_details
+    tool: discover_networks
   - name: discover_firewall_rules
     type: tool
-    tool: get_firewall_rules
+    tool: discover_firewall_rules
     args_from:
       network_id: resolve_targets.result.id
   - name: discover_ssids
     type: tool
-    tool: get_ssids
+    tool: discover_ssids
     args_from:
       network_id: resolve_targets.result.id
   - name: analyze_security

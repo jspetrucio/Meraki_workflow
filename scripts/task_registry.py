@@ -99,6 +99,7 @@ def parse_task_file(file_path: str | Path) -> TaskDefinition:
     try:
         risk_level = RiskLevel(risk_str)
     except ValueError:
+        logger.warning(f"Invalid risk_level '{risk_str}' in {file_path}, defaulting to LOW")
         risk_level = RiskLevel.LOW
 
     return TaskDefinition(

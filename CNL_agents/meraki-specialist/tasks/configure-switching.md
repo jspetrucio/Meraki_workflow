@@ -1,6 +1,7 @@
 # Task: configure-switching
 
 ## Metadata
+
 - **ID:** T2
 - **Trigger:** VLAN, ACL, switch port, QoS, CoS, STP, DHCP, storm control, port schedule, trunk, access port, PoE
 - **Scope:** MS (Switches) + Catalyst C9300 managed mode
@@ -44,13 +45,14 @@
 - **Action:** Testar writeability de cada porta alvo
 - **Output:** Lista de portas writable vs read-only (SGT locked)
 - **Se porta alvo é read-only:**
-```
+
+```text
 ⚠️ ALERTA: Porta {port_id} no switch {name} ({model}) está protegida por TrustSec/SGT.
-  
+
   Status: READ-ONLY via API
   Causa: Cisco ISE Security Group Tag peering
   Ação: Modificar política SGT no ISE ou escolher porta diferente
-  
+
   Portas disponíveis (writable): {lista}
 ```
 

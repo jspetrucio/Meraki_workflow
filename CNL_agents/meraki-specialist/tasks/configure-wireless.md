@@ -61,7 +61,7 @@ Confirma? (sim/não)
 
 ### Step 5 — Apply Changes
 - **Type:** tool
-- **Tools:** `update_network_ssid`, `update_network_ssid_splash_settings`
+- **Tools:** `configure_ssid`
 - **Sequence:** (ordem importa)
   1. Configurar SSID base (nome, auth, encryption, PSK)
   2. Configurar splash page (se aplicável)
@@ -72,7 +72,7 @@ Confirma? (sim/não)
 
 ### Step 6 — Verify
 - **Type:** tool
-- **Tools:** `get_network_ssid`
+- **Tools:** `discover_ssids`
 - **Action:** GET o SSID configurado e comparar com o esperado
 - **Se divergir:** Alertar usuário, oferecer rollback
 

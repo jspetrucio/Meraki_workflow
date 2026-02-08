@@ -18,6 +18,7 @@ from typing import AsyncGenerator, Optional
 
 from scripts.ai_engine import AIEngine
 from scripts.executor_utils import execute_function, serialize_result
+from scripts.path_validation import validate_path_component
 from scripts.safety import (
     before_operation,
     classify_operation,
@@ -122,11 +123,12 @@ class TaskExecutor:
             ):
                 yield chunk
         except Exception as exc:
+            logger.error(f"Pre-task hook failed for {task_def.name}: {exc}")
             state.status = TaskStatus.FAILED
             self._save_state(state, client_name)
             yield {
                 "type": "task_error",
-                "error": f"Pre-task hook failed: {exc}",
+                "error": "Pre-task hook failed. Check server logs for details.",
                 "task_name": task_def.name,
             }
             return
@@ -249,6 +251,7 @@ class TaskExecutor:
                 return
 
             except Exception as exc:
+                logger.error(f"Step '{step.name}' failed in task '{task_def.name}': {exc}")
                 step_result.status = StepStatus.FAILED
                 step_result.error = str(exc)
                 step_result.completed_at = datetime.now()
@@ -258,13 +261,13 @@ class TaskExecutor:
                 yield {
                     "type": "step_error",
                     "step": step.name,
-                    "error": str(exc),
+                    "error": f"Step '{step.name}' failed. Check server logs for details.",
                 }
                 yield {
                     "type": "task_complete",
                     "task_name": task_def.name,
                     "status": "failed",
-                    "summary": f"Step failed: {step.name} — {exc}",
+                    "summary": f"Step failed: {step.name}. Check server logs for details.",
                 }
                 return
 
@@ -503,6 +506,7 @@ class TaskExecutor:
     def _save_state(self, state: TaskRunState, client_name: str) -> None:
         """Save task run state to JSON file."""
         try:
+            client_name = validate_path_component(client_name, "client_name")
             state_dir = Path("clients") / client_name / "task-runs"
             state_dir.mkdir(parents=True, exist_ok=True)
             state_file = state_dir / f"{state.task_id}.json"
@@ -516,6 +520,7 @@ class TaskExecutor:
     @staticmethod
     def load_state(task_id: str, client_name: str) -> Optional[TaskRunState]:
         """Load task run state from JSON file."""
+        client_name = validate_path_component(client_name, "client_name")
         state_file = Path("clients") / client_name / "task-runs" / f"{task_id}.json"
         if not state_file.exists():
             return None
@@ -546,7 +551,8 @@ class TaskExecutor:
                 undo_result = execute_undo(session_id)
                 results.append({"action": entry.action, "undo": undo_result})
             except ValueError as exc:
-                results.append({"action": entry.action, "error": str(exc)})
+                logger.error(f"Rollback failed for action '{entry.action}': {exc}")
+                results.append({"action": entry.action, "error": "Undo failed. Check server logs for details."})
 
         state.status = TaskStatus.ROLLED_BACK
         return {"rollback_results": results, "status": state.status.value}

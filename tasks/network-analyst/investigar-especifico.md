@@ -9,7 +9,7 @@ steps:
     description: "Parse the user's investigation request to identify targets and scope"
   - name: resolve_targets
     type: tool
-    tool: get_network_details
+    tool: discover_networks
   - name: investigate
     type: agent
     description: "Investigate the specific issue or question raised by the user"

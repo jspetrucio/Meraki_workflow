@@ -12,7 +12,7 @@ steps:
     description: "Parse user request to identify wireless configuration changes needed"
   - name: resolve_targets
     type: tool
-    tool: get_network_details
+    tool: discover_networks
     description: "Identify network, SSID slots, and affected APs"
   - name: backup_current_state
     type: tool
@@ -27,17 +27,11 @@ steps:
     type: gate
     message_template: "Review the wireless configuration changes above. Apply these changes?"
   - name: apply_changes
-    type: tool
-    tool: apply_config
-    args_from:
-      network_id: resolve_targets.result.id
-    description: "Apply wireless configuration changes"
+    type: agent
+    description: "Apply wireless configuration changes via appropriate API endpoints"
   - name: verify
-    type: tool
-    tool: verify_config
-    args_from:
-      network_id: resolve_targets.result.id
-    description: "Verify applied wireless configuration matches expected state"
+    type: agent
+    description: "Verify applied wireless configuration by re-reading current state"
 ---
 
 # Meraki Specialist - Configure Wireless
@@ -45,6 +39,7 @@ steps:
 Configure MR (Access Point) wireless settings via Meraki Dashboard API.
 
 ## Scope
+
 - SSIDs (create, update, enable/disable)
 - Splash pages and captive portals
 - RF profiles
@@ -53,6 +48,7 @@ Configure MR (Access Point) wireless settings via Meraki Dashboard API.
 - Bluetooth settings
 
 ## Safety Rules
+
 1. PSK minimum 8 characters, suggest 12+ with complexity
 2. Open SSID: ALWAYS alert user about security risk
 3. WPA1: Alert deprecation, recommend WPA2 or WPA3

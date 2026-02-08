@@ -11,19 +11,23 @@ steps:
     type: agent
     description: "Identify which change to rollback from changelog or user description"
   - name: list_backups
-    type: tool
-    tool: list_change_log
+    type: agent
     description: "List available backups from the change log"
   - name: select_backup
     type: gate
     message_template: "Select which change to rollback from the list above."
+  - name: generate_preview
+    type: agent
+    description: "Generate rollback preview showing current state vs backup state"
+  - name: confirm_rollback
+    type: gate
+    message_template: "Review the rollback preview above. Proceed with rollback?"
   - name: rollback_config
     type: tool
-    tool: execute_undo
+    tool: rollback_config
     description: "Restore the backup state for the selected change"
   - name: verify
-    type: tool
-    tool: verify_config
+    type: agent
     description: "Verify rollback was applied correctly by comparing with backup state"
 ---
 

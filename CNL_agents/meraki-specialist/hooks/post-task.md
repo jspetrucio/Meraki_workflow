@@ -210,7 +210,7 @@ async def on_error(error, change_request, backup_state):
             await rollback_to_state(backup_state)
             print("✅ Rollback automático realizado com sucesso.")
             return {"action": "rolled_back"}
-        except:
+        except Exception:
             print("❌ Rollback automático falhou. Estado pode estar inconsistente.")
             print(f"Backup salvo em: change_id={change_request.id}")
             print("Use 'rollback --change-id=...' para reverter manualmente.")

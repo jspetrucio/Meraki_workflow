@@ -5,8 +5,8 @@ trigger_keywords: [drift, changed, difference, compare, baseline, what changed, 
 risk_level: low
 steps:
   - name: load_baseline
-    type: tool
-    tool: load_snapshot
+    type: agent
+    description: "Load the most recent baseline snapshot for comparison"
   - name: discover_current
     type: tool
     tool: full_discovery

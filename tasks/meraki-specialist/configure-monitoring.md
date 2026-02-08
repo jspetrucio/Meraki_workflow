@@ -12,20 +12,14 @@ steps:
     description: "Parse user request to identify monitoring configuration changes"
   - name: resolve_targets
     type: tool
-    tool: get_network_details
+    tool: discover_networks
     description: "Identify network, devices, and current monitoring settings"
   - name: apply_changes
-    type: tool
-    tool: apply_config
-    args_from:
-      network_id: resolve_targets.result.id
-    description: "Apply monitoring configuration changes"
+    type: agent
+    description: "Apply monitoring configuration changes via appropriate API endpoints"
   - name: verify
-    type: tool
-    tool: verify_config
-    args_from:
-      network_id: resolve_targets.result.id
-    description: "Verify applied monitoring configuration"
+    type: agent
+    description: "Verify applied monitoring configuration by re-reading current state"
 ---
 
 # Meraki Specialist - Configure Monitoring
@@ -33,6 +27,7 @@ steps:
 Configure monitoring, alerting, and observability settings across all device types.
 
 ## Scope
+
 - Alerts and notifications (email, webhook, SMS)
 - SNMP (v2c, v3)
 - Syslog servers
@@ -42,6 +37,7 @@ Configure monitoring, alerting, and observability settings across all device typ
 - Webhooks
 
 ## Notes
+
 - No gate step required: monitoring changes are low-disruption
 - Firmware updates are the exception: suggest maintenance window
 

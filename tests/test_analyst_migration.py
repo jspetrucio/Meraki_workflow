@@ -137,7 +137,7 @@ class TestRiskLevels:
         return reg
 
     def test_all_tasks_low_risk(self, registry):
-        """AC#14: All Network Analyst tasks have risk_level: low."""
+        """AC#14: All Network Analyst tasks have risk_level: low (read-only operations)."""
         analyst_tasks = [
             "discovery-completo",
             "health-check",

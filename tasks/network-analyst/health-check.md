@@ -6,10 +6,10 @@ risk_level: low
 steps:
   - name: resolve_network
     type: tool
-    tool: get_network_details
+    tool: discover_networks
   - name: get_health_metrics
     type: tool
-    tool: get_device_statuses
+    tool: discover_devices
     args_from:
       network_id: resolve_network.result.id
   - name: assess_thresholds

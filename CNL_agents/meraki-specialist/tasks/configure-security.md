@@ -43,7 +43,7 @@
 - **Input:** regras atuais + nova regra + posição
 - **Output:** `change-preview` schema
 - **CRÍTICO — Mostrar contexto completo:**
-```
+```text
 Regras L3 atuais (MX-HQ):
   1. ALLOW TCP 10.0.0.0/8 → any:443     [HTTPS interno]
   2. ALLOW UDP any → any:53              [DNS]
