@@ -508,7 +508,7 @@ MERAKI_SPECIALIST_TOOLS = [
                     },
                 },
                 "required": ["network_id", "vlan_id"],
-                "additionalProperties": True,
+                "additionalProperties": False,
             },
         },
     },
