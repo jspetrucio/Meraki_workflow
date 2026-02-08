@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/common/AppLayout';
 import { OnboardingWizard } from '@/components/onboarding';
 import { UpdateBanner } from '@/components/common/UpdateBanner';
+import { ChatView } from '@/components/chat/ChatView';
 import { api, fetchWithErrorHandling } from '@/lib/api';
 import { tauriInvoke } from '@/lib/tauri';
 import type { OnboardingStatus } from '@/components/onboarding';
@@ -66,17 +67,7 @@ function App() {
     <>
       <UpdateBanner onInstallUpdate={handleInstallUpdate} />
       <AppLayout>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <div className="h-16 w-16 mx-auto rounded-2xl bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-2xl">C</span>
-            </div>
-            <h1 className="text-2xl font-semibold">CNL</h1>
-            <p className="text-muted-foreground">
-              Cisco Neural Language — Chat interface coming soon
-            </p>
-          </div>
-        </div>
+        <ChatView />
       </AppLayout>
     </>
   );

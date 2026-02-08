@@ -1,11 +1,32 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useChatStore } from '@/stores/chatStore';
 import type { WebSocketMessage, SendMessageOptions } from '@/lib/websocket-types';
-import type { ConnectionStatus } from '@/lib/types';
+import type { ConnectionStatus, AgentInfo } from '@/lib/types';
 
-const WS_URL = 'ws://localhost:3141/ws';
+// Build WebSocket URL dynamically so it works through Vite proxy (dev) and directly (prod)
+const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/chat`;
 const RECONNECT_DELAY = 3000;
 const PING_INTERVAL = 30000;
+
+// Map agent names to display info
+const AGENT_ICONS: Record<string, string> = {
+  'network-analyst': '🔍',
+  'meraki-specialist': '⚙️',
+  'workflow-creator': '🔄',
+  'system': '🤖',
+};
+
+function normalizeAgent(agent: unknown): AgentInfo | undefined {
+  if (!agent) return undefined;
+  if (typeof agent === 'string') {
+    return { name: agent, icon: AGENT_ICONS[agent] || '🤖' };
+  }
+  if (typeof agent === 'object' && 'name' in (agent as Record<string, unknown>)) {
+    const a = agent as Record<string, unknown>;
+    return { name: String(a.name), icon: String(a.icon || AGENT_ICONS[String(a.name)] || '🤖') };
+  }
+  return undefined;
+}
 
 export function useWebSocket() {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
@@ -38,11 +59,13 @@ export function useWebSocket() {
           // Keepalive response, do nothing
           break;
 
-        case 'stream':
-          if (msg.content) {
-            appendToLastAssistant(sessionId, msg.content);
+        case 'stream': {
+          const text = msg.content || msg.chunk;
+          if (text) {
+            appendToLastAssistant(sessionId, text);
           }
           break;
+        }
 
         case 'data':
           addMessage(sessionId, {
@@ -54,14 +77,15 @@ export function useWebSocket() {
               content: msg.data,
               language: msg.language,
             },
-            agent: msg.agent,
+            agent: normalizeAgent(msg.agent),
           });
           break;
 
         case 'confirm':
+        case 'confirmation_required':
           addMessage(sessionId, {
             role: 'assistant',
-            content: msg.content || 'Confirmation required',
+            content: msg.content || msg.message || 'Confirmation required',
             sessionId,
             confirmRequest: {
               request_id: msg.request_id || '',
@@ -69,12 +93,36 @@ export function useWebSocket() {
               preview: msg.preview,
               danger_level: msg.danger_level || 'medium',
             },
-            agent: msg.agent,
+            agent: normalizeAgent(msg.agent),
           });
           break;
 
+        case 'function_result':
+          addMessage(sessionId, {
+            role: 'assistant',
+            content: '',
+            sessionId,
+            data: {
+              format: 'json',
+              content: msg.result ?? msg.data,
+            },
+            agent: normalizeAgent(msg.agent),
+          });
+          break;
+
+        case 'function_error':
+          addMessage(sessionId, {
+            role: 'assistant',
+            content: `Function error (${msg.function || 'unknown'}): ${msg.error || 'Unknown error'}`,
+            sessionId,
+            agent: normalizeAgent(msg.agent),
+          });
+          setStreaming(false);
+          break;
+
+        case 'classification':
         case 'agent_status':
-          // Agent status update - could be used to show "Agent X is thinking..."
+          // Agent classification/status update - ignore silently
           break;
 
         case 'error':
@@ -82,7 +130,7 @@ export function useWebSocket() {
             role: 'assistant',
             content: `Error: ${msg.error || msg.message || 'Unknown error'}`,
             sessionId,
-            agent: msg.agent,
+            agent: normalizeAgent(msg.agent),
           });
           setStreaming(false);
           break;

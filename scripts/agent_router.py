@@ -10,15 +10,26 @@ Executes agent functions via asyncio.to_thread() for sync module integration.
 """
 
 import asyncio
+import dataclasses
+import inspect
 import json
 import logging
 import re
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import AsyncGenerator, Optional
 
+from scripts.agent_tools import get_agent_tools
 from scripts.ai_engine import AIEngine, AIEngineError
+from scripts.executor_utils import (
+    execute_function as _public_execute_function,
+    serialize_result as _public_serialize_result,
+)
 from scripts.settings import Settings, SettingsManager
+from scripts.task_models import TaskDefinition
+from scripts.task_registry import TaskRegistry
+from scripts.verb_utils import detect_verb_type
 
 logger = logging.getLogger(__name__)
 
@@ -54,15 +65,19 @@ class ClassificationResult:
     confidence: float
     reasoning: str
     requires_confirmation: bool = False
+    task_definition: Optional[TaskDefinition] = None
 
     def to_dict(self) -> dict:
         """Convert to dict for serialization."""
-        return {
+        result = {
             "agent_name": self.agent_name,
             "confidence": self.confidence,
             "reasoning": self.reasoning,
             "requires_confirmation": self.requires_confirmation,
         }
+        if self.task_definition:
+            result["task_name"] = self.task_definition.name
+        return result
 
 
 # ==================== Agent Registry ====================
@@ -206,6 +221,10 @@ def _build_function_registry() -> dict:
     registry["add_switch_acl"] = config.add_switch_acl
     registry["backup_config"] = config.backup_config
     registry["rollback_config"] = config.rollback_config
+    registry["detect_catalyst_mode"] = config.detect_catalyst_mode
+    registry["sgt_preflight_check"] = config.sgt_preflight_check
+    registry["check_license"] = config.check_license
+    registry["backup_current_state"] = config.backup_current_state
 
     # Workflow functions
     registry["create_device_offline_handler"] = workflow.create_device_offline_handler
@@ -223,6 +242,23 @@ def _build_function_registry() -> dict:
 
 
 FUNCTION_REGISTRY = _build_function_registry()
+
+# Module-level TaskRegistry (lazy-loaded from tasks/ directory)
+_task_registry = TaskRegistry()
+
+def _get_task_registry() -> TaskRegistry:
+    """Get the module-level task registry, loading tasks on first access.
+
+    Note: load_tasks() performs synchronous disk I/O (YAML parsing).
+    This is acceptable as a one-time cold-start cost; results are cached
+    in the module-level ``_task_registry`` for all subsequent calls.
+    """
+    if not _task_registry.tasks:
+        tasks_dir = Path(__file__).parent.parent / "tasks"
+        if tasks_dir.exists():
+            _task_registry.load_tasks(tasks_dir)
+            logger.info(f"Loaded {len(_task_registry.tasks)} modular tasks from {tasks_dir}")
+    return _task_registry
 
 
 # ==================== Classification ====================
@@ -311,6 +347,9 @@ def _quick_classify(message: str) -> Optional[ClassificationResult]:
         },
     }
 
+    # Verb-aware pre-pass (Story 7.7 / HIGH-1)
+    has_action, has_analysis = detect_verb_type(message_lower)
+
     # Count matches for each agent with weights
     match_scores = {}
     for agent_name, agent_config in patterns.items():
@@ -324,6 +363,27 @@ def _quick_classify(message: str) -> Optional[ClassificationResult]:
                 score += len(matches) * agent_config["weight"]
         match_scores[agent_name] = score
 
+    # Apply verb-based score adjustments (only between analyst/specialist)
+    # Workflow-creator is unaffected — its keywords are highly specific
+    verb_boost = 0.0
+    wf_score = match_scores.get("workflow-creator", 0)
+    analyst_score = match_scores.get("network-analyst", 0)
+    specialist_score = match_scores.get("meraki-specialist", 0)
+
+    # Only apply verb boost when workflow-creator has no matches
+    # (workflow keywords are highly specific, verb boost shouldn't override them)
+    if wf_score == 0:
+        if has_action and not has_analysis:
+            # Pure action intent → boost specialist, penalize analyst
+            match_scores["meraki-specialist"] = specialist_score + 2.0
+            match_scores["network-analyst"] = max(analyst_score - 1.0, 0)
+            verb_boost = 2.0
+        elif has_analysis and not has_action:
+            # Pure analysis intent → boost analyst, penalize specialist
+            match_scores["network-analyst"] = analyst_score + 2.0
+            match_scores["meraki-specialist"] = max(specialist_score - 1.0, 0)
+            verb_boost = 2.0
+
     # Get best match
     if match_scores:
         best_agent = max(match_scores, key=match_scores.get)
@@ -332,11 +392,14 @@ def _quick_classify(message: str) -> Optional[ClassificationResult]:
         if best_score > 0:
             # Calculate confidence (normalize to 0.6-0.95 range)
             confidence = min(0.6 + (best_score * 0.1), 0.95)
+            reasoning = f"Pattern match (score: {best_score:.1f})"
+            if verb_boost > 0:
+                reasoning += f", verb-aware boost applied"
 
             return ClassificationResult(
                 agent_name=best_agent,
                 confidence=confidence,
-                reasoning=f"Pattern match (score: {best_score:.1f})",
+                reasoning=reasoning,
                 requires_confirmation=confidence < 0.7,
             )
 
@@ -397,28 +460,57 @@ async def _llm_classify(message: str, ai_engine: AIEngine) -> ClassificationResu
 
 
 async def classify_intent(
-    message: str, ai_engine: Optional[AIEngine] = None
+    message: str,
+    ai_engine: Optional[AIEngine] = None,
+    settings: Optional[Settings] = None,
 ) -> ClassificationResult:
     """
     Classify user intent to route to appropriate agent.
 
     Pipeline:
     1. Check explicit prefix (@analyst, @specialist, @workflow)
-    2. Quick regex classify (if confidence > 0.9, return)
-    3. LLM classify (if AI engine available)
-    4. If final confidence < 0.7, set requires_confirmation
+    2. Task registry match WITH verb check (if use_modular_tasks enabled)
+    3. Quick regex classify (if confidence > 0.9, return)
+    4. LLM classify (if AI engine available)
+    5. If final confidence < 0.7, set requires_confirmation
 
     Args:
         message: User message to classify
         ai_engine: Optional AIEngine instance
+        settings: Optional Settings instance for feature flags
 
     Returns:
         ClassificationResult with agent selection and confidence
     """
-    # Try quick classify first
+    # Try quick classify first (handles explicit prefix at confidence=1.0)
     quick_result = _quick_classify(message)
 
-    # If explicit prefix or high confidence, use it
+    # If explicit prefix (confidence=1.0), use it immediately
+    if quick_result and quick_result.confidence == 1.0:
+        logger.info(
+            f"Explicit prefix: {quick_result.agent_name}"
+        )
+        return quick_result
+
+    # Task registry check (after prefix, before regex/LLM) — Story 7.3 / HIGH-1
+    use_modular = True
+    if settings:
+        use_modular = getattr(settings, "use_modular_tasks", True)
+
+    if use_modular:
+        registry = _get_task_registry()
+        task_match = registry.find_matching_task(message)
+        if task_match:
+            logger.info(f"Routing to task_executor: {task_match.name}")
+            return ClassificationResult(
+                agent_name=task_match.agent,
+                confidence=1.0,
+                reasoning=f"Matched task: {task_match.name}",
+                requires_confirmation=False,
+                task_definition=task_match,
+            )
+
+    # If high confidence regex match, use it
     if quick_result and quick_result.confidence >= 0.9:
         logger.info(
             f"Quick classify: {quick_result.agent_name} "
@@ -448,6 +540,7 @@ async def classify_intent(
 
     # Ultimate fallback
     logger.warning("No classification method succeeded, using default")
+    logger.info("Routing to legacy LLM flow for agent: network-analyst")
     return ClassificationResult(
         agent_name="network-analyst",
         confidence=0.3,
@@ -459,38 +552,16 @@ async def classify_intent(
 # ==================== Function Execution ====================
 
 
+def _serialize_result(obj):
+    """Delegate to executor_utils.serialize_result (CRITICAL-1)."""
+    return _public_serialize_result(obj)
+
+
 async def _execute_function(
     func_name: str, args: dict
 ) -> tuple[bool, Optional[dict], Optional[str]]:
-    """
-    Execute a function from the registry via asyncio.to_thread().
-
-    Args:
-        func_name: Name of the function to execute
-        args: Arguments to pass to the function
-
-    Returns:
-        Tuple of (success: bool, result: dict, error: str)
-    """
-    # Lookup function
-    func = FUNCTION_REGISTRY.get(func_name)
-    if not func:
-        error = f"Function '{func_name}' not found in registry"
-        logger.error(error)
-        return False, None, error
-
-    try:
-        # Execute via asyncio.to_thread() to avoid blocking
-        logger.debug(f"Executing function: {func_name} with args: {args}")
-        result = await asyncio.to_thread(func, **args)
-
-        logger.info(f"Function {func_name} executed successfully")
-        return True, {"result": str(result)}, None
-
-    except Exception as exc:
-        error = f"Function {func_name} failed: {type(exc).__name__}: {exc}"
-        logger.error(error)
-        return False, None, error
+    """Delegate to executor_utils.execute_function (CRITICAL-1)."""
+    return await _public_execute_function(func_name, args, FUNCTION_REGISTRY)
 
 
 # ==================== Message Processing ====================
@@ -501,28 +572,28 @@ async def process_message(
     session_id: str = "default",
     ai_engine: Optional[AIEngine] = None,
     session_context: Optional[list] = None,
+    settings: Optional[Settings] = None,
 ) -> AsyncGenerator[dict, None]:
     """
     Process user message and route to appropriate agent.
 
     Pipeline:
-    1. Classify intent → select agent
-    2. Build prompt with agent system prompt + context
-    3. Send to AI Engine with function-calling
-    4. Execute function calls via FUNCTION_REGISTRY
-    5. Yield streaming chunks and data
+    1. Classify intent → select agent (includes task registry check)
+    2a. If task_definition matched → delegate to task_executor
+    2b. Otherwise → legacy LLM flow (build prompt, chat_completion, tool_calls)
 
     Args:
         message: User message to process
         session_id: Session identifier for context
         ai_engine: Optional AIEngine instance
         session_context: Optional list of previous messages (last 20)
+        settings: Optional Settings for feature flags
 
     Yields:
         Dict with type=stream|data|error and content
     """
-    # Classify intent
-    classification = await classify_intent(message, ai_engine)
+    # Classify intent (includes task registry check if use_modular_tasks enabled)
+    classification = await classify_intent(message, ai_engine, settings=settings)
 
     # Yield classification result
     yield {
@@ -542,6 +613,40 @@ async def process_message(
         }
         # In real implementation, would await user response here
         # For now, we proceed
+
+    # === Task Executor Path (Story 7.3) ===
+    if classification.task_definition:
+        from scripts.task_executor import TaskExecutor
+
+        executor = TaskExecutor(
+            ai_engine=ai_engine,
+            settings=settings,
+            function_registry=FUNCTION_REGISTRY,
+        )
+
+        session_ctx = {"session_id": session_id}
+        client_name = None
+        if settings:
+            client_name = getattr(settings, "meraki_profile", None)
+
+        try:
+            async for chunk in executor.execute(
+                task_def=classification.task_definition,
+                user_message=message,
+                session_context=session_ctx,
+                client_name=client_name,
+            ):
+                yield chunk
+        except Exception as exc:
+            logger.exception(f"Task executor error for {classification.task_definition.name}")
+            yield {
+                "type": "error",
+                "error": "Task execution failed. Check server logs for details.",
+            }
+        return
+
+    # === Legacy LLM Flow ===
+    logger.info(f"Routing to legacy LLM flow for agent: {classification.agent_name}")
 
     # Get agent definition
     agent = AGENTS.get(classification.agent_name)
@@ -573,21 +678,11 @@ async def process_message(
         }
         return
 
-    # Build tool definitions from agent functions
-    tools = []
-    for func_name in agent.functions:
-        # Simple tool definition (in production, would load from schema)
-        tools.append({
-            "type": "function",
-            "function": {
-                "name": func_name,
-                "description": f"Execute {func_name}",
-                "parameters": {
-                    "type": "object",
-                    "properties": {},
-                },
-            },
-        })
+    # Build tool definitions from agent_tools.py schemas
+    try:
+        tools = get_agent_tools(agent.name)
+    except ValueError:
+        tools = []
 
     # Call AI Engine with function-calling
     try:
@@ -650,7 +745,7 @@ async def process_message(
         logger.exception("Error in process_message")
         yield {
             "type": "error",
-            "error": f"Processing failed: {type(exc).__name__}: {exc}",
+            "error": "Processing failed. Check server logs for details.",
         }
 
 

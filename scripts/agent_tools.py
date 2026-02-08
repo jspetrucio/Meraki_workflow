@@ -63,6 +63,11 @@ TOOL_SAFETY = {
     "create_scheduled_report": SafetyLevel.SAFE,
     "create_security_alert_handler": SafetyLevel.SAFE,
     "save_workflow": SafetyLevel.SAFE,
+    # Task executor support (Story 7.4)
+    "detect_catalyst_mode": SafetyLevel.SAFE,
+    "sgt_preflight_check": SafetyLevel.SAFE,
+    "check_license": SafetyLevel.SAFE,
+    "backup_current_state": SafetyLevel.SAFE,
 }
 
 
@@ -455,12 +460,48 @@ MERAKI_SPECIALIST_TOOLS = [
         "type": "function",
         "function": {
             "name": "update_vlan",
-            "description": "Update an existing VLAN",
+            "description": "Update an existing VLAN configuration including DHCP and DNS settings",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "network_id": {"type": "string", "description": "Network ID"},
                     "vlan_id": {"type": "string", "description": "VLAN ID"},
+                    "name": {"type": "string", "description": "VLAN name (optional)"},
+                    "subnet": {"type": "string", "description": "Subnet CIDR (optional)"},
+                    "appliance_ip": {"type": "string", "description": "Gateway IP (optional)"},
+                    "dhcpHandling": {
+                        "type": "string",
+                        "description": "DHCP handling mode",
+                        "enum": ["Run a DHCP server", "Relay DHCP to another server", "Do not respond to DHCP requests"],
+                    },
+                    "dnsNameservers": {
+                        "type": "string",
+                        "description": "DNS nameservers (e.g., 'upstream_dns', 'google_dns', or custom IPs newline-separated)",
+                    },
+                    "dhcpOptions": {
+                        "type": "array",
+                        "description": "DHCP options list",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "code": {"type": "string"},
+                                "type": {"type": "string"},
+                                "value": {"type": "string"},
+                            },
+                        },
+                    },
+                    "reservedIpRanges": {
+                        "type": "array",
+                        "description": "Reserved IP ranges for DHCP",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "start": {"type": "string"},
+                                "end": {"type": "string"},
+                                "comment": {"type": "string"},
+                            },
+                        },
+                    },
                     "client_name": {
                         "type": "string",
                         "description": "Client name for backup (optional)",
@@ -665,6 +706,87 @@ MERAKI_SPECIALIST_TOOLS = [
                     }
                 },
                 "required": ["backup_path"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "detect_catalyst_mode",
+            "description": "Detect Catalyst switch management mode (native_meraki, managed, or monitored). Monitored mode blocks write operations.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "serial": {
+                        "type": "string",
+                        "description": "Device serial number",
+                    }
+                },
+                "required": ["serial"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "sgt_preflight_check",
+            "description": "Check switch port writeability for SGT/TrustSec restrictions. Returns count of writable vs read-only ports.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "serial": {
+                        "type": "string",
+                        "description": "Switch serial number",
+                    }
+                },
+                "required": ["serial"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_license",
+            "description": "Check device license level (enterprise, advanced, standard) and available features.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "serial": {
+                        "type": "string",
+                        "description": "Device serial number",
+                    }
+                },
+                "required": ["serial"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "backup_current_state",
+            "description": "Create a backup of current configuration state before making changes.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "resource_type": {
+                        "type": "string",
+                        "description": "Type of resource to backup",
+                        "enum": ["network", "ssid", "vlan", "firewall", "switch_acl"],
+                    },
+                    "targets": {
+                        "type": "object",
+                        "description": "Target parameters (e.g., network_id, vlan_id)",
+                    },
+                    "client_name": {
+                        "type": "string",
+                        "description": "Client name for backup directory",
+                    },
+                },
+                "required": ["resource_type", "targets", "client_name"],
                 "additionalProperties": False,
             },
         },

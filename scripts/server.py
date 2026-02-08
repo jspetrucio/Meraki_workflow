@@ -22,8 +22,10 @@ Usage:
 import asyncio
 import json
 import logging
+import re
 import time
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
@@ -62,6 +64,21 @@ _session_manager: SessionManager = SessionManager()
 # Global AI engine instance (initialized on startup)
 _ai_engine: Optional[AIEngine] = None
 
+# Global settings instance (lazy-loaded)
+_settings = None
+
+def _get_settings():
+    """Get current settings (lazy-loaded)."""
+    global _settings
+    if _settings is None:
+        try:
+            manager = SettingsManager()
+            _settings = manager.load()
+        except Exception as exc:
+            logger.warning(f"Failed to load settings: {exc}")
+            _settings = None
+    return _settings
+
 
 # ==================== Response Models ====================
 
@@ -89,13 +106,49 @@ class ErrorResponse(BaseModel):
     code: str
 
 
+# ==================== Lifespan ====================
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage server startup and shutdown lifecycle."""
+    global _start_time, _ai_engine
+    _start_time = time.time()
+
+    logger.info(f"CNL Server v{__version__} starting")
+    logger.info(f"Server started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+    # Load settings
+    manager = SettingsManager()
+    settings = manager.load()
+    logger.info(f"Settings loaded - Port: {settings.port}, Profile: {settings.meraki_profile}")
+
+    # Initialize AI engine if configured
+    if settings.ai_api_key:
+        try:
+            _ai_engine = AIEngine(settings)
+            logger.info(f"AI Engine initialized: {settings.ai_provider}/{settings.ai_model}")
+        except Exception as exc:
+            logger.warning(f"Failed to initialize AI Engine: {exc}")
+            _ai_engine = None
+    else:
+        logger.info("AI Engine not configured (no API key)")
+
+    yield
+
+    # Shutdown
+    uptime = time.time() - _start_time
+    logger.info(f"CNL Server shutting down after {uptime:.2f}s uptime")
+
+
 # ==================== FastAPI App ====================
 
 
 app = FastAPI(
     title="CNL",
     version=__version__,
-    description="Conversational Network Language API Server"
+    description="Conversational Network Language API Server",
+    lifespan=lifespan
 )
 
 # CORS for local development
@@ -108,8 +161,8 @@ app.add_middleware(
         "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Session-ID"],
 )
 
 
@@ -195,42 +248,6 @@ async def generic_exception_handler(request: Request, exc: Exception):
             "code": "INTERNAL_ERROR"
         }
     )
-
-
-# ==================== Startup/Shutdown Events ====================
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize server on startup."""
-    global _start_time, _ai_engine
-    _start_time = time.time()
-
-    logger.info(f"CNL Server v{__version__} starting")
-    logger.info(f"Server started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
-
-    # Load settings
-    manager = SettingsManager()
-    settings = manager.load()
-    logger.info(f"Settings loaded - Port: {settings.port}, Profile: {settings.meraki_profile}")
-
-    # Initialize AI engine if configured
-    if settings.ai_api_key:
-        try:
-            _ai_engine = AIEngine(settings)
-            logger.info(f"AI Engine initialized: {settings.ai_provider}/{settings.ai_model}")
-        except Exception as exc:
-            logger.warning(f"Failed to initialize AI Engine: {exc}")
-            _ai_engine = None
-    else:
-        logger.info("AI Engine not configured (no API key)")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up on shutdown."""
-    uptime = time.time() - _start_time
-    logger.info(f"CNL Server shutting down after {uptime:.2f}s uptime")
 
 
 # ==================== Health Endpoints ====================
@@ -361,6 +378,30 @@ class ConnectionManager:
 _connection_manager = ConnectionManager()
 
 
+# ==================== WebSocket Helpers ====================
+
+
+_SESSION_ID_PATTERN = re.compile(r'^[a-zA-Z0-9\-]{1,64}$')
+
+
+def _validate_session_id(raw_id: str | None) -> str:
+    """
+    Validate and sanitize session ID.
+
+    Accepts alphanumeric strings with hyphens, max 64 chars.
+    If the provided ID is invalid or missing, generates a new UUID.
+
+    Args:
+        raw_id: Raw session ID from client message.
+
+    Returns:
+        Validated session ID string.
+    """
+    if raw_id and _SESSION_ID_PATTERN.match(raw_id):
+        return raw_id
+    return str(uuid.uuid4())
+
+
 # ==================== WebSocket Endpoint ====================
 
 
@@ -426,6 +467,9 @@ async def websocket_chat_endpoint(websocket: WebSocket):
         return
 
     session_id: Optional[str] = None
+    # Gate confirmation storage for task executor (CRITICAL-2)
+    pending_confirmations: dict[str, asyncio.Event] = {}
+    pending_denial_flags: dict[str, dict] = {}
 
     try:
         # Accept connection (will be registered with session_id later)
@@ -454,7 +498,7 @@ async def websocket_chat_endpoint(websocket: WebSocket):
             # Handle message
             elif msg_type == "message":
                 content = raw.get("content", "").strip()
-                session_id = raw.get("session_id") or str(uuid.uuid4())
+                session_id = _validate_session_id(raw.get("session_id"))
 
                 # Input validation
                 if not content:
@@ -505,8 +549,19 @@ async def websocket_chat_endpoint(websocket: WebSocket):
                             message=content,
                             session_id=session_id,
                             ai_engine=_ai_engine,
-                            session_context=context
+                            session_context=context,
+                            settings=_get_settings(),
                         ):
+                            # Gate confirmation interception (CRITICAL-2)
+                            if chunk.get("type") == "confirmation_required" and "_event" in chunk:
+                                event = chunk.pop("_event")
+                                rid = chunk.get("request_id", "")
+                                if rid:
+                                    pending_confirmations[rid] = event
+                                    pending_denial_flags[rid] = chunk.get("_session_context", {})
+
+                            # Remove internal fields before sending to client
+                            chunk.pop("_session_context", None)
                             await websocket.send_json(chunk)
 
                             # If this is a stream chunk, accumulate for assistant message
@@ -545,26 +600,38 @@ async def websocket_chat_endpoint(websocket: WebSocket):
                     "agent": "system"
                 })
 
-            # Handle confirmation response
+            # Handle confirmation response (gate step — CRITICAL-2)
             elif msg_type == "confirm_response":
-                # TODO: Implement confirmation flow
                 request_id = raw.get("request_id")
                 approved = raw.get("approved", False)
 
                 logger.info(f"Confirmation response: request_id={request_id}, approved={approved}")
 
-                # For now, just acknowledge
-                await websocket.send_json({
-                    "type": "stream",
-                    "chunk": f"Confirmation {'approved' if approved else 'denied'}",
-                    "agent": "system"
-                })
+                if request_id and request_id in pending_confirmations:
+                    event = pending_confirmations.pop(request_id)
+                    ctx = pending_denial_flags.pop(request_id, {})
+                    if not approved:
+                        # Set denial flag so executor checks and aborts
+                        ctx[f"_gate_denied_{request_id}"] = True
+                    event.set()
+                    await websocket.send_json({
+                        "type": "stream",
+                        "chunk": f"Gate {'approved' if approved else 'denied'}",
+                        "agent": "system"
+                    })
+                else:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": "No pending confirmation found for the given request.",
+                        "code": "NO_PENDING_CONFIRMATION"
+                    })
 
             # Unknown message type
             else:
+                logger.warning(f"Unknown WebSocket message type: {msg_type}")
                 await websocket.send_json({
                     "type": "error",
-                    "message": f"Unknown message type: {msg_type}",
+                    "message": "Unrecognized message type.",
                     "code": "UNKNOWN_MESSAGE_TYPE"
                 })
 

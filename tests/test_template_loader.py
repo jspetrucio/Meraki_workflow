@@ -37,7 +37,7 @@ def sample_workflow_data():
     """Workflow válido para testes."""
     return {
         "workflow": {
-            "unique_name": "definition_workflow_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345",
+            "unique_name": "definition_workflow_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678",
             "name": "Test Workflow",
             "title": "Test Workflow",
             "type": "generic.workflow",
@@ -53,7 +53,7 @@ def sample_workflow_data():
                         "type": "datatype.string",
                         "is_required": True,
                     },
-                    "unique_name": "variable_workflow_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345",
+                    "unique_name": "variable_workflow_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678",
                     "object_type": "variable_workflow",
                 }
             ],
@@ -67,7 +67,7 @@ def sample_workflow_data():
             },
             "actions": [
                 {
-                    "unique_name": "definition_activity_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345",
+                    "unique_name": "definition_activity_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678",
                     "name": "Sleep",
                     "title": "Sleep",
                     "type": "core.sleep",
@@ -79,11 +79,11 @@ def sample_workflow_data():
                     "object_type": "definition_activity",
                 }
             ],
-            "categories": ["category_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345"],
+            "categories": ["category_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678"],
         },
         "categories": {
-            "category_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345": {
-                "unique_name": "category_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345",
+            "category_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678": {
+                "unique_name": "category_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678",
                 "name": "Test Category",
                 "title": "Test Category",
                 "type": "basic.category",
@@ -342,8 +342,8 @@ class TestTemplateWorkflow:
         """build() deve atualizar referências internas."""
         # Adicionar referência interna
         sample_workflow_data["workflow"]["actions"][0]["properties"]["ref"] = (
-            "$workflow.definition_workflow_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345"
-            ".input.variable_workflow_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345$"
+            "$workflow.definition_workflow_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678"
+            ".input.variable_workflow_02ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678$"
         )
 
         wf = TemplateWorkflow(sample_workflow_data).clone().build()

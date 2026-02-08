@@ -96,12 +96,13 @@ export function useOnboarding() {
     }
   };
 
-  const saveMerakiCredentials = async (apiKey: string, orgId: string): Promise<boolean> => {
+  const saveMerakiCredentials = async (_apiKey: string, _orgId: string): Promise<boolean> => {
     try {
-      const result = await fetchWithErrorHandling(
-        api.post('/v1/credentials/provider/meraki', {
-          api_key: apiKey,
-          org_id: orgId,
+      // Meraki credentials are validated via /v1/credentials/validate (already done).
+      // Save the profile setting so the backend knows which profile to use.
+      const result = await fetchWithErrorHandling<{ success: boolean }>(
+        api.patch('/v1/settings', {
+          meraki_profile: 'default',
         })
       );
       return result.success;
@@ -113,7 +114,7 @@ export function useOnboarding() {
 
   const saveAICredentials = async (provider: AIProvider, apiKey?: string): Promise<boolean> => {
     try {
-      const result = await fetchWithErrorHandling(
+      const result = await fetchWithErrorHandling<{ success: boolean }>(
         api.post(`/v1/credentials/provider/${provider}`, {
           api_key: apiKey,
         })
@@ -126,20 +127,11 @@ export function useOnboarding() {
   };
 
   const completeOnboarding = async (): Promise<boolean> => {
-    try {
-      const result = await fetchWithErrorHandling(
-        api.put('/v1/settings', {
-          onboarding_complete: true,
-        })
-      );
-      if (result.success) {
-        setOnboardingComplete(true);
-      }
-      return result.success;
-    } catch (error) {
-      console.error('Failed to mark onboarding complete:', error);
-      return false;
-    }
+    // Onboarding is "complete" when both meraki_profile and ai_api_key exist.
+    // The backend checks this via GET /v1/settings/onboarding-status.
+    // No separate flag needs to be written — just mark local state as done.
+    setOnboardingComplete(true);
+    return true;
   };
 
   const updateFormData = useCallback((updates: Partial<OnboardingFormData>) => {

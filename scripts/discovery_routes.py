@@ -25,6 +25,7 @@ from scripts.discovery import (
     compare_snapshots,
     DiscoveryResult
 )
+from scripts.path_validation import validate_path_within_base, validate_path_component
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,8 @@ async def run_full_discovery(request: DiscoveryRequest):
         502: Meraki API error
     """
     try:
+        validate_path_component(request.client_name, "client_name")
+
         # Get Meraki client
         client = await asyncio.to_thread(
             get_client,
@@ -108,7 +111,7 @@ async def run_full_discovery(request: DiscoveryRequest):
 
     except Exception as e:
         logger.exception(f"Discovery failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.get("/snapshots")
@@ -123,6 +126,8 @@ async def get_snapshots(client: str):
         List of snapshot metadata (path, timestamp, filename)
     """
     try:
+        validate_path_component(client, "client")
+
         # List snapshots
         snapshots = await asyncio.to_thread(list_snapshots, client)
 
@@ -145,7 +150,7 @@ async def get_snapshots(client: str):
 
     except Exception as e:
         logger.exception(f"Failed to list snapshots: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.get("/snapshots/{snapshot_id}")
@@ -164,20 +169,29 @@ async def get_snapshot(snapshot_id: str, client: str):
         404: Snapshot not found
     """
     try:
+        # Validate path components
+        validate_path_component(client, "client")
+        validate_path_component(
+            snapshot_id if snapshot_id.endswith(".json") else f"discovery_{snapshot_id}.json",
+            "snapshot_id"
+        )
+
         # Construct snapshot path
         if not snapshot_id.endswith(".json"):
             snapshot_id = f"discovery_{snapshot_id}.json"
 
         snapshot_path = Path("clients") / client / "discovery" / snapshot_id
+        # Validate resolved path stays within base
+        validated_path = validate_path_within_base(str(snapshot_path))
 
-        if not snapshot_path.exists():
+        if not validated_path.exists():
             raise HTTPException(
                 status_code=404,
-                detail=f"Snapshot not found: {snapshot_id}"
+                detail="Snapshot not found."
             )
 
         # Load snapshot
-        result = await asyncio.to_thread(load_snapshot, snapshot_path)
+        result = await asyncio.to_thread(load_snapshot, validated_path)
 
         return {
             "discovery": result.to_dict(),
@@ -188,7 +202,7 @@ async def get_snapshot(snapshot_id: str, client: str):
         raise
     except Exception as e:
         logger.exception(f"Failed to load snapshot: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.post("/compare")
@@ -206,19 +220,19 @@ async def compare_discovery_snapshots(request: SnapshotCompareRequest):
         404: Snapshot not found
     """
     try:
-        old_path = Path(request.old_path)
-        new_path = Path(request.new_path)
+        old_path = validate_path_within_base(request.old_path)
+        new_path = validate_path_within_base(request.new_path)
 
         if not old_path.exists():
             raise HTTPException(
                 status_code=404,
-                detail=f"Old snapshot not found: {request.old_path}"
+                detail="Old snapshot not found."
             )
 
         if not new_path.exists():
             raise HTTPException(
                 status_code=404,
-                detail=f"New snapshot not found: {request.new_path}"
+                detail="New snapshot not found."
             )
 
         # Load snapshots
@@ -234,4 +248,4 @@ async def compare_discovery_snapshots(request: SnapshotCompareRequest):
         raise
     except Exception as e:
         logger.exception(f"Failed to compare snapshots: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")

@@ -51,6 +51,9 @@ class Settings:
     # Privacy
     telemetry_enabled: bool = False
 
+    # Feature Flags
+    use_modular_tasks: bool = True
+
 
 class SettingsManager:
     """Gerencia carregamento, salvamento e criptografia de configuracoes."""

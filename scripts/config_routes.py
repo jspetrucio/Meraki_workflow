@@ -27,6 +27,7 @@ from scripts.config import (
     backup_config,
     ConfigResult
 )
+from scripts.path_validation import validate_path_within_base
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +154,7 @@ async def config_ssid(request: SSIDConfigRequest):
 
     except Exception as e:
         logger.exception(f"SSID configuration failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.post("/firewall")
@@ -197,7 +198,7 @@ async def config_firewall(request: FirewallRuleRequest):
 
     except Exception as e:
         logger.exception(f"Firewall configuration failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.post("/acl")
@@ -242,7 +243,7 @@ async def config_acl(request: ACLRequest):
 
     except Exception as e:
         logger.exception(f"ACL configuration failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.post("/vlan")
@@ -283,7 +284,7 @@ async def config_vlan(request: VLANRequest):
 
     except Exception as e:
         logger.exception(f"VLAN configuration failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
 
 
 @router.post("/rollback")
@@ -302,12 +303,12 @@ async def config_rollback(request: RollbackRequest):
         502: Meraki API error
     """
     try:
-        backup_path = Path(request.backup_path)
+        backup_path = validate_path_within_base(request.backup_path)
 
         if not backup_path.exists():
             raise HTTPException(
                 status_code=404,
-                detail=f"Backup not found: {request.backup_path}"
+                detail="Backup not found."
             )
 
         # Get client
@@ -327,4 +328,4 @@ async def config_rollback(request: RollbackRequest):
         raise
     except Exception as e:
         logger.exception(f"Rollback failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal error occurred. Check server logs for details.")
