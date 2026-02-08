@@ -293,6 +293,36 @@ class MerakiClient:
         """Atualiza configuracao de qualidade da camera."""
         return self.dashboard.camera.updateDeviceCameraQualityAndRetention(serial, **kwargs)
 
+    # ==================== Clients & Traffic ====================
+
+    @log_api_call
+    def get_network_clients(self, network_id: str, timespan: int = 3600, per_page: int = 50) -> list[dict]:
+        """Lista clientes conectados com uso de banda."""
+        return self.dashboard.networks.getNetworkClients(
+            network_id, timespan=timespan, perPage=per_page, total_pages=1
+        )
+
+    @log_api_call
+    def get_network_clients_bandwidth_usage(self, network_id: str, timespan: int = 3600, per_page: int = 10) -> list[dict]:
+        """Historico de uso de banda por cliente."""
+        return self.dashboard.networks.getNetworkClientsBandwidthUsageHistory(
+            network_id, timespan=timespan, perPage=per_page, total_pages=1
+        )
+
+    @log_api_call
+    def get_network_clients_overview(self, network_id: str, timespan: int = 3600) -> dict:
+        """Resumo geral dos clientes da rede."""
+        return self.dashboard.networks.getNetworkClientsOverview(
+            network_id, timespan=timespan
+        )
+
+    @log_api_call
+    def get_network_traffic(self, network_id: str, timespan: int = 3600) -> list[dict]:
+        """Analise de trafego da rede por aplicacao."""
+        return self.dashboard.networks.getNetworkTraffic(
+            network_id, timespan=timespan
+        )
+
     # ==================== Helpers ====================
 
     def get_network_by_name(self, name: str, org_id: Optional[str] = None) -> Optional[dict]:

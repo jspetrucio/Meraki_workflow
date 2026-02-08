@@ -38,6 +38,8 @@ TOOL_SAFETY = {
     "discover_firewall_rules": SafetyLevel.SAFE,
     "discover_switch_ports": SafetyLevel.SAFE,
     "discover_switch_acls": SafetyLevel.SAFE,
+    "discover_clients": SafetyLevel.SAFE,
+    "discover_traffic": SafetyLevel.SAFE,
     "find_issues": SafetyLevel.SAFE,
     "generate_suggestions": SafetyLevel.SAFE,
     "save_snapshot": SafetyLevel.SAFE,
@@ -150,6 +152,50 @@ NETWORK_ANALYST_TOOLS = [
                         "type": "string",
                         "description": "Network ID to discover devices from",
                     }
+                },
+                "required": ["network_id"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "discover_clients",
+            "description": "Discover connected clients in a network with bandwidth usage data, sorted by usage (highest first). Use this to find which devices are consuming the most bandwidth.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "network_id": {
+                        "type": "string",
+                        "description": "Network ID to discover clients from",
+                    },
+                    "timespan": {
+                        "type": "integer",
+                        "description": "Time window in seconds (default: 3600 = 1 hour, max: 2592000 = 30 days)",
+                    },
+                },
+                "required": ["network_id"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "discover_traffic",
+            "description": "Discover network traffic by application. Shows which applications are consuming the most bandwidth.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "network_id": {
+                        "type": "string",
+                        "description": "Network ID to get traffic data from",
+                    },
+                    "timespan": {
+                        "type": "integer",
+                        "description": "Time window in seconds (default: 3600 = 1 hour)",
+                    },
                 },
                 "required": ["network_id"],
                 "additionalProperties": False,

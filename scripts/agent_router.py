@@ -105,7 +105,7 @@ def _load_agent_prompt(agent_name: str) -> str:
 AGENTS = {
     "network-analyst": AgentDefinition(
         name="network-analyst",
-        description="Network discovery, analysis, diagnostics, health checks",
+        description="Network discovery, analysis, diagnostics, health checks, bandwidth usage, client monitoring, traffic analysis",
         system_prompt=_load_agent_prompt("network-analyst"),
         functions=[
             "full_discovery",
@@ -116,6 +116,8 @@ AGENTS = {
             "discover_firewall_rules",
             "discover_switch_ports",
             "discover_switch_acls",
+            "discover_clients",
+            "discover_traffic",
             "find_issues",
             "generate_suggestions",
             "save_snapshot",
@@ -127,6 +129,9 @@ AGENTS = {
             "discover all networks",
             "check device status",
             "find network issues",
+            "which device is consuming more bandwidth",
+            "show top bandwidth consumers",
+            "show network traffic",
         ],
     ),
     "meraki-specialist": AgentDefinition(
@@ -204,6 +209,8 @@ def _build_function_registry() -> dict:
     registry["discover_firewall_rules"] = discovery.discover_firewall_rules
     registry["discover_switch_ports"] = discovery.discover_switch_ports
     registry["discover_switch_acls"] = discovery.discover_switch_acls
+    registry["discover_clients"] = discovery.discover_clients
+    registry["discover_traffic"] = discovery.discover_traffic
     registry["find_issues"] = discovery.find_issues
     registry["generate_suggestions"] = discovery.generate_suggestions
     registry["save_snapshot"] = discovery.save_snapshot
@@ -684,62 +691,121 @@ async def process_message(
     except ValueError:
         tools = []
 
-    # Call AI Engine with function-calling
-    try:
-        response_stream = await ai_engine.chat_completion(
-            messages=messages,
-            tools=tools if tools else None,
-            stream=True,
-            session_id=session_id,
-        )
+    # Call AI Engine with tool-call conversation loop.
+    # After executing tools, feed results back to the LLM so it can
+    # generate a natural language interpretation instead of raw JSON.
+    MAX_TOOL_ROUNDS = 5  # prevent infinite loops
 
-        # Stream response chunks
-        async for chunk in response_stream:
-            # Check for tool calls
-            if hasattr(chunk, "choices") and len(chunk.choices) > 0:
+    try:
+        for _round in range(MAX_TOOL_ROUNDS):
+            response_stream = await ai_engine.chat_completion(
+                messages=messages,
+                tools=tools if tools else None,
+                stream=True,
+                session_id=session_id,
+            )
+
+            # Accumulate streaming tool call chunks before executing
+            pending_tool_calls: dict[int, dict] = {}
+            assistant_content = ""
+
+            async for chunk in response_stream:
+                if not hasattr(chunk, "choices") or len(chunk.choices) == 0:
+                    continue
+
                 choice = chunk.choices[0]
 
                 # Stream delta content
                 if hasattr(choice, "delta") and hasattr(choice.delta, "content"):
                     content = choice.delta.content
                     if content:
+                        assistant_content += content
                         yield {
                             "type": "stream",
                             "chunk": content,
                             "agent": agent.name,
                         }
 
-                # Check for tool calls
+                # Accumulate tool call chunks (name, arguments, id)
                 if hasattr(choice.delta, "tool_calls") and choice.delta.tool_calls:
                     for tool_call in choice.delta.tool_calls:
+                        idx = tool_call.index if hasattr(tool_call, "index") else 0
+                        if idx not in pending_tool_calls:
+                            pending_tool_calls[idx] = {
+                                "id": None, "name": None, "arguments": "",
+                            }
+                        if hasattr(tool_call, "id") and tool_call.id:
+                            pending_tool_calls[idx]["id"] = tool_call.id
                         if hasattr(tool_call, "function"):
-                            func_name = tool_call.function.name
-                            func_args_str = tool_call.function.arguments
+                            if tool_call.function.name:
+                                pending_tool_calls[idx]["name"] = tool_call.function.name
+                            if tool_call.function.arguments:
+                                pending_tool_calls[idx]["arguments"] += tool_call.function.arguments
 
-                            try:
-                                func_args = json.loads(func_args_str) if func_args_str else {}
-                            except json.JSONDecodeError:
-                                func_args = {}
+            # No tool calls — LLM responded with text, we're done
+            if not pending_tool_calls:
+                break
 
-                            # Execute function
-                            success, result, error = await _execute_function(
-                                func_name, func_args
-                            )
+            # Execute all accumulated tool calls
+            tool_results: list[dict] = []
+            assistant_tool_calls: list[dict] = []
 
-                            if success:
-                                yield {
-                                    "type": "function_result",
-                                    "function": func_name,
-                                    "result": result,
-                                    "agent": agent.name,
-                                }
-                            else:
-                                yield {
-                                    "type": "function_error",
-                                    "function": func_name,
-                                    "error": error,
-                                    "agent": agent.name,
-                                }
+            for _idx, tc in sorted(pending_tool_calls.items()):
+                func_name = tc["name"]
+                if not func_name:
+                    continue
+
+                tc_id = tc["id"] or f"call_{func_name}_{_idx}"
+
+                try:
+                    func_args = json.loads(tc["arguments"]) if tc["arguments"] else {}
+                except json.JSONDecodeError:
+                    func_args = {}
+
+                # Build the assistant tool_calls entry for the conversation
+                assistant_tool_calls.append({
+                    "id": tc_id,
+                    "type": "function",
+                    "function": {"name": func_name, "arguments": tc["arguments"] or "{}"},
+                })
+
+                success, result, error = await _execute_function(
+                    func_name, func_args
+                )
+
+                result_content = _serialize_result(result) if success else json.dumps({"error": error})
+
+                tool_results.append({
+                    "role": "tool",
+                    "tool_call_id": tc_id,
+                    "content": result_content if isinstance(result_content, str) else json.dumps(result_content),
+                })
+
+                # Yield tool execution status to frontend
+                if success:
+                    yield {
+                        "type": "tool_status",
+                        "function": func_name,
+                        "status": "ok",
+                        "agent": agent.name,
+                    }
+                else:
+                    yield {
+                        "type": "function_error",
+                        "function": func_name,
+                        "error": error,
+                        "agent": agent.name,
+                    }
+
+            # Append assistant message with tool calls + tool results to conversation
+            messages.append({
+                "role": "assistant",
+                "content": assistant_content or None,
+                "tool_calls": assistant_tool_calls,
+            })
+            messages.extend(tool_results)
+
+            # Loop continues — LLM will see tool results and generate NL response
 
     except Exception as exc:
         logger.exception("Error in process_message")

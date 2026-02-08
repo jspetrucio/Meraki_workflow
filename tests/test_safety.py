@@ -729,7 +729,7 @@ def test_all_classified_functions_exist():
     #            delete_vlan, rollback_config (5 total)
 
     expected_counts = {
-        SafetyLevel.SAFE: 22,
+        SafetyLevel.SAFE: 24,
         SafetyLevel.MODERATE: 6,
         SafetyLevel.DANGEROUS: 5,
     }

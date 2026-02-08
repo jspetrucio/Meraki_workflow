@@ -431,6 +431,56 @@ def discover_switch_acls(network_id: str, client: MerakiClient) -> dict:
     return acls
 
 
+def discover_clients(network_id: str, client: MerakiClient, timespan: int = 3600) -> list[dict]:
+    """
+    Descobre clientes conectados a uma network com dados de uso de banda.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki autenticado
+        timespan: Janela de tempo em segundos (default: 1 hora)
+
+    Returns:
+        Lista de clientes com uso de banda (sorted by usage desc)
+    """
+    logger.debug(f"Descobrindo clientes da network {network_id} (timespan={timespan}s)")
+
+    clients = client.safe_call(
+        client.get_network_clients, network_id, timespan=timespan, default=[]
+    )
+
+    # Sort by total usage (sent + recv) descending
+    for c in clients:
+        c["total_usage"] = (c.get("usage", {}).get("sent", 0) or 0) + (c.get("usage", {}).get("recv", 0) or 0)
+
+    clients.sort(key=lambda c: c.get("total_usage", 0), reverse=True)
+    logger.debug(f"Encontrados {len(clients)} clientes")
+
+    return clients
+
+
+def discover_traffic(network_id: str, client: MerakiClient, timespan: int = 3600) -> list[dict]:
+    """
+    Descobre trafego da network por aplicacao.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki autenticado
+        timespan: Janela de tempo em segundos (default: 1 hora)
+
+    Returns:
+        Lista de aplicacoes com trafego (sorted by usage desc)
+    """
+    logger.debug(f"Descobrindo trafego da network {network_id}")
+
+    traffic = client.safe_call(
+        client.get_network_traffic, network_id, timespan=timespan, default=[]
+    )
+
+    logger.debug(f"Encontradas {len(traffic)} aplicacoes com trafego")
+    return traffic
+
+
 def full_discovery(
     org_id: Optional[str] = None,
     client: Optional[MerakiClient] = None,

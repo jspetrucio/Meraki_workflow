@@ -57,6 +57,8 @@ SAFETY_CLASSIFICATION = {
     "discover_firewall_rules": SafetyLevel.SAFE,
     "discover_switch_ports": SafetyLevel.SAFE,
     "discover_switch_acls": SafetyLevel.SAFE,
+    "discover_clients": SafetyLevel.SAFE,
+    "discover_traffic": SafetyLevel.SAFE,
     "find_issues": SafetyLevel.SAFE,
     "generate_suggestions": SafetyLevel.SAFE,
     "save_snapshot": SafetyLevel.SAFE,

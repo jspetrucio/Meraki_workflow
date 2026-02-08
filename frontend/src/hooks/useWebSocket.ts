@@ -98,6 +98,7 @@ export function useWebSocket() {
           break;
 
         case 'function_result':
+          // Legacy: if raw JSON arrives without NL follow-up, show it
           addMessage(sessionId, {
             role: 'assistant',
             content: '',
@@ -108,6 +109,14 @@ export function useWebSocket() {
             },
             agent: normalizeAgent(msg.agent),
           });
+          break;
+
+        case 'tool_status':
+          // Tool executed OK — LLM will follow up with NL interpretation
+          appendToLastAssistant(
+            sessionId,
+            `\n> Fetching data via \`${msg.function || 'tool'}\`...\n`
+          );
           break;
 
         case 'function_error':
