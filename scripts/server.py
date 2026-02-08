@@ -74,7 +74,8 @@ def _get_settings():
         try:
             manager = SettingsManager()
             _settings = manager.load()
-        except Exception:
+        except Exception as exc:
+            logger.warning(f"Failed to load settings: {exc}")
             _settings = None
     return _settings
 
@@ -611,7 +612,7 @@ async def websocket_chat_endpoint(websocket: WebSocket):
                     ctx = pending_denial_flags.pop(request_id, {})
                     if not approved:
                         # Set denial flag so executor checks and aborts
-                        ctx[f"gate_denied_{request_id}"] = True
+                        ctx[f"_gate_denied_{request_id}"] = True
                     event.set()
                     await websocket.send_json({
                         "type": "stream",

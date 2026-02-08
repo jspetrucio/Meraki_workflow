@@ -18,7 +18,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-def serialize_result(obj):
+def serialize_result(obj: object) -> object:
     """
     Recursively serialize a function return value to JSON-safe types.
 
@@ -76,28 +76,25 @@ async def execute_function(
         sig = inspect.signature(func)
         params = sig.parameters
 
-        # Auto-inject client if the function accepts it and it wasn't provided
-        if "client" in params and "client" not in args:
+        # Auto-inject client and client_name from settings
+        needs_client = "client" in params and "client" not in args
+        needs_client_name = "client_name" in params and "client_name" not in args
+
+        if needs_client or needs_client_name:
             try:
-                from scripts.api import get_client
                 from scripts.settings import SettingsManager
 
-                settings = SettingsManager.load()
+                settings = SettingsManager().load()
                 profile = settings.meraki_profile or "default"
-                args["client"] = get_client(profile=profile)
-            except Exception as exc:
-                logger.warning(f"Could not auto-inject client: {exc}")
 
-        # Auto-inject client_name from settings
-        if "client_name" in params and "client_name" not in args:
-            try:
-                from scripts.settings import SettingsManager
+                if needs_client:
+                    from scripts.api import get_client
+                    args["client"] = get_client(profile=profile)
 
-                settings = SettingsManager.load()
-                if settings.meraki_profile:
+                if needs_client_name and settings.meraki_profile:
                     args["client_name"] = settings.meraki_profile
             except Exception as exc:
-                logger.warning(f"Could not auto-inject client_name: {exc}")
+                logger.warning(f"Could not auto-inject client/client_name: {exc}")
 
         # Auto-inject org_id from client
         if "org_id" in params and "org_id" not in args:

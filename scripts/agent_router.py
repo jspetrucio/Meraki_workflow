@@ -15,8 +15,8 @@ import inspect
 import json
 import logging
 import re
-from enum import Enum
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import AsyncGenerator, Optional
 
@@ -247,7 +247,12 @@ FUNCTION_REGISTRY = _build_function_registry()
 _task_registry = TaskRegistry()
 
 def _get_task_registry() -> TaskRegistry:
-    """Get the module-level task registry, loading tasks on first access."""
+    """Get the module-level task registry, loading tasks on first access.
+
+    Note: load_tasks() performs synchronous disk I/O (YAML parsing).
+    This is acceptable as a one-time cold-start cost; results are cached
+    in the module-level ``_task_registry`` for all subsequent calls.
+    """
     if not _task_registry.tasks:
         tasks_dir = Path(__file__).parent.parent / "tasks"
         if tasks_dir.exists():

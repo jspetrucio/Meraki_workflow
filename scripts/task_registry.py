@@ -117,7 +117,10 @@ def parse_task_file(file_path: str | Path) -> TaskDefinition:
 def _parse_steps(steps_data: list, file_path: Path) -> list[StepDefinition]:
     """Parse and validate step definitions from YAML data."""
     if not isinstance(steps_data, list):
-        return []
+        raise TaskParseError(
+            str(file_path),
+            f"'steps' must be a list, got {type(steps_data).__name__}",
+        )
 
     parsed = []
     for idx, step_data in enumerate(steps_data):

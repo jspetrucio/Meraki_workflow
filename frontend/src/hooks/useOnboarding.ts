@@ -100,7 +100,7 @@ export function useOnboarding() {
     try {
       // Meraki credentials are validated via /v1/credentials/validate (already done).
       // Save the profile setting so the backend knows which profile to use.
-      const result = await fetchWithErrorHandling(
+      const result = await fetchWithErrorHandling<{ success: boolean }>(
         api.patch('/v1/settings', {
           meraki_profile: 'default',
         })
@@ -114,7 +114,7 @@ export function useOnboarding() {
 
   const saveAICredentials = async (provider: AIProvider, apiKey?: string): Promise<boolean> => {
     try {
-      const result = await fetchWithErrorHandling(
+      const result = await fetchWithErrorHandling<{ success: boolean }>(
         api.post(`/v1/credentials/provider/${provider}`, {
           api_key: apiKey,
         })

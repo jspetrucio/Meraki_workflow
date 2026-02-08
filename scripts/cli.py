@@ -80,7 +80,7 @@ logger = logging.getLogger(__name__)
 @click.option("--cli", "cli_mode", is_flag=True, help="CLI-only mode (no web UI)")
 @click.option("--version", is_flag=True, help="Show version and exit")
 @click.pass_context
-def cli(ctx, debug, profile, cli_mode, version):
+def cli(ctx: click.Context, debug: bool, profile: str, cli_mode: bool, version: bool) -> None:
     """CNL (Cisco Neural Language) - Automacao de redes via linguagem natural.
 
     Run without arguments to start the web UI server.

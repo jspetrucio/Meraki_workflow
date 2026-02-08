@@ -869,6 +869,7 @@ def check_switch_port_writeability(
     r = requests.get(
         f"https://api.meraki.com/api/v1/devices/{serial}/switch/ports",
         headers=headers,
+        timeout=30,
     )
     r.raise_for_status()
     ports = r.json()
@@ -887,7 +888,20 @@ def check_switch_port_writeability(
             f"https://api.meraki.com/api/v1/devices/{serial}/switch/ports/{pid}",
             headers=headers,
             json={"name": current_name},
+            timeout=30,
         )
+
+        # Handle rate limiting (429) with Retry-After
+        if probe.status_code == 429:
+            import time
+            retry_after = int(probe.headers.get("Retry-After", 1))
+            time.sleep(retry_after)
+            probe = requests.put(
+                f"https://api.meraki.com/api/v1/devices/{serial}/switch/ports/{pid}",
+                headers=headers,
+                json={"name": current_name},
+                timeout=30,
+            )
 
         if probe.status_code == 200:
             writable.append(pid)
@@ -938,6 +952,16 @@ def update_switch_port(
     Returns:
         ConfigResult with outcome
     """
+    if not kwargs:
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="switch_port",
+            resource_id=f"{serial}/port_{port_id}",
+            message="No update fields provided.",
+            error="Empty payload",
+        )
+
     client = client or get_client()
 
     # Run preflight if not provided
@@ -978,6 +1002,7 @@ def update_switch_port(
             f"https://api.meraki.com/api/v1/devices/{serial}/switch/ports/{port_id}",
             headers=headers,
             json=kwargs,
+            timeout=30,
         )
         r.raise_for_status()
 
@@ -1058,6 +1083,7 @@ def detect_catalyst_mode(
         r = requests.get(
             f"https://api.meraki.com/api/v1/devices/{serial}",
             headers=headers,
+            timeout=30,
         )
         r.raise_for_status()
         device = r.json()
@@ -1164,6 +1190,7 @@ def check_license(
         r = requests.get(
             f"https://api.meraki.com/api/v1/organizations/{org_id}/licensing/coterm/licenses",
             headers=headers,
+            timeout=30,
         )
 
         if r.status_code == 200:
@@ -1229,13 +1256,23 @@ def backup_current_state(
     """
     from datetime import datetime as _dt
 
+    # Normalize resource_type to values accepted by backup_config
+    _RESOURCE_TYPE_MAP = {
+        "switch_port": "full",
+        "switch_acl": "acl",
+        "l3_firewall": "firewall",
+        "l7_firewall": "firewall",
+        "network": "full",
+    }
+    normalized_type = _RESOURCE_TYPE_MAP.get(resource_type, resource_type)
+
     network_id = targets.get("network_id", "unknown")
 
     try:
         backup_path = backup_config(
             network_id=network_id,
             client_name=client_name,
-            resource_type=resource_type,
+            resource_type=normalized_type,
             client=client,
         )
 
