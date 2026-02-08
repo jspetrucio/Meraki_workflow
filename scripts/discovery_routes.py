@@ -76,6 +76,8 @@ async def run_full_discovery(request: DiscoveryRequest):
         502: Meraki API error
     """
     try:
+        validate_path_component(request.client_name, "client_name")
+
         # Get Meraki client
         client = await asyncio.to_thread(
             get_client,
@@ -124,6 +126,8 @@ async def get_snapshots(client: str):
         List of snapshot metadata (path, timestamp, filename)
     """
     try:
+        validate_path_component(client, "client")
+
         # List snapshots
         snapshots = await asyncio.to_thread(list_snapshots, client)
 

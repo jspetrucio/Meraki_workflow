@@ -621,15 +621,16 @@ async def websocket_chat_endpoint(websocket: WebSocket):
                 else:
                     await websocket.send_json({
                         "type": "error",
-                        "message": f"No pending confirmation for request_id={request_id}",
+                        "message": "No pending confirmation found for the given request.",
                         "code": "NO_PENDING_CONFIRMATION"
                     })
 
             # Unknown message type
             else:
+                logger.warning(f"Unknown WebSocket message type: {msg_type}")
                 await websocket.send_json({
                     "type": "error",
-                    "message": f"Unknown message type: {msg_type}",
+                    "message": "Unrecognized message type.",
                     "code": "UNKNOWN_MESSAGE_TYPE"
                 })
 

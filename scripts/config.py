@@ -37,6 +37,11 @@ from .api import MerakiClient, get_client
 logger = logging.getLogger(__name__)
 
 
+def _mask_serial(serial: str) -> str:
+    """Mask a device serial for safe logging (e.g. 'Q2XX-XXXX-XXXX' → 'Q2XX...XXXX')."""
+    return f"{serial[:4]}...{serial[-4:]}" if len(serial) > 8 else "****"
+
+
 class ConfigAction(Enum):
     """Tipo de acao de configuracao."""
     CREATE = "create"
@@ -876,11 +881,12 @@ def check_switch_port_writeability(
         pid = port["portId"]
         current_name = port.get("name", "")
 
-        # Probe: try to set name back to itself (no actual change)
+        # Probe: try to set name back to itself (no actual change).
+        # Always send the original value to avoid unintended modifications.
         probe = requests.put(
             f"https://api.meraki.com/api/v1/devices/{serial}/switch/ports/{pid}",
             headers=headers,
-            json={"name": current_name if current_name else f"Port {pid}"},
+            json={"name": current_name},
         )
 
         if probe.status_code == 200:
@@ -905,7 +911,7 @@ def check_switch_port_writeability(
     )
 
     logger.info(
-        f"Switch {serial} preflight: {len(writable)}/{total} writable, "
+        f"Switch {_mask_serial(serial)} preflight: {len(writable)}/{total} writable, "
         f"SGT restriction: {has_sgt}"
     )
 
@@ -936,7 +942,7 @@ def update_switch_port(
 
     # Run preflight if not provided
     if preflight is None:
-        logger.info(f"Running preflight check for switch {serial}...")
+        logger.info(f"Running preflight check for switch {_mask_serial(serial)}...")
         preflight = check_switch_port_writeability(serial, client)
 
     # Check if target port is writable
@@ -1075,7 +1081,7 @@ def detect_catalyst_mode(
         return {"serial": serial, "mode": mode, "writable": writable}
 
     except Exception as exc:
-        logger.warning(f"detect_catalyst_mode failed for {serial}: {exc}")
+        logger.warning(f"detect_catalyst_mode failed for {_mask_serial(serial)}: {exc}")
         return {"serial": serial, "mode": "unknown", "writable": False, "error": str(exc)}
 
 
@@ -1112,7 +1118,7 @@ def sgt_preflight_check(
         return result
 
     except Exception as exc:
-        logger.warning(f"sgt_preflight_check failed for {serial}: {exc}")
+        logger.warning(f"sgt_preflight_check failed for {_mask_serial(serial)}: {exc}")
         return {
             "serial": serial,
             "has_sgt_restriction": False,
@@ -1194,7 +1200,7 @@ def check_license(
         }
 
     except Exception as exc:
-        logger.warning(f"check_license failed for {serial}: {exc}")
+        logger.warning(f"check_license failed for {_mask_serial(serial)}: {exc}")
         return {
             "serial": serial,
             "license_type": "unknown",

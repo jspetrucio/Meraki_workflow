@@ -636,7 +636,7 @@ async def process_message(
             logger.exception(f"Task executor error for {classification.task_definition.name}")
             yield {
                 "type": "error",
-                "error": f"Task execution failed: {type(exc).__name__}: {exc}",
+                "error": "Task execution failed. Check server logs for details.",
             }
         return
 
@@ -740,7 +740,7 @@ async def process_message(
         logger.exception("Error in process_message")
         yield {
             "type": "error",
-            "error": f"Processing failed: {type(exc).__name__}: {exc}",
+            "error": "Processing failed. Check server logs for details.",
         }
 
 

@@ -4,7 +4,7 @@ import type { WebSocketMessage, SendMessageOptions } from '@/lib/websocket-types
 import type { ConnectionStatus, AgentInfo } from '@/lib/types';
 
 // Build WebSocket URL dynamically so it works through Vite proxy (dev) and directly (prod)
-const WS_URL = `ws://${window.location.host}/ws/chat`;
+const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/chat`;
 const RECONNECT_DELAY = 3000;
 const PING_INTERVAL = 30000;
 
