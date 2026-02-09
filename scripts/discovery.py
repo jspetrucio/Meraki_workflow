@@ -271,15 +271,26 @@ def discover_networks(org_id: str, client: MerakiClient) -> list[NetworkInfo]:
     """
     logger.info(f"Descobrindo networks da org {org_id}")
 
-    try:
-        networks_raw = client.get_networks(org_id)
-        networks = [NetworkInfo.from_api(net) for net in networks_raw]
-        logger.info(f"Encontradas {len(networks)} networks")
-        return networks
+    # Meraki API can return transient 404s — retry with backoff
+    last_error = None
+    for attempt in range(3):
+        try:
+            networks_raw = client.get_networks(org_id)
+            networks = [NetworkInfo.from_api(net) for net in networks_raw]
+            logger.info(f"Encontradas {len(networks)} networks")
+            return networks
+        except APIError as e:
+            last_error = e
+            if e.status == 404 and attempt < 2:
+                import time
+                wait = 2 ** attempt  # 1s, 2s
+                logger.warning(f"Transient 404 on discover_networks (attempt {attempt + 1}/3), retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                logger.error(f"Erro ao descobrir networks: {e}")
+                raise
 
-    except APIError as e:
-        logger.error(f"Erro ao descobrir networks: {e}")
-        raise
+    raise last_error
 
 
 def discover_devices(network_id: str, client: MerakiClient) -> list[DeviceInfo]:
