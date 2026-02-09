@@ -537,6 +537,40 @@ Covers niche and specialized product lines. Takes coverage from **~35% to ~50%**
 | **Location Analytics** | `get_location_scanning`, `get_wireless_latency_history` | `discover_location_analytics` | -- | 2 | 2 | network-analyst |
 | **TOTALS** | **~50 new methods** | **~12 new functions** | **~10 new functions** | **~37 new schemas** | **~50 SP** | -- |
 
+### Phase 4 - Smart Tools: CNL Intelligence Layer (Epics 16-18)
+
+This phase is about building intelligent tools that DON'T map 1:1 to Meraki API endpoints. Instead, they COMBINE data from multiple API calls to deliver higher-level analysis and automation that doesn't exist anywhere else.
+
+**Target coverage:** Beyond API coverage — this is CNL's value-add layer.
+
+**Prerequisites:** Phases 1-3 must be substantially complete since smart tools depend on the underlying API coverage.
+
+| Smart Tool | Description | API Data Sources | Agent | Story Points |
+|------------|-------------|-----------------|-------|-------------|
+| **Health Score Calculator** | Generate a 0-100 network health score per site | Device status + wireless health + client errors + uplink status | network-analyst | 8 |
+| **Security Posture Audit** | Comprehensive security assessment report | IPS settings + AMP settings + content filter + firewall rules + open ports + admin 2FA status | network-analyst | 13 |
+| **Compliance Checker** | Validate config against industry baselines (PCI-DSS, HIPAA, CIS Meraki Benchmark) | All config endpoints + policy objects + admin settings | network-analyst | 13 |
+| **Capacity Planning** | Project growth based on historical client/bandwidth trends | Client history + bandwidth history + device count trends | network-analyst | 8 |
+| **Change Impact Analysis** | Simulate "what if" scenarios before applying config changes (e.g., "if I block port 443, who is affected?") | Current clients + traffic data + firewall rules + ACLs | meraki-specialist | 13 |
+| **Auto-Remediation Engine** | Automated response to events: device offline → reboot, SSID degraded → rollback, high utilization → traffic shape | Device status + wireless health + config backups + all write endpoints | meraki-specialist | 21 |
+| **Multi-Site Config Comparison** | Compare configurations across sites/networks, find divergences | All config endpoints across multiple networks | network-analyst | 8 |
+| **Config Drift Detection** | Periodic snapshot comparison, alert when config changes unexpectedly | Snapshot system + change log + all config endpoints | network-analyst | 8 |
+| **Network Documentation Generator** | Auto-generate complete network documentation (topology, IP plans, VLAN maps, security policies) | Full discovery + all config endpoints + LLDP/CDP | network-analyst | 13 |
+| **Bandwidth Anomaly Detection** | Establish usage baselines, alert on deviations (potential intrusion, abuse, or failure) | Client bandwidth history + traffic by application + historical baselines | network-analyst | 13 |
+| **Predictive Maintenance** | Predict device failures based on uptime patterns, error rates, firmware age | Device status + uptime + firmware versions + error logs | network-analyst | 13 |
+| **Automated Workflow Generator** | Dynamically generate N8N/SecureX workflows based on detected issues | find_issues output + workflow templates + remediation patterns | workflow-creator | 13 |
+| **TOTALS** | **12 smart tools** | **Multiple API sources each** | -- | **~155 SP** |
+
+**Why Phase 4 Matters:**
+
+These tools are what differentiate CNL from a simple API wrapper:
+- They combine multiple API data sources with custom logic
+- They represent the "intelligence layer" — the AI analyst that interprets data, not just fetches it
+- They deliver insights and automation that don't exist in the Meraki Dashboard or API
+- They embody the "Neural Language" vision: understanding intent and delivering business value
+
+**Note:** "Intelligence coverage" is not measured by API endpoint count, but by unique analytical capabilities. Target: 12 smart tools that provide value no other Meraki tool offers.
+
 ---
 
 ## Implementation Pattern
@@ -745,6 +779,7 @@ class TestConfigureContentFilter:
 | Phase 1 (Epics 8-10) | ~15% (~130 methods) | ~55 api.py + ~37 other | ~90 SP | 6-8 sprints |
 | Phase 2 (Epics 11-13) | ~35% (~300 methods) | ~65 api.py + ~38 other | ~75 SP | 5-7 sprints |
 | Phase 3 (Epics 14-15) | ~50% (~430 methods) | ~50 api.py + ~22 other | ~50 SP | 4-5 sprints |
+| Phase 4 (Epics 16-18) | Intelligence layer (12 smart tools) | N/A - multi-source analysis | ~155 SP | 8-10 sprints |
 
 ### Remaining 50%
 
@@ -772,6 +807,7 @@ These will be added on-demand as customer requirements dictate, but are not prio
 - **Phase 1 complete:** A network engineer can use CNL to perform the 20 most common day-1 operations (VPN, IPS, content filtering, firmware, alerts, live tools, SNMP/syslog) without touching the Dashboard UI.
 - **Phase 2 complete:** A network architect can use CNL for advanced platform operations (SD-WAN, templates, HA, camera analytics, sensors, advanced switching) covering 80% of enterprise use cases.
 - **Phase 3 complete:** Full MDM/SM support, Insight monitoring, and all specialized product lines are accessible, making CNL a comprehensive Meraki management platform.
+- **Phase 4 complete:** CNL delivers intelligent analysis and automation beyond what's available in the Meraki Dashboard or API. Network teams can use natural language to generate health scores, security audits, compliance reports, predictive alerts, and automated remediation workflows without manual data correlation.
 
 ---
 
