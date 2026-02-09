@@ -211,6 +211,18 @@ def _build_function_registry() -> dict:
     registry["discover_switch_acls"] = discovery.discover_switch_acls
     registry["discover_clients"] = discovery.discover_clients
     registry["discover_traffic"] = discovery.discover_traffic
+    registry["discover_vpn_topology"] = discovery.discover_vpn_topology
+    registry["discover_content_filtering"] = discovery.discover_content_filtering
+    registry["discover_ips_settings"] = discovery.discover_ips_settings
+    registry["discover_amp_settings"] = discovery.discover_amp_settings
+    registry["discover_traffic_shaping"] = discovery.discover_traffic_shaping
+    # Epic 9: Alerts, Firmware, Observability
+    registry["discover_alerts"] = discovery.discover_alerts
+    registry["discover_webhooks"] = discovery.discover_webhooks
+    registry["discover_firmware_status"] = discovery.discover_firmware_status
+    registry["discover_snmp_config"] = discovery.discover_snmp_config
+    registry["discover_syslog_config"] = discovery.discover_syslog_config
+    registry["discover_recent_changes"] = discovery.discover_recent_changes
     registry["find_issues"] = discovery.find_issues
     registry["generate_suggestions"] = discovery.generate_suggestions
     registry["save_snapshot"] = discovery.save_snapshot
@@ -232,6 +244,54 @@ def _build_function_registry() -> dict:
     registry["sgt_preflight_check"] = config.sgt_preflight_check
     registry["check_license"] = config.check_license
     registry["backup_current_state"] = config.backup_current_state
+    # Epic 8: Security & Monitoring
+    registry["backup_vpn_config"] = config.backup_vpn_config
+    registry["configure_s2s_vpn"] = config.configure_s2s_vpn
+    registry["add_vpn_peer"] = config.add_vpn_peer
+    registry["configure_content_filter"] = config.configure_content_filter
+    registry["add_blocked_url"] = config.add_blocked_url
+    registry["configure_ips"] = config.configure_ips
+    registry["set_ips_mode"] = config.set_ips_mode
+    registry["configure_amp"] = config.configure_amp
+    registry["configure_traffic_shaping"] = config.configure_traffic_shaping
+    registry["set_bandwidth_limit"] = config.set_bandwidth_limit
+    # Epic 9: Alerts, Firmware, SNMP, Syslog
+    registry["configure_alerts"] = config.configure_alerts
+    registry["create_webhook_endpoint"] = config.create_webhook_endpoint
+    registry["schedule_firmware_upgrade"] = config.schedule_firmware_upgrade
+    registry["cancel_firmware_upgrade"] = config.cancel_firmware_upgrade
+    registry["configure_snmp"] = config.configure_snmp
+    registry["configure_syslog"] = config.configure_syslog
+    # Epic 10: Advanced Switching, Wireless & Platform - Discovery
+    registry["discover_switch_routing"] = discovery.discover_switch_routing
+    registry["discover_stp_config"] = discovery.discover_stp_config
+    registry["discover_nat_rules"] = discovery.discover_nat_rules
+    registry["discover_port_forwarding"] = discovery.discover_port_forwarding
+    registry["discover_rf_profiles"] = discovery.discover_rf_profiles
+    registry["discover_wireless_health"] = discovery.discover_wireless_health
+    registry["discover_qos_config"] = discovery.discover_qos_config
+    registry["discover_org_admins"] = discovery.discover_org_admins
+    registry["discover_inventory"] = discovery.discover_inventory
+    # Epic 10: Advanced Switching, Wireless & Platform - Config
+    registry["configure_switch_l3_interface"] = config.configure_switch_l3_interface
+    registry["add_switch_static_route"] = config.add_switch_static_route
+    registry["configure_stp"] = config.configure_stp
+    registry["configure_1to1_nat"] = config.configure_1to1_nat
+    registry["configure_port_forwarding"] = config.configure_port_forwarding
+    registry["configure_rf_profile"] = config.configure_rf_profile
+    registry["configure_qos"] = config.configure_qos
+    registry["manage_admin"] = config.manage_admin
+    # Epic 10: Direct API actions (reboot, blink, claim, release)
+    from scripts.api import get_client
+    registry["reboot_device"] = lambda serial: get_client().reboot_device(serial)
+    registry["blink_leds"] = lambda serial, duration=20: get_client().blink_leds(serial, duration)
+    registry["claim_device"] = lambda serials: get_client().claim_device(serials=serials)
+    registry["release_device"] = lambda serials: get_client().release_device(serials=serials)
+    registry["get_wireless_connection_stats"] = lambda network_id, **kw: get_client().get_wireless_connection_stats(network_id, **kw)
+    registry["get_wireless_latency_stats"] = lambda network_id, **kw: get_client().get_wireless_latency_stats(network_id, **kw)
+    registry["get_wireless_signal_quality"] = lambda network_id, **kw: get_client().get_wireless_signal_quality(network_id, **kw)
+    registry["get_channel_utilization"] = lambda network_id, **kw: get_client().get_channel_utilization(network_id, **kw)
+    registry["get_failed_connections"] = lambda network_id, **kw: get_client().get_failed_connections(network_id, **kw)
 
     # Workflow functions
     registry["create_device_offline_handler"] = workflow.create_device_offline_handler

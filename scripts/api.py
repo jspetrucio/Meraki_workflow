@@ -281,6 +281,401 @@ class MerakiClient:
         """Remove uma VLAN."""
         return self.dashboard.appliance.deleteNetworkApplianceVlan(network_id, vlan_id)
 
+    # ==================== VPN ====================
+
+    @log_api_call
+    def get_vpn_config(self, network_id: str) -> dict:
+        """Retorna configuracao Site-to-Site VPN."""
+        return self.dashboard.appliance.getNetworkApplianceSiteToSiteVpn(network_id)
+
+    @log_api_call
+    def update_vpn_config(self, network_id: str, **kwargs) -> dict:
+        """Atualiza configuracao Site-to-Site VPN."""
+        return self.dashboard.appliance.updateNetworkApplianceSiteToSiteVpn(network_id, **kwargs)
+
+    @log_api_call
+    def get_vpn_statuses(self, org_id: Optional[str] = None) -> list[dict]:
+        """Retorna status VPN de todas as networks da org."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.appliance.getOrganizationApplianceVpnStatuses(org)
+
+    # ==================== Content Filtering ====================
+
+    @log_api_call
+    def get_content_filtering(self, network_id: str) -> dict:
+        """Retorna configuracao de Content Filtering."""
+        return self.dashboard.appliance.getNetworkApplianceContentFiltering(network_id)
+
+    @log_api_call
+    def update_content_filtering(self, network_id: str, **kwargs) -> dict:
+        """Atualiza configuracao de Content Filtering."""
+        return self.dashboard.appliance.updateNetworkApplianceContentFiltering(network_id, **kwargs)
+
+    @log_api_call
+    def get_content_categories(self, network_id: str) -> dict:
+        """Retorna categorias de conteudo disponiveis."""
+        return self.dashboard.appliance.getNetworkApplianceContentFilteringCategories(network_id)
+
+    # ==================== IPS (Intrusion Prevention) ====================
+
+    @log_api_call
+    def get_intrusion_settings(self, network_id: str) -> dict:
+        """Retorna configuracoes de IPS/IDS."""
+        return self.dashboard.appliance.getNetworkApplianceSecurityIntrusion(network_id)
+
+    @log_api_call
+    def update_intrusion_settings(self, network_id: str, **kwargs) -> dict:
+        """Atualiza configuracoes de IPS/IDS."""
+        return self.dashboard.appliance.updateNetworkApplianceSecurityIntrusion(network_id, **kwargs)
+
+    # ==================== AMP (Malware Protection) ====================
+
+    @log_api_call
+    def get_malware_settings(self, network_id: str) -> dict:
+        """Retorna configuracoes de AMP/Malware Protection."""
+        return self.dashboard.appliance.getNetworkApplianceSecurityMalware(network_id)
+
+    @log_api_call
+    def update_malware_settings(self, network_id: str, **kwargs) -> dict:
+        """Atualiza configuracoes de AMP/Malware Protection."""
+        return self.dashboard.appliance.updateNetworkApplianceSecurityMalware(network_id, **kwargs)
+
+    # ==================== Traffic Shaping ====================
+
+    @log_api_call
+    def get_traffic_shaping(self, network_id: str) -> dict:
+        """Retorna regras de Traffic Shaping."""
+        return self.dashboard.appliance.getNetworkApplianceTrafficShapingRules(network_id)
+
+    @log_api_call
+    def update_traffic_shaping(self, network_id: str, **kwargs) -> dict:
+        """Atualiza regras de Traffic Shaping."""
+        return self.dashboard.appliance.updateNetworkApplianceTrafficShapingRules(network_id, **kwargs)
+
+    @log_api_call
+    def get_uplink_bandwidth(self, network_id: str) -> dict:
+        """Retorna configuracao de banda de uplink."""
+        return self.dashboard.appliance.getNetworkApplianceTrafficShapingUplinkBandwidth(network_id)
+
+    # ==================== Alerts & Webhooks ====================
+
+    @log_api_call
+    def get_alert_settings(self, network_id: str) -> dict:
+        """Retorna configuracoes de alertas."""
+        return self.dashboard.networks.getNetworkAlertsSettings(network_id)
+
+    @log_api_call
+    def update_alert_settings(self, network_id: str, **kwargs) -> dict:
+        """Atualiza configuracoes de alertas."""
+        return self.dashboard.networks.updateNetworkAlertsSettings(network_id, **kwargs)
+
+    @log_api_call
+    def get_webhook_servers(self, network_id: str) -> list[dict]:
+        """Retorna servidores webhook."""
+        return self.dashboard.networks.getNetworkWebhooksHttpServers(network_id)
+
+    @log_api_call
+    def create_webhook_server(self, network_id: str, **kwargs) -> dict:
+        """Cria servidor webhook."""
+        return self.dashboard.networks.createNetworkWebhooksHttpServer(network_id, **kwargs)
+
+    @log_api_call
+    def test_webhook(self, network_id: str, url: str) -> dict:
+        """Testa webhook."""
+        return self.dashboard.networks.createNetworkWebhooksWebhookTest(network_id, url=url)
+
+    # ==================== Firmware ====================
+
+    @log_api_call
+    def get_firmware_upgrades(self, network_id: str) -> dict:
+        """Retorna configuracao de firmware upgrades."""
+        return self.dashboard.networks.getNetworkFirmwareUpgrades(network_id)
+
+    @log_api_call
+    def update_firmware_upgrades(self, network_id: str, **kwargs) -> dict:
+        """Atualiza configuracao de firmware upgrades."""
+        return self.dashboard.networks.updateNetworkFirmwareUpgrades(network_id, **kwargs)
+
+    @log_api_call
+    def get_firmware_by_device(self, org_id: Optional[str] = None) -> list[dict]:
+        """Retorna firmware status por device (org-level)."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.getOrganizationFirmwareUpgradesByDevice(org)
+
+    # ==================== Live Tools ====================
+
+    @log_api_call
+    def create_ping(self, serial: str, target: str, count: int = 5) -> dict:
+        """Cria ping test."""
+        return self.dashboard.devices.createDeviceLiveToolsPing(serial, target=target, count=count)
+
+    @log_api_call
+    def get_ping_result(self, serial: str, ping_id: str) -> dict:
+        """Retorna resultado de ping test."""
+        return self.dashboard.devices.getDeviceLiveToolsPing(serial, ping_id)
+
+    @log_api_call
+    def create_cable_test(self, serial: str, ports: list[str]) -> dict:
+        """Cria cable test."""
+        return self.dashboard.devices.createDeviceLiveToolsCableTest(serial, ports=ports)
+
+    @log_api_call
+    def get_cable_test_result(self, serial: str, cable_test_id: str) -> dict:
+        """Retorna resultado de cable test."""
+        return self.dashboard.devices.getDeviceLiveToolsCableTest(serial, cable_test_id)
+
+    # ==================== SNMP ====================
+
+    @log_api_call
+    def get_snmp_settings(self, network_id: str) -> dict:
+        """Retorna configuracoes SNMP."""
+        return self.dashboard.networks.getNetworkSnmp(network_id)
+
+    @log_api_call
+    def update_snmp_settings(self, network_id: str, **kwargs) -> dict:
+        """Atualiza configuracoes SNMP."""
+        return self.dashboard.networks.updateNetworkSnmp(network_id, **kwargs)
+
+    # ==================== Syslog ====================
+
+    @log_api_call
+    def get_syslog_servers(self, network_id: str) -> dict:
+        """Retorna configuracoes de syslog."""
+        return self.dashboard.networks.getNetworkSyslogServers(network_id)
+
+    @log_api_call
+    def update_syslog_servers(self, network_id: str, servers: list[dict]) -> dict:
+        """Atualiza servidores syslog."""
+        return self.dashboard.networks.updateNetworkSyslogServers(network_id, servers=servers)
+
+    # ==================== Change Log ====================
+
+    @log_api_call
+    def get_config_changes(self, org_id: Optional[str] = None, timespan: int = 86400) -> list[dict]:
+        """Retorna mudancas de configuracao (org-level)."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.getOrganizationConfigurationChanges(org, timespan=timespan)
+
+    # ==================== Switch Routing (L3) ====================
+
+    @log_api_call
+    def get_switch_routing_interfaces(self, serial: str) -> list[dict]:
+        """Retorna interfaces L3 de routing do switch."""
+        return self.dashboard.switch.getDeviceSwitchRoutingInterfaces(serial)
+
+    @log_api_call
+    def create_routing_interface(self, serial: str, **kwargs) -> dict:
+        """Cria interface L3 de routing."""
+        return self.dashboard.switch.createDeviceSwitchRoutingInterface(serial, **kwargs)
+
+    @log_api_call
+    def update_routing_interface(self, serial: str, interface_id: str, **kwargs) -> dict:
+        """Atualiza interface L3 de routing."""
+        return self.dashboard.switch.updateDeviceSwitchRoutingInterface(serial, interface_id, **kwargs)
+
+    @log_api_call
+    def delete_routing_interface(self, serial: str, interface_id: str) -> None:
+        """Remove interface L3 de routing."""
+        return self.dashboard.switch.deleteDeviceSwitchRoutingInterface(serial, interface_id)
+
+    @log_api_call
+    def get_switch_static_routes(self, serial: str) -> list[dict]:
+        """Retorna rotas estaticas do switch."""
+        return self.dashboard.switch.getDeviceSwitchRoutingStaticRoutes(serial)
+
+    # ==================== STP ====================
+
+    @log_api_call
+    def get_stp_settings(self, network_id: str) -> dict:
+        """Retorna configuracoes STP da network."""
+        return self.dashboard.switch.getNetworkSwitchStp(network_id)
+
+    @log_api_call
+    def update_stp_settings(self, network_id: str, **kwargs) -> dict:
+        """Atualiza configuracoes STP."""
+        return self.dashboard.switch.updateNetworkSwitchStp(network_id, **kwargs)
+
+    # ==================== Device Management ====================
+
+    @log_api_call
+    def reboot_device(self, serial: str) -> dict:
+        """Reinicia um device."""
+        return self.dashboard.devices.rebootDevice(serial)
+
+    @log_api_call
+    def blink_leds(self, serial: str, duration: int = 20, **kwargs) -> dict:
+        """Pisca LEDs de um device para identificacao."""
+        return self.dashboard.devices.blinkDeviceLeds(serial, duration=duration, **kwargs)
+
+    # ==================== NAT & Port Forwarding ====================
+
+    @log_api_call
+    def get_1to1_nat(self, network_id: str) -> dict:
+        """Retorna regras 1:1 NAT."""
+        return self.dashboard.appliance.getNetworkApplianceFirewallOneToOneNatRules(network_id)
+
+    @log_api_call
+    def update_1to1_nat(self, network_id: str, rules: list[dict]) -> dict:
+        """Atualiza regras 1:1 NAT."""
+        return self.dashboard.appliance.updateNetworkApplianceFirewallOneToOneNatRules(network_id, rules=rules)
+
+    @log_api_call
+    def get_1tomany_nat(self, network_id: str) -> dict:
+        """Retorna regras 1:Many NAT."""
+        return self.dashboard.appliance.getNetworkApplianceFirewallOneToManyNatRules(network_id)
+
+    @log_api_call
+    def update_1tomany_nat(self, network_id: str, rules: list[dict]) -> dict:
+        """Atualiza regras 1:Many NAT."""
+        return self.dashboard.appliance.updateNetworkApplianceFirewallOneToManyNatRules(network_id, rules=rules)
+
+    @log_api_call
+    def get_port_forwarding(self, network_id: str) -> dict:
+        """Retorna regras de port forwarding."""
+        return self.dashboard.appliance.getNetworkApplianceFirewallPortForwardingRules(network_id)
+
+    @log_api_call
+    def update_port_forwarding(self, network_id: str, rules: list[dict]) -> dict:
+        """Atualiza regras de port forwarding."""
+        return self.dashboard.appliance.updateNetworkApplianceFirewallPortForwardingRules(network_id, rules=rules)
+
+    # ==================== RF Profiles ====================
+
+    @log_api_call
+    def get_rf_profiles(self, network_id: str) -> list[dict]:
+        """Retorna RF profiles da network."""
+        return self.dashboard.wireless.getNetworkWirelessRfProfiles(network_id)
+
+    @log_api_call
+    def create_rf_profile(self, network_id: str, **kwargs) -> dict:
+        """Cria RF profile."""
+        return self.dashboard.wireless.createNetworkWirelessRfProfile(network_id, **kwargs)
+
+    @log_api_call
+    def update_rf_profile(self, network_id: str, rf_profile_id: str, **kwargs) -> dict:
+        """Atualiza RF profile."""
+        return self.dashboard.wireless.updateNetworkWirelessRfProfile(network_id, rf_profile_id, **kwargs)
+
+    @log_api_call
+    def delete_rf_profile(self, network_id: str, rf_profile_id: str) -> None:
+        """Remove RF profile."""
+        return self.dashboard.wireless.deleteNetworkWirelessRfProfile(network_id, rf_profile_id)
+
+    # ==================== Wireless Health ====================
+
+    @log_api_call
+    def get_wireless_connection_stats(self, network_id: str, timespan: int = 3600) -> dict:
+        """Retorna estatisticas de conexao wireless."""
+        return self.dashboard.wireless.getNetworkWirelessConnectionStats(network_id, timespan=timespan)
+
+    @log_api_call
+    def get_wireless_latency_stats(self, network_id: str, timespan: int = 3600) -> dict:
+        """Retorna estatisticas de latencia wireless."""
+        return self.dashboard.wireless.getNetworkWirelessLatencyStats(network_id, timespan=timespan)
+
+    @log_api_call
+    def get_wireless_signal_quality(self, network_id: str, timespan: int = 3600) -> dict:
+        """Retorna qualidade de sinal wireless."""
+        return self.dashboard.wireless.getNetworkWirelessSignalQualityHistory(network_id, timespan=timespan)
+
+    @log_api_call
+    def get_channel_utilization(self, network_id: str, timespan: int = 3600) -> list[dict]:
+        """Retorna utilizacao de canal wireless."""
+        return self.dashboard.wireless.getNetworkWirelessChannelUtilizationHistory(network_id, timespan=timespan)
+
+    @log_api_call
+    def get_failed_connections(self, network_id: str, timespan: int = 3600) -> list[dict]:
+        """Retorna conexoes wireless falhas."""
+        return self.dashboard.wireless.getNetworkWirelessFailedConnections(network_id, timespan=timespan)
+
+    # ==================== Switch QoS ====================
+
+    @log_api_call
+    def get_qos_rules(self, network_id: str) -> list[dict]:
+        """Retorna regras QoS do switch."""
+        return self.dashboard.switch.getNetworkSwitchQosRules(network_id)
+
+    @log_api_call
+    def create_qos_rule(self, network_id: str, **kwargs) -> dict:
+        """Cria regra QoS."""
+        return self.dashboard.switch.createNetworkSwitchQosRule(network_id, **kwargs)
+
+    @log_api_call
+    def update_qos_rule(self, network_id: str, qos_rule_id: str, **kwargs) -> dict:
+        """Atualiza regra QoS."""
+        return self.dashboard.switch.updateNetworkSwitchQosRule(network_id, qos_rule_id, **kwargs)
+
+    @log_api_call
+    def delete_qos_rule(self, network_id: str, qos_rule_id: str) -> None:
+        """Remove regra QoS."""
+        return self.dashboard.switch.deleteNetworkSwitchQosRule(network_id, qos_rule_id)
+
+    # ==================== Org Admins ====================
+
+    @log_api_call
+    def get_admins(self, org_id: Optional[str] = None) -> list[dict]:
+        """Retorna administradores da org."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.getOrganizationAdmins(org)
+
+    @log_api_call
+    def create_admin(self, org_id: Optional[str] = None, **kwargs) -> dict:
+        """Cria administrador."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.createOrganizationAdmin(org, **kwargs)
+
+    @log_api_call
+    def update_admin(self, org_id: Optional[str] = None, admin_id: str = "", **kwargs) -> dict:
+        """Atualiza administrador."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.updateOrganizationAdmin(org, admin_id, **kwargs)
+
+    @log_api_call
+    def delete_admin(self, org_id: Optional[str] = None, admin_id: str = "") -> None:
+        """Remove administrador."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.deleteOrganizationAdmin(org, admin_id)
+
+    # ==================== Inventory ====================
+
+    @log_api_call
+    def get_inventory(self, org_id: Optional[str] = None) -> list[dict]:
+        """Retorna inventario completo da org."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.getOrganizationInventoryDevices(org)
+
+    @log_api_call
+    def claim_device(self, org_id: Optional[str] = None, serials: list[str] = None) -> dict:
+        """Faz claim de devices na org."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.claimIntoOrganizationInventory(org, serials=serials or [])
+
+    @log_api_call
+    def release_device(self, org_id: Optional[str] = None, serials: list[str] = None) -> dict:
+        """Release devices da org."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.releaseFromOrganizationInventory(org, serials=serials or [])
+
     # ==================== Camera (MV) ====================
 
     @log_api_call

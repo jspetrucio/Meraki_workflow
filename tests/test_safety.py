@@ -715,23 +715,15 @@ def test_all_classified_functions_exist():
     assert counts[SafetyLevel.DANGEROUS] > 0, "Should have dangerous operations"
 
     # Verify specific counts match what's actually in SAFETY_CLASSIFICATION
-    # Count by looking at the actual dict:
-    # SAFE: full_discovery, discover_networks, discover_devices, discover_ssids,
-    #       discover_vlans, discover_firewall_rules, discover_switch_ports,
-    #       discover_switch_acls, find_issues, generate_suggestions,
-    #       save_snapshot, compare_snapshots, list_networks, list_devices,
-    #       generate_report, generate_discovery_report, create_device_offline_handler,
-    #       create_firmware_compliance_check, create_scheduled_report,
-    #       create_security_alert_handler, save_workflow, list_workflows (22 total)
-    # MODERATE: configure_ssid, enable_ssid, disable_ssid, create_vlan,
-    #           update_vlan, backup_config (6 total)
-    # DANGEROUS: add_firewall_rule, remove_firewall_rule, add_switch_acl,
-    #            delete_vlan, rollback_config (5 total)
+    # Updated for Epic 8, Epic 9 & Epic 10:
+    # SAFE: 51 (base 24 + Epic 8: 5 + Epic 9: 7 + Epic 10: 15)
+    # MODERATE: 22 (base 6 + Epic 8: 7 + Epic 9: 4 + Epic 10: 5)
+    # DANGEROUS: 15 (base 5 + Epic 8: 2 + Epic 9: 2 + Epic 10: 6)
 
     expected_counts = {
-        SafetyLevel.SAFE: 24,
-        SafetyLevel.MODERATE: 6,
-        SafetyLevel.DANGEROUS: 5,
+        SafetyLevel.SAFE: 51,
+        SafetyLevel.MODERATE: 22,
+        SafetyLevel.DANGEROUS: 15,
     }
 
     assert counts == expected_counts, (

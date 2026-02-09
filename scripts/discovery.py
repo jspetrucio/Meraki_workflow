@@ -481,6 +481,464 @@ def discover_traffic(network_id: str, client: MerakiClient, timespan: int = 3600
     return traffic
 
 
+def discover_vpn_topology(org_id: Optional[str] = None, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre topologia Site-to-Site VPN.
+
+    Args:
+        org_id: ID da organizacao (usa do profile se None)
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com configuracoes VPN e status
+    """
+    client = client or get_client()
+    org_id = org_id or client.org_id
+    if not org_id:
+        raise ValueError("org_id deve ser fornecido ou definido no profile")
+
+    logger.debug(f"Descobrindo VPN topology da org {org_id}")
+
+    # Get all networks
+    networks = client.safe_call(client.get_networks, org_id, default=[])
+
+    # Filter MX networks
+    mx_networks = [n for n in networks if "appliance" in n.get("productTypes", [])]
+
+    # Get VPN config for each MX network
+    vpn_configs = {}
+    for network in mx_networks:
+        net_id = network["id"]
+        config = client.safe_call(client.get_vpn_config, net_id, default={})
+        if config:
+            vpn_configs[net_id] = config
+
+    # Get org-level VPN statuses
+    vpn_statuses = client.safe_call(client.get_vpn_statuses, org_id, default=[])
+
+    logger.debug(
+        f"Encontradas {len(vpn_configs)} configuracoes VPN, "
+        f"{len(vpn_statuses)} status entries"
+    )
+
+    return {
+        "vpn_configs": vpn_configs,
+        "vpn_statuses": vpn_statuses,
+        "mx_networks": mx_networks,
+    }
+
+
+def discover_content_filtering(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracao de Content Filtering.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com configuracao de content filtering
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo content filtering da network {network_id}")
+
+    result = client.safe_call(client.get_content_filtering, network_id, default={})
+    logger.debug(f"Content filtering: {len(result.get('blockedUrlPatterns', []))} blocked URLs")
+
+    return result
+
+
+def discover_ips_settings(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracoes de IPS/IDS.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com configuracoes de IPS
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo IPS settings da network {network_id}")
+
+    result = client.safe_call(client.get_intrusion_settings, network_id, default={})
+    logger.debug(f"IPS mode: {result.get('mode', 'unknown')}")
+
+    return result
+
+
+def discover_amp_settings(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracoes de AMP/Malware Protection.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com configuracoes de AMP
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo AMP settings da network {network_id}")
+
+    result = client.safe_call(client.get_malware_settings, network_id, default={})
+    logger.debug(f"AMP mode: {result.get('mode', 'unknown')}")
+
+    return result
+
+
+def discover_traffic_shaping(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracao de Traffic Shaping.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com regras de traffic shaping
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo traffic shaping da network {network_id}")
+
+    result = client.safe_call(client.get_traffic_shaping, network_id, default={})
+    logger.debug(f"Traffic shaping: {len(result.get('rules', []))} rules")
+
+    return result
+
+
+def discover_alerts(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracoes de alertas.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com configuracoes de alertas
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo alert settings da network {network_id}")
+
+    result = client.safe_call(client.get_alert_settings, network_id, default={})
+    # Ensure result is a dict
+    if not isinstance(result, dict):
+        result = {}
+    logger.debug(f"Alertas: {len(result.get('alerts', []))} configured")
+
+    return result
+
+
+def discover_webhooks(network_id: str, client: Optional[MerakiClient] = None) -> list[dict]:
+    """
+    Descobre servidores webhook configurados.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Lista de webhooks
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo webhooks da network {network_id}")
+
+    result = client.safe_call(client.get_webhook_servers, network_id, default=[])
+    logger.debug(f"Webhooks: {len(result)} servers")
+
+    return result
+
+
+def discover_firmware_status(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre status de firmware da network.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com status de firmware
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo firmware status da network {network_id}")
+
+    result = client.safe_call(client.get_firmware_upgrades, network_id, default={})
+    if isinstance(result, dict):
+        logger.debug(f"Firmware upgrade policy: {result.get('upgradeWindow', {}).get('dayOfWeek', 'unknown')}")
+
+    return result
+
+
+def discover_snmp_config(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracao SNMP.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com configuracao SNMP
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo SNMP config da network {network_id}")
+
+    result = client.safe_call(client.get_snmp_settings, network_id, default={})
+    logger.debug(f"SNMP access: {result.get('access', 'unknown')}")
+
+    return result
+
+
+def discover_syslog_config(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracao de syslog.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com configuracao de syslog
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo syslog config da network {network_id}")
+
+    result = client.safe_call(client.get_syslog_servers, network_id, default={})
+    servers = result.get("servers", [])
+    logger.debug(f"Syslog: {len(servers)} servers")
+
+    return result
+
+
+def discover_recent_changes(org_id: Optional[str] = None, timespan: int = 86400, client: Optional[MerakiClient] = None) -> list[dict]:
+    """
+    Descobre mudancas recentes de configuracao.
+
+    Args:
+        org_id: ID da organizacao (opcional)
+        timespan: Janela de tempo em segundos (default: 86400 = 24h)
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Lista de mudancas
+    """
+    client = client or get_client()
+    org_id = org_id or client.org_id
+    if not org_id:
+        raise ValueError("org_id deve ser fornecido ou definido no profile")
+
+    logger.debug(f"Descobrindo config changes da org {org_id} (timespan={timespan}s)")
+
+    result = client.safe_call(client.get_config_changes, org_id, timespan=timespan, default=[])
+    logger.debug(f"Config changes: {len(result)} entries")
+
+    return result
+
+
+def discover_switch_routing(serial: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracoes de routing L3 de um switch.
+
+    Args:
+        serial: Serial do switch
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com interfaces e rotas estaticas
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo switch routing para {serial}")
+
+    result = {
+        "interfaces": client.safe_call(client.get_switch_routing_interfaces, serial, default=[]),
+        "static_routes": client.safe_call(client.get_switch_static_routes, serial, default=[]),
+    }
+
+    logger.debug(f"Encontradas {len(result['interfaces'])} interfaces L3, {len(result['static_routes'])} rotas estaticas")
+    return result
+
+
+def discover_stp_config(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracao STP da network.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com configuracao STP
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo STP config da network {network_id}")
+
+    result = client.safe_call(client.get_stp_settings, network_id, default={})
+    logger.debug(f"STP enabled: {result.get('stpBridgePriority', 'unknown')}")
+
+    return result
+
+
+def discover_nat_rules(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre regras NAT (1:1 e 1:Many).
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com regras 1:1 e 1:Many
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo NAT rules da network {network_id}")
+
+    result = {
+        "1to1_nat": client.safe_call(client.get_1to1_nat, network_id, default={"rules": []}),
+        "1tomany_nat": client.safe_call(client.get_1tomany_nat, network_id, default={"rules": []}),
+    }
+
+    logger.debug(f"Found {len(result['1to1_nat'].get('rules', []))} 1:1 NAT, {len(result['1tomany_nat'].get('rules', []))} 1:Many NAT")
+    return result
+
+
+def discover_port_forwarding(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre regras de port forwarding.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com regras de port forwarding
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo port forwarding da network {network_id}")
+
+    result = client.safe_call(client.get_port_forwarding, network_id, default={"rules": []})
+    logger.debug(f"Port forwarding: {len(result.get('rules', []))} rules")
+
+    return result
+
+
+def discover_rf_profiles(network_id: str, client: Optional[MerakiClient] = None) -> list[dict]:
+    """
+    Descobre RF profiles da network.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Lista de RF profiles
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo RF profiles da network {network_id}")
+
+    result = client.safe_call(client.get_rf_profiles, network_id, default=[])
+    logger.debug(f"RF profiles: {len(result)} profiles")
+
+    return result
+
+
+def discover_wireless_health(network_id: str, client: Optional[MerakiClient] = None, timespan: int = 3600) -> dict:
+    """
+    Descobre metricas de saude wireless.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+        timespan: Janela de tempo em segundos (default: 3600 = 1h)
+
+    Returns:
+        Dict com metricas de saude wireless
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo wireless health da network {network_id}")
+
+    result = {
+        "connection_stats": client.safe_call(client.get_wireless_connection_stats, network_id, timespan=timespan, default={}),
+        "latency_stats": client.safe_call(client.get_wireless_latency_stats, network_id, timespan=timespan, default={}),
+        "signal_quality": client.safe_call(client.get_wireless_signal_quality, network_id, timespan=timespan, default=[]),
+        "channel_utilization": client.safe_call(client.get_channel_utilization, network_id, timespan=timespan, default=[]),
+        "failed_connections": client.safe_call(client.get_failed_connections, network_id, timespan=timespan, default=[]),
+    }
+
+    logger.debug(f"Wireless health: {len(result['failed_connections'])} failed connections")
+    return result
+
+
+def discover_qos_config(network_id: str, client: Optional[MerakiClient] = None) -> list[dict]:
+    """
+    Descobre configuracao QoS do switch.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Lista de regras QoS
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo QoS config da network {network_id}")
+
+    result = client.safe_call(client.get_qos_rules, network_id, default=[])
+    logger.debug(f"QoS rules: {len(result)} rules")
+
+    return result
+
+
+def discover_org_admins(org_id: Optional[str] = None, client: Optional[MerakiClient] = None) -> list[dict]:
+    """
+    Descobre administradores da organizacao.
+
+    Args:
+        org_id: ID da organizacao (opcional)
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Lista de admins com roles e 2FA
+    """
+    client = client or get_client()
+    org_id = org_id or client.org_id
+    if not org_id:
+        raise ValueError("org_id deve ser fornecido ou definido no profile")
+
+    logger.debug(f"Descobrindo org admins da org {org_id}")
+
+    result = client.safe_call(client.get_admins, org_id, default=[])
+    logger.debug(f"Org admins: {len(result)} admins")
+
+    return result
+
+
+def discover_inventory(org_id: Optional[str] = None, client: Optional[MerakiClient] = None) -> list[dict]:
+    """
+    Descobre inventario completo da org.
+
+    Args:
+        org_id: ID da organizacao (opcional)
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Lista de devices no inventario
+    """
+    client = client or get_client()
+    org_id = org_id or client.org_id
+    if not org_id:
+        raise ValueError("org_id deve ser fornecido ou definido no profile")
+
+    logger.debug(f"Descobrindo inventory da org {org_id}")
+
+    result = client.safe_call(client.get_inventory, org_id, default=[])
+    logger.debug(f"Inventory: {len(result)} devices")
+
+    return result
+
+
 def full_discovery(
     org_id: Optional[str] = None,
     client: Optional[MerakiClient] = None,
@@ -548,6 +1006,15 @@ def full_discovery(
             "firewall": {"l3_rules": [], "l7_rules": []},
             "switch_acls": {},
             "switch_ports": {},
+            "content_filtering": {},
+            "ips_settings": {},
+            "amp_settings": {},
+            "traffic_shaping": {},
+            "alert_settings": {},
+            "webhooks": [],
+            "firmware_status": {},
+            "snmp_config": {},
+            "syslog_config": {},
         }
 
         # SSIDs (se wireless)
@@ -558,6 +1025,17 @@ def full_discovery(
         if "appliance" in network.product_types:
             configs["vlans"] = [asdict(v) for v in discover_vlans(net_id, client)]
             configs["firewall"] = discover_firewall_rules(net_id, client)
+            configs["content_filtering"] = discover_content_filtering(net_id, client)
+            configs["ips_settings"] = discover_ips_settings(net_id, client)
+            configs["amp_settings"] = discover_amp_settings(net_id, client)
+            configs["traffic_shaping"] = discover_traffic_shaping(net_id, client)
+
+        # Epic 9: Alerts, Firmware, SNMP, Syslog (all networks)
+        configs["alert_settings"] = discover_alerts(net_id, client)
+        configs["webhooks"] = discover_webhooks(net_id, client)
+        configs["firmware_status"] = discover_firmware_status(net_id, client)
+        configs["snmp_config"] = discover_snmp_config(net_id, client)
+        configs["syslog_config"] = discover_syslog_config(net_id, client)
 
         # Switch ACLs (se switch)
         if "switch" in network.product_types:
@@ -570,6 +1048,11 @@ def full_discovery(
                     configs["switch_ports"][device.serial] = ports
 
         configurations[net_id] = configs
+
+    # Discover VPN topology (org-level)
+    logger.info("Descobrindo topologia VPN")
+    vpn_topology = discover_vpn_topology(org_id, client)
+    configurations["vpn_topology"] = vpn_topology
 
     # Buscar status atualizado dos devices
     logger.info("Buscando status dos devices")
@@ -692,6 +1175,8 @@ def find_issues(discovery: DiscoveryResult) -> list[dict]:
     insecure_ssids = []
 
     for net_id, configs in discovery.configurations.items():
+        if not isinstance(configs, dict):
+            continue
         for ssid_data in configs.get("ssids", []):
             if ssid_data["enabled"] and ssid_data.get("auth_mode") == "open":
                 network = next((n for n in discovery.networks if n.id == net_id), None)
@@ -715,6 +1200,8 @@ def find_issues(discovery: DiscoveryResult) -> list[dict]:
     permissive_rules = []
 
     for net_id, configs in discovery.configurations.items():
+        if not isinstance(configs, dict):
+            continue
         firewall = configs.get("firewall", {})
         l3_rules = firewall.get("l3_rules", [])
 
@@ -740,6 +1227,209 @@ def find_issues(discovery: DiscoveryResult) -> list[dict]:
             "message": f"{len(permissive_rules)} regra(s) de firewall muito permissiva(s)",
             "count": len(permissive_rules),
             "rules": permissive_rules,
+        })
+
+    # 6. VPN peer down (check if configurations dict has vpn_topology)
+    vpn_topology = discovery.configurations.get("vpn_topology", {})
+    vpn_statuses = vpn_topology.get("vpn_statuses", []) if isinstance(vpn_topology, dict) else []
+    peers_down = [s for s in vpn_statuses if s.get("vpnMode") == "spoke" and s.get("status", {}).get("metaNetworkName") and "offline" in str(s.get("status", {}).get("uplinks", [])).lower()]
+
+    if peers_down:
+        issues.append({
+            "type": "vpn_peer_down",
+            "severity": "high",
+            "message": f"{len(peers_down)} VPN peer(s) offline",
+            "count": len(peers_down),
+            "peers": [{"network": p.get("networkName"), "mode": p.get("vpnMode")} for p in peers_down],
+        })
+
+    # 7. Content filtering permissive
+    content_filter_permissive = []
+    for net_id, configs in discovery.configurations.items():
+        if not isinstance(configs, dict):
+            continue
+        content_filter = configs.get("content_filtering", {})
+        url_category_list_size = content_filter.get("urlCategoryListSize", "topSites")
+        blocked_categories = content_filter.get("blockedUrlCategories", [])
+
+        # If topSites (minimal filtering) and no blocked categories
+        if url_category_list_size == "topSites" and len(blocked_categories) == 0:
+            network = next((n for n in discovery.networks if n.id == net_id), None)
+            content_filter_permissive.append({
+                "network_id": net_id,
+                "network_name": network.name if network else "unknown",
+            })
+
+    if content_filter_permissive:
+        issues.append({
+            "type": "content_filter_permissive",
+            "severity": "medium",
+            "message": f"{len(content_filter_permissive)} network(s) com content filtering muito permissivo",
+            "count": len(content_filter_permissive),
+            "networks": content_filter_permissive,
+        })
+
+    # 8. IPS disabled
+    ips_disabled = []
+    for net_id, configs in discovery.configurations.items():
+        if not isinstance(configs, dict):
+            continue
+        ips_settings = configs.get("ips_settings", {})
+        if ips_settings.get("mode") == "disabled":
+            network = next((n for n in discovery.networks if n.id == net_id), None)
+            ips_disabled.append({
+                "network_id": net_id,
+                "network_name": network.name if network else "unknown",
+            })
+
+    if ips_disabled:
+        issues.append({
+            "type": "ips_disabled",
+            "severity": "medium",
+            "message": f"{len(ips_disabled)} network(s) com IPS desabilitado",
+            "count": len(ips_disabled),
+            "networks": ips_disabled,
+        })
+
+    # 9. AMP disabled
+    amp_disabled = []
+    for net_id, configs in discovery.configurations.items():
+        if not isinstance(configs, dict):
+            continue
+        amp_settings = configs.get("amp_settings", {})
+        if amp_settings.get("mode") == "disabled":
+            network = next((n for n in discovery.networks if n.id == net_id), None)
+            amp_disabled.append({
+                "network_id": net_id,
+                "network_name": network.name if network else "unknown",
+            })
+
+    if amp_disabled:
+        issues.append({
+            "type": "amp_disabled",
+            "severity": "medium",
+            "message": f"{len(amp_disabled)} network(s) com AMP desabilitado",
+            "count": len(amp_disabled),
+            "networks": amp_disabled,
+        })
+
+    # 10. No alerts configured (Epic 9)
+    no_alerts = []
+    for net_id, configs in discovery.configurations.items():
+        if not isinstance(configs, dict):
+            continue
+        alert_settings = configs.get("alert_settings", {})
+        alerts = alert_settings.get("alerts", [])
+        if len(alerts) == 0 or not alert_settings:
+            network = next((n for n in discovery.networks if n.id == net_id), None)
+            no_alerts.append({
+                "network_id": net_id,
+                "network_name": network.name if network else "unknown",
+            })
+
+    if no_alerts:
+        issues.append({
+            "type": "no_alerts_configured",
+            "severity": "medium",
+            "message": f"{len(no_alerts)} network(s) sem alertas configurados",
+            "count": len(no_alerts),
+            "networks": no_alerts,
+        })
+
+    # 11. Firmware outdated (Epic 9)
+    firmware_outdated = []
+    for net_id, configs in discovery.configurations.items():
+        if not isinstance(configs, dict):
+            continue
+        firmware_status = configs.get("firmware_status", {})
+        products = firmware_status.get("products", {})
+        for product_type, product_config in products.items():
+            current_version = product_config.get("currentVersion", {})
+            if current_version.get("id") and current_version.get("id") != product_config.get("nextUpgrade", {}).get("id"):
+                network = next((n for n in discovery.networks if n.id == net_id), None)
+                firmware_outdated.append({
+                    "network_id": net_id,
+                    "network_name": network.name if network else "unknown",
+                    "product_type": product_type,
+                    "current": current_version.get("shortName", "unknown"),
+                })
+                break  # One entry per network
+
+    if firmware_outdated:
+        issues.append({
+            "type": "firmware_outdated",
+            "severity": "low",
+            "message": f"{len(firmware_outdated)} network(s) com firmware desatualizado",
+            "count": len(firmware_outdated),
+            "networks": firmware_outdated,
+        })
+
+    # 12. No SNMP configured (Epic 9)
+    no_snmp = []
+    for net_id, configs in discovery.configurations.items():
+        if not isinstance(configs, dict):
+            continue
+        snmp_config = configs.get("snmp_config", {})
+        if snmp_config.get("access") == "none" or not snmp_config:
+            network = next((n for n in discovery.networks if n.id == net_id), None)
+            no_snmp.append({
+                "network_id": net_id,
+                "network_name": network.name if network else "unknown",
+            })
+
+    if no_snmp:
+        issues.append({
+            "type": "no_snmp_configured",
+            "severity": "low",
+            "message": f"{len(no_snmp)} network(s) sem SNMP configurado",
+            "count": len(no_snmp),
+            "networks": no_snmp,
+        })
+
+    # 13. No syslog configured (Epic 9)
+    no_syslog = []
+    for net_id, configs in discovery.configurations.items():
+        if not isinstance(configs, dict):
+            continue
+        syslog_config = configs.get("syslog_config", {})
+        servers = syslog_config.get("servers", [])
+        if len(servers) == 0:
+            network = next((n for n in discovery.networks if n.id == net_id), None)
+            no_syslog.append({
+                "network_id": net_id,
+                "network_name": network.name if network else "unknown",
+            })
+
+    if no_syslog:
+        issues.append({
+            "type": "no_syslog_configured",
+            "severity": "low",
+            "message": f"{len(no_syslog)} network(s) sem syslog configurado",
+            "count": len(no_syslog),
+            "networks": no_syslog,
+        })
+
+    # 14. STP inconsistency (Epic 10)
+    stp_inconsistent = []
+    for net_id, configs in discovery.configurations.items():
+        if not isinstance(configs, dict):
+            continue
+        stp_config = configs.get("stp_config", {})
+        if stp_config.get("stpBridgePriority") and stp_config.get("rstpEnabled") is False:
+            network = next((n for n in discovery.networks if n.id == net_id), None)
+            stp_inconsistent.append({
+                "network_id": net_id,
+                "network_name": network.name if network else "unknown",
+                "reason": "STP enabled but RSTP disabled",
+            })
+
+    if stp_inconsistent:
+        issues.append({
+            "type": "stp_inconsistency",
+            "severity": "medium",
+            "message": f"{len(stp_inconsistent)} network(s) with STP inconsistency",
+            "count": len(stp_inconsistent),
+            "networks": stp_inconsistent,
         })
 
     return issues
