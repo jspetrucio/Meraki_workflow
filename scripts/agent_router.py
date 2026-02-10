@@ -105,7 +105,7 @@ def _load_agent_prompt(agent_name: str) -> str:
 AGENTS = {
     "network-analyst": AgentDefinition(
         name="network-analyst",
-        description="Network discovery, analysis, diagnostics, health checks",
+        description="Network discovery, analysis, diagnostics, health checks, bandwidth usage, client monitoring, traffic analysis",
         system_prompt=_load_agent_prompt("network-analyst"),
         functions=[
             "full_discovery",
@@ -116,6 +116,8 @@ AGENTS = {
             "discover_firewall_rules",
             "discover_switch_ports",
             "discover_switch_acls",
+            "discover_clients",
+            "discover_traffic",
             "find_issues",
             "generate_suggestions",
             "save_snapshot",
@@ -127,6 +129,9 @@ AGENTS = {
             "discover all networks",
             "check device status",
             "find network issues",
+            "which device is consuming more bandwidth",
+            "show top bandwidth consumers",
+            "show network traffic",
         ],
     ),
     "meraki-specialist": AgentDefinition(
@@ -204,6 +209,20 @@ def _build_function_registry() -> dict:
     registry["discover_firewall_rules"] = discovery.discover_firewall_rules
     registry["discover_switch_ports"] = discovery.discover_switch_ports
     registry["discover_switch_acls"] = discovery.discover_switch_acls
+    registry["discover_clients"] = discovery.discover_clients
+    registry["discover_traffic"] = discovery.discover_traffic
+    registry["discover_vpn_topology"] = discovery.discover_vpn_topology
+    registry["discover_content_filtering"] = discovery.discover_content_filtering
+    registry["discover_ips_settings"] = discovery.discover_ips_settings
+    registry["discover_amp_settings"] = discovery.discover_amp_settings
+    registry["discover_traffic_shaping"] = discovery.discover_traffic_shaping
+    # Epic 9: Alerts, Firmware, Observability
+    registry["discover_alerts"] = discovery.discover_alerts
+    registry["discover_webhooks"] = discovery.discover_webhooks
+    registry["discover_firmware_status"] = discovery.discover_firmware_status
+    registry["discover_snmp_config"] = discovery.discover_snmp_config
+    registry["discover_syslog_config"] = discovery.discover_syslog_config
+    registry["discover_recent_changes"] = discovery.discover_recent_changes
     registry["find_issues"] = discovery.find_issues
     registry["generate_suggestions"] = discovery.generate_suggestions
     registry["save_snapshot"] = discovery.save_snapshot
@@ -225,6 +244,126 @@ def _build_function_registry() -> dict:
     registry["sgt_preflight_check"] = config.sgt_preflight_check
     registry["check_license"] = config.check_license
     registry["backup_current_state"] = config.backup_current_state
+    # Epic 8: Security & Monitoring
+    registry["backup_vpn_config"] = config.backup_vpn_config
+    registry["configure_s2s_vpn"] = config.configure_s2s_vpn
+    registry["add_vpn_peer"] = config.add_vpn_peer
+    registry["configure_content_filter"] = config.configure_content_filter
+    registry["add_blocked_url"] = config.add_blocked_url
+    registry["configure_ips"] = config.configure_ips
+    registry["set_ips_mode"] = config.set_ips_mode
+    registry["configure_amp"] = config.configure_amp
+    registry["configure_traffic_shaping"] = config.configure_traffic_shaping
+    registry["set_bandwidth_limit"] = config.set_bandwidth_limit
+    # Epic 9: Alerts, Firmware, SNMP, Syslog
+    registry["configure_alerts"] = config.configure_alerts
+    registry["create_webhook_endpoint"] = config.create_webhook_endpoint
+    registry["schedule_firmware_upgrade"] = config.schedule_firmware_upgrade
+    registry["cancel_firmware_upgrade"] = config.cancel_firmware_upgrade
+    registry["configure_snmp"] = config.configure_snmp
+    registry["configure_syslog"] = config.configure_syslog
+    # Epic 10: Advanced Switching, Wireless & Platform - Discovery
+    registry["discover_switch_routing"] = discovery.discover_switch_routing
+    registry["discover_stp_config"] = discovery.discover_stp_config
+    registry["discover_nat_rules"] = discovery.discover_nat_rules
+    registry["discover_port_forwarding"] = discovery.discover_port_forwarding
+    registry["discover_rf_profiles"] = discovery.discover_rf_profiles
+    registry["discover_wireless_health"] = discovery.discover_wireless_health
+    registry["discover_qos_config"] = discovery.discover_qos_config
+    registry["discover_org_admins"] = discovery.discover_org_admins
+    registry["discover_inventory"] = discovery.discover_inventory
+
+    # ===== Phase 2 - Wave 1 =====
+    # Story 11.5: Policy Objects
+    registry["discover_policy_objects"] = discovery.discover_policy_objects
+    registry["manage_policy_object"] = config.manage_policy_object
+    # Story 11.2: Client VPN
+    registry["discover_client_vpn"] = discovery.discover_client_vpn
+    registry["configure_client_vpn"] = config.configure_client_vpn
+    # Story 12.3: Port Schedules
+    registry["discover_port_schedules"] = discovery.discover_port_schedules
+    registry["configure_port_schedule"] = config.configure_port_schedule
+    # Story 13.5: LLDP/CDP
+    registry["discover_lldp_cdp"] = discovery.discover_lldp_cdp
+    # Story 13.7: NetFlow
+    registry["discover_netflow_config"] = discovery.discover_netflow_config
+    registry["configure_netflow"] = config.configure_netflow
+    # Story 13.8: PoE Status
+    registry["discover_poe_status"] = discovery.discover_poe_status
+
+    # ===== Phase 2 - Wave 2 =====
+    # Story 11.1: SD-WAN
+    registry["discover_sdwan_config"] = discovery.discover_sdwan_config
+    registry["configure_sdwan_policy"] = config.configure_sdwan_policy
+    registry["set_uplink_preference"] = config.set_uplink_preference
+    # Story 11.4: Config Templates
+    registry["discover_templates"] = discovery.discover_templates
+    registry["manage_template"] = config.manage_template
+    # Story 12.2: Access Policies
+    registry["discover_access_policies"] = discovery.discover_access_policies
+    registry["configure_access_policy"] = config.configure_access_policy
+    # Story 12.5: Air Marshal
+    registry["discover_rogue_aps"] = discovery.discover_rogue_aps
+    # Story 12.6: SSID Firewall
+    registry["discover_ssid_firewall"] = discovery.discover_ssid_firewall
+    registry["configure_ssid_firewall"] = config.configure_ssid_firewall
+    # Story 12.7: Splash Pages
+    registry["discover_splash_config"] = discovery.discover_splash_config
+    registry["configure_splash_page"] = config.configure_splash_page
+
+    # ===== Phase 2 - Wave 3 =====
+    # Story 11.3: Adaptive Policy / SGT
+    registry["discover_adaptive_policies"] = discovery.discover_adaptive_policies
+    registry["configure_adaptive_policy"] = config.configure_adaptive_policy
+    # Story 12.1: Switch Stacks
+    registry["discover_switch_stacks"] = discovery.discover_switch_stacks
+    registry["manage_switch_stack"] = config.manage_switch_stack
+    # Story 12.4: HA / Warm Spare
+    registry["discover_ha_config"] = discovery.discover_ha_config
+    registry["configure_warm_spare"] = config.configure_warm_spare
+    registry["trigger_failover"] = config.trigger_failover
+    # Story 13.1: Camera Analytics & Snapshots
+    registry["discover_camera_analytics"] = discovery.discover_camera_analytics
+    # Story 13.2: Sensor Readings & Alerts
+    registry["discover_sensors"] = discovery.discover_sensors
+    registry["configure_sensor_alert"] = config.configure_sensor_alert
+
+    # ===== Phase 2 - Wave 4 =====
+    # Story 13.3: Floor Plans
+    registry["discover_floor_plans"] = discovery.discover_floor_plans
+    registry["create_floor_plan"] = lambda network_id, name, **kw: get_client().create_floor_plan(network_id, name, **kw)
+    registry["update_floor_plan"] = lambda network_id, floor_plan_id, **kw: get_client().update_floor_plan(network_id, floor_plan_id, **kw)
+    registry["delete_floor_plan"] = lambda network_id, floor_plan_id: get_client().delete_floor_plan(network_id, floor_plan_id)
+    # Story 13.4: Group Policies
+    registry["discover_group_policies"] = discovery.discover_group_policies
+    registry["configure_group_policy"] = config.configure_group_policy
+    # Story 13.6: Packet Capture
+    registry["create_packet_capture"] = lambda device_serial, **kw: get_client().create_packet_capture(device_serial, **kw)
+    registry["get_packet_capture_status"] = lambda device_serial, capture_id: get_client().get_packet_capture_status(device_serial, capture_id)
+    # Story 13.9: Static Routes (Appliance)
+    registry["discover_static_routes"] = discovery.discover_static_routes
+    registry["manage_static_route"] = config.manage_static_route
+
+    # Epic 10: Advanced Switching, Wireless & Platform - Config
+    registry["configure_switch_l3_interface"] = config.configure_switch_l3_interface
+    registry["add_switch_static_route"] = config.add_switch_static_route
+    registry["configure_stp"] = config.configure_stp
+    registry["configure_1to1_nat"] = config.configure_1to1_nat
+    registry["configure_port_forwarding"] = config.configure_port_forwarding
+    registry["configure_rf_profile"] = config.configure_rf_profile
+    registry["configure_qos"] = config.configure_qos
+    registry["manage_admin"] = config.manage_admin
+    # Epic 10: Direct API actions (reboot, blink, claim, release)
+    from scripts.api import get_client
+    registry["reboot_device"] = lambda serial: get_client().reboot_device(serial)
+    registry["blink_leds"] = lambda serial, duration=20: get_client().blink_leds(serial, duration)
+    registry["claim_device"] = lambda serials: get_client().claim_device(serials=serials)
+    registry["release_device"] = lambda serials: get_client().release_device(serials=serials)
+    registry["get_wireless_connection_stats"] = lambda network_id, **kw: get_client().get_wireless_connection_stats(network_id, **kw)
+    registry["get_wireless_latency_stats"] = lambda network_id, **kw: get_client().get_wireless_latency_stats(network_id, **kw)
+    registry["get_wireless_signal_quality"] = lambda network_id, **kw: get_client().get_wireless_signal_quality(network_id, **kw)
+    registry["get_channel_utilization"] = lambda network_id, **kw: get_client().get_channel_utilization(network_id, **kw)
+    registry["get_failed_connections"] = lambda network_id, **kw: get_client().get_failed_connections(network_id, **kw)
 
     # Workflow functions
     registry["create_device_offline_handler"] = workflow.create_device_offline_handler
@@ -684,62 +823,121 @@ async def process_message(
     except ValueError:
         tools = []
 
-    # Call AI Engine with function-calling
-    try:
-        response_stream = await ai_engine.chat_completion(
-            messages=messages,
-            tools=tools if tools else None,
-            stream=True,
-            session_id=session_id,
-        )
+    # Call AI Engine with tool-call conversation loop.
+    # After executing tools, feed results back to the LLM so it can
+    # generate a natural language interpretation instead of raw JSON.
+    MAX_TOOL_ROUNDS = 5  # prevent infinite loops
 
-        # Stream response chunks
-        async for chunk in response_stream:
-            # Check for tool calls
-            if hasattr(chunk, "choices") and len(chunk.choices) > 0:
+    try:
+        for _round in range(MAX_TOOL_ROUNDS):
+            response_stream = await ai_engine.chat_completion(
+                messages=messages,
+                tools=tools if tools else None,
+                stream=True,
+                session_id=session_id,
+            )
+
+            # Accumulate streaming tool call chunks before executing
+            pending_tool_calls: dict[int, dict] = {}
+            assistant_content = ""
+
+            async for chunk in response_stream:
+                if not hasattr(chunk, "choices") or len(chunk.choices) == 0:
+                    continue
+
                 choice = chunk.choices[0]
 
                 # Stream delta content
                 if hasattr(choice, "delta") and hasattr(choice.delta, "content"):
                     content = choice.delta.content
                     if content:
+                        assistant_content += content
                         yield {
                             "type": "stream",
                             "chunk": content,
                             "agent": agent.name,
                         }
 
-                # Check for tool calls
+                # Accumulate tool call chunks (name, arguments, id)
                 if hasattr(choice.delta, "tool_calls") and choice.delta.tool_calls:
                     for tool_call in choice.delta.tool_calls:
+                        idx = tool_call.index if hasattr(tool_call, "index") else 0
+                        if idx not in pending_tool_calls:
+                            pending_tool_calls[idx] = {
+                                "id": None, "name": None, "arguments": "",
+                            }
+                        if hasattr(tool_call, "id") and tool_call.id:
+                            pending_tool_calls[idx]["id"] = tool_call.id
                         if hasattr(tool_call, "function"):
-                            func_name = tool_call.function.name
-                            func_args_str = tool_call.function.arguments
+                            if tool_call.function.name:
+                                pending_tool_calls[idx]["name"] = tool_call.function.name
+                            if tool_call.function.arguments:
+                                pending_tool_calls[idx]["arguments"] += tool_call.function.arguments
 
-                            try:
-                                func_args = json.loads(func_args_str) if func_args_str else {}
-                            except json.JSONDecodeError:
-                                func_args = {}
+            # No tool calls — LLM responded with text, we're done
+            if not pending_tool_calls:
+                break
 
-                            # Execute function
-                            success, result, error = await _execute_function(
-                                func_name, func_args
-                            )
+            # Execute all accumulated tool calls
+            tool_results: list[dict] = []
+            assistant_tool_calls: list[dict] = []
 
-                            if success:
-                                yield {
-                                    "type": "function_result",
-                                    "function": func_name,
-                                    "result": result,
-                                    "agent": agent.name,
-                                }
-                            else:
-                                yield {
-                                    "type": "function_error",
-                                    "function": func_name,
-                                    "error": error,
-                                    "agent": agent.name,
-                                }
+            for _idx, tc in sorted(pending_tool_calls.items()):
+                func_name = tc["name"]
+                if not func_name:
+                    continue
+
+                tc_id = tc["id"] or f"call_{func_name}_{_idx}"
+
+                try:
+                    func_args = json.loads(tc["arguments"]) if tc["arguments"] else {}
+                except json.JSONDecodeError:
+                    func_args = {}
+
+                # Build the assistant tool_calls entry for the conversation
+                assistant_tool_calls.append({
+                    "id": tc_id,
+                    "type": "function",
+                    "function": {"name": func_name, "arguments": tc["arguments"] or "{}"},
+                })
+
+                success, result, error = await _execute_function(
+                    func_name, func_args
+                )
+
+                result_content = _serialize_result(result) if success else json.dumps({"error": error})
+
+                tool_results.append({
+                    "role": "tool",
+                    "tool_call_id": tc_id,
+                    "content": result_content if isinstance(result_content, str) else json.dumps(result_content),
+                })
+
+                # Yield tool execution status to frontend
+                if success:
+                    yield {
+                        "type": "tool_status",
+                        "function": func_name,
+                        "status": "ok",
+                        "agent": agent.name,
+                    }
+                else:
+                    yield {
+                        "type": "function_error",
+                        "function": func_name,
+                        "error": error,
+                        "agent": agent.name,
+                    }
+
+            # Append assistant message with tool calls + tool results to conversation
+            messages.append({
+                "role": "assistant",
+                "content": assistant_content or None,
+                "tool_calls": assistant_tool_calls,
+            })
+            messages.extend(tool_results)
+
+            # Loop continues — LLM will see tool results and generate NL response
 
     except Exception as exc:
         logger.exception("Error in process_message")

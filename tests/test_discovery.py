@@ -657,8 +657,8 @@ def test_full_discovery_integration(mock_get_client):
         {"serial": "Q1", "status": "online"}
     ]
 
-    # Mock safe_call (para SSIDs, VLANs, etc)
-    mock_client.safe_call.return_value = []
+    # Mock safe_call - return the caller's default value when provided
+    mock_client.safe_call.side_effect = lambda func, *args, default=None, **kwargs: default if default is not None else []
 
     mock_get_client.return_value = mock_client
 

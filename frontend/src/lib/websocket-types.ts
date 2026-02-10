@@ -1,5 +1,5 @@
 export interface WebSocketMessage {
-  type: 'message' | 'stream' | 'data' | 'confirm' | 'confirmation_required' | 'classification' | 'agent_status' | 'error' | 'done' | 'confirm_response' | 'ping' | 'pong' | 'function_result' | 'function_error';
+  type: 'message' | 'stream' | 'data' | 'confirm' | 'confirmation_required' | 'classification' | 'agent_status' | 'error' | 'done' | 'confirm_response' | 'ping' | 'pong' | 'function_result' | 'function_error' | 'tool_status';
   content?: string;
   chunk?: string;
   session_id?: string;
