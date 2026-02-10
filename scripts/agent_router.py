@@ -272,6 +272,78 @@ def _build_function_registry() -> dict:
     registry["discover_qos_config"] = discovery.discover_qos_config
     registry["discover_org_admins"] = discovery.discover_org_admins
     registry["discover_inventory"] = discovery.discover_inventory
+
+    # ===== Phase 2 - Wave 1 =====
+    # Story 11.5: Policy Objects
+    registry["discover_policy_objects"] = discovery.discover_policy_objects
+    registry["manage_policy_object"] = config.manage_policy_object
+    # Story 11.2: Client VPN
+    registry["discover_client_vpn"] = discovery.discover_client_vpn
+    registry["configure_client_vpn"] = config.configure_client_vpn
+    # Story 12.3: Port Schedules
+    registry["discover_port_schedules"] = discovery.discover_port_schedules
+    registry["configure_port_schedule"] = config.configure_port_schedule
+    # Story 13.5: LLDP/CDP
+    registry["discover_lldp_cdp"] = discovery.discover_lldp_cdp
+    # Story 13.7: NetFlow
+    registry["discover_netflow_config"] = discovery.discover_netflow_config
+    registry["configure_netflow"] = config.configure_netflow
+    # Story 13.8: PoE Status
+    registry["discover_poe_status"] = discovery.discover_poe_status
+
+    # ===== Phase 2 - Wave 2 =====
+    # Story 11.1: SD-WAN
+    registry["discover_sdwan_config"] = discovery.discover_sdwan_config
+    registry["configure_sdwan_policy"] = config.configure_sdwan_policy
+    registry["set_uplink_preference"] = config.set_uplink_preference
+    # Story 11.4: Config Templates
+    registry["discover_templates"] = discovery.discover_templates
+    registry["manage_template"] = config.manage_template
+    # Story 12.2: Access Policies
+    registry["discover_access_policies"] = discovery.discover_access_policies
+    registry["configure_access_policy"] = config.configure_access_policy
+    # Story 12.5: Air Marshal
+    registry["discover_rogue_aps"] = discovery.discover_rogue_aps
+    # Story 12.6: SSID Firewall
+    registry["discover_ssid_firewall"] = discovery.discover_ssid_firewall
+    registry["configure_ssid_firewall"] = config.configure_ssid_firewall
+    # Story 12.7: Splash Pages
+    registry["discover_splash_config"] = discovery.discover_splash_config
+    registry["configure_splash_page"] = config.configure_splash_page
+
+    # ===== Phase 2 - Wave 3 =====
+    # Story 11.3: Adaptive Policy / SGT
+    registry["discover_adaptive_policies"] = discovery.discover_adaptive_policies
+    registry["configure_adaptive_policy"] = config.configure_adaptive_policy
+    # Story 12.1: Switch Stacks
+    registry["discover_switch_stacks"] = discovery.discover_switch_stacks
+    registry["manage_switch_stack"] = config.manage_switch_stack
+    # Story 12.4: HA / Warm Spare
+    registry["discover_ha_config"] = discovery.discover_ha_config
+    registry["configure_warm_spare"] = config.configure_warm_spare
+    registry["trigger_failover"] = config.trigger_failover
+    # Story 13.1: Camera Analytics & Snapshots
+    registry["discover_camera_analytics"] = discovery.discover_camera_analytics
+    # Story 13.2: Sensor Readings & Alerts
+    registry["discover_sensors"] = discovery.discover_sensors
+    registry["configure_sensor_alert"] = config.configure_sensor_alert
+
+    # ===== Phase 2 - Wave 4 =====
+    # Story 13.3: Floor Plans
+    registry["discover_floor_plans"] = discovery.discover_floor_plans
+    registry["create_floor_plan"] = lambda network_id, name, **kw: get_client().create_floor_plan(network_id, name, **kw)
+    registry["update_floor_plan"] = lambda network_id, floor_plan_id, **kw: get_client().update_floor_plan(network_id, floor_plan_id, **kw)
+    registry["delete_floor_plan"] = lambda network_id, floor_plan_id: get_client().delete_floor_plan(network_id, floor_plan_id)
+    # Story 13.4: Group Policies
+    registry["discover_group_policies"] = discovery.discover_group_policies
+    registry["configure_group_policy"] = config.configure_group_policy
+    # Story 13.6: Packet Capture
+    registry["create_packet_capture"] = lambda device_serial, **kw: get_client().create_packet_capture(device_serial, **kw)
+    registry["get_packet_capture_status"] = lambda device_serial, capture_id: get_client().get_packet_capture_status(device_serial, capture_id)
+    # Story 13.9: Static Routes (Appliance)
+    registry["discover_static_routes"] = discovery.discover_static_routes
+    registry["manage_static_route"] = config.manage_static_route
+
     # Epic 10: Advanced Switching, Wireless & Platform - Config
     registry["configure_switch_l3_interface"] = config.configure_switch_l3_interface
     registry["add_switch_static_route"] = config.add_switch_static_route

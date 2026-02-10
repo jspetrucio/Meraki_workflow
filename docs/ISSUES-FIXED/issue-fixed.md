@@ -104,6 +104,16 @@
 
 ---
 
+## IF-011 | VPN topology retorna JSON bruto sem mensagem clara
+
+- **Symptom:** Perguntar "Show me the VPN topology" retornava um JSON enorme de `full_discovery` em vez de informar que nao ha VPN configurada.
+- **Root Cause:** `discover_vpn_topology()` retornava `{"vpn_configs": {}, "vpn_statuses": [], "mx_networks": []}` sem campo `summary`. LLM nao interpretava resultado vazio como "sem VPN" e chamava `full_discovery` como fallback, retornando JSON gigante.
+- **Fix:** Adicionado early return com campo `summary` quando `mx_networks` esta vazio: "No VPN infrastructure found. This organization has no MX appliance networks." Tambem adicionado `summary` para resultados nao-vazios com contagem de peers ativos.
+- **File:** `scripts/discovery.py:517-555`
+- **Date:** 2026-02-09
+
+---
+
 ## Quick Lookup by Error Message
 
 | Error Fragment | Issue |
@@ -117,3 +127,4 @@
 | `additionalProperties` | IF-008 |
 | `_get_task_registry` auto-reload | IF-009 |
 | `500 Internal Server Error` + `git push` | IF-010 |
+| VPN topology returns raw JSON / no summary | IF-011 |

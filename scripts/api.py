@@ -676,6 +676,101 @@ class MerakiClient:
             raise ValueError("org_id nao definido")
         return self.dashboard.organizations.releaseFromOrganizationInventory(org, serials=serials or [])
 
+    # ==================== Policy Objects (Org-level) ====================
+
+    @log_api_call
+    def get_policy_objects(self, org_id: Optional[str] = None) -> list[dict]:
+        """Retorna todos os policy objects da org."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.getOrganizationPolicyObjects(org)
+
+    @log_api_call
+    def create_policy_object(self, org_id: Optional[str] = None, **kwargs) -> dict:
+        """Cria policy object (CIDR, FQDN, port range)."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.createOrganizationPolicyObject(org, **kwargs)
+
+    @log_api_call
+    def update_policy_object(self, org_id: Optional[str] = None, policy_object_id: str = "", **kwargs) -> dict:
+        """Atualiza policy object."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.updateOrganizationPolicyObject(org, policy_object_id, **kwargs)
+
+    @log_api_call
+    def delete_policy_object(self, org_id: Optional[str] = None, policy_object_id: str = "") -> None:
+        """Remove policy object."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.deleteOrganizationPolicyObject(org, policy_object_id)
+
+    @log_api_call
+    def get_policy_object_groups(self, org_id: Optional[str] = None) -> list[dict]:
+        """Retorna grupos de policy objects."""
+        org = org_id or self.org_id
+        if not org:
+            raise ValueError("org_id nao definido")
+        return self.dashboard.organizations.getOrganizationPolicyObjectsGroups(org)
+
+    # ==================== Client VPN ====================
+
+    @log_api_call
+    def get_client_vpn(self, network_id: str) -> dict:
+        """Retorna configuracao Client VPN."""
+        return self.dashboard.appliance.getNetworkApplianceVpn(network_id)
+
+    @log_api_call
+    def update_client_vpn(self, network_id: str, **kwargs) -> dict:
+        """Atualiza configuracao Client VPN."""
+        return self.dashboard.appliance.updateNetworkApplianceVpn(network_id, **kwargs)
+
+    # ==================== Port Schedules ====================
+
+    @log_api_call
+    def get_port_schedules(self, network_id: str) -> list[dict]:
+        """Retorna port schedules da network."""
+        return self.dashboard.switch.getNetworkSwitchPortSchedules(network_id)
+
+    @log_api_call
+    def create_port_schedule(self, network_id: str, **kwargs) -> dict:
+        """Cria port schedule."""
+        return self.dashboard.switch.createNetworkSwitchPortSchedule(network_id, **kwargs)
+
+    @log_api_call
+    def update_port_schedule(self, network_id: str, port_schedule_id: str, **kwargs) -> dict:
+        """Atualiza port schedule."""
+        return self.dashboard.switch.updateNetworkSwitchPortSchedule(network_id, port_schedule_id, **kwargs)
+
+    @log_api_call
+    def delete_port_schedule(self, network_id: str, port_schedule_id: str) -> None:
+        """Remove port schedule."""
+        return self.dashboard.switch.deleteNetworkSwitchPortSchedule(network_id, port_schedule_id)
+
+    # ==================== LLDP/CDP ====================
+
+    @log_api_call
+    def get_lldp_cdp(self, serial: str) -> dict:
+        """Retorna dados LLDP/CDP de um device."""
+        return self.dashboard.devices.getDeviceLldpCdp(serial)
+
+    # ==================== NetFlow ====================
+
+    @log_api_call
+    def get_netflow_settings(self, network_id: str) -> dict:
+        """Retorna configuracoes NetFlow."""
+        return self.dashboard.networks.getNetworkNetflow(network_id)
+
+    @log_api_call
+    def update_netflow_settings(self, network_id: str, **kwargs) -> dict:
+        """Atualiza configuracoes NetFlow."""
+        return self.dashboard.networks.updateNetworkNetflow(network_id, **kwargs)
+
     # ==================== Camera (MV) ====================
 
     @log_api_call
@@ -762,6 +857,398 @@ class MerakiClient:
                 return default
             else:
                 raise
+
+    # ==================== Phase 2 - Wave 2: SD-WAN / Uplink ====================
+
+    @log_api_call
+    def get_uplink_selection(self, network_id: str) -> dict:
+        """Get uplink selection settings for an MX network."""
+        return self.dashboard.appliance.getNetworkApplianceTrafficShapingUplinkSelection(network_id)
+
+    @log_api_call
+    def update_uplink_selection(self, network_id: str, **kwargs) -> dict:
+        """Update uplink selection settings for an MX network."""
+        return self.dashboard.appliance.updateNetworkApplianceTrafficShapingUplinkSelection(network_id, **kwargs)
+
+    @log_api_call
+    def get_uplink_statuses(self, org_id: str) -> list:
+        """Get uplink statuses for all MX devices in an organization."""
+        return self.dashboard.appliance.getOrganizationApplianceUplinkStatuses(org_id)
+
+    @log_api_call
+    def get_vpn_exclusions(self, network_id: str) -> dict:
+        """Get VPN exclusions for an MX network."""
+        return self.dashboard.appliance.getNetworkApplianceTrafficShapingVpnExclusions(network_id)
+
+    # ==================== Phase 2 - Wave 2: Config Templates ====================
+
+    @log_api_call
+    def get_config_templates(self, org_id: str) -> list:
+        """Get all configuration templates in an organization."""
+        return self.dashboard.organizations.getOrganizationConfigTemplates(org_id)
+
+    @log_api_call
+    def create_config_template(self, org_id: str, **kwargs) -> dict:
+        """Create a new configuration template."""
+        return self.dashboard.organizations.createOrganizationConfigTemplate(org_id, **kwargs)
+
+    @log_api_call
+    def update_config_template(self, org_id: str, template_id: str, **kwargs) -> dict:
+        """Update an existing configuration template."""
+        return self.dashboard.organizations.updateOrganizationConfigTemplate(org_id, template_id, **kwargs)
+
+    @log_api_call
+    def delete_config_template(self, org_id: str, template_id: str) -> None:
+        """Delete a configuration template."""
+        return self.dashboard.organizations.deleteOrganizationConfigTemplate(org_id, template_id)
+
+    @log_api_call
+    def bind_network(self, network_id: str, template_id: str, **kwargs) -> dict:
+        """Bind a network to a configuration template."""
+        return self.dashboard.networks.bindNetwork(network_id, configTemplateId=template_id, **kwargs)
+
+    @log_api_call
+    def unbind_network(self, network_id: str) -> dict:
+        """Unbind a network from its configuration template."""
+        return self.dashboard.networks.unbindNetwork(network_id)
+
+    # ==================== Phase 2 - Wave 2: 802.1X Access Policies ====================
+
+    @log_api_call
+    def get_access_policies(self, network_id: str) -> list:
+        """Get 802.1X access policies for a switch network."""
+        return self.dashboard.switch.getNetworkSwitchAccessPolicies(network_id)
+
+    @log_api_call
+    def create_access_policy(self, network_id: str, **kwargs) -> dict:
+        """Create a new 802.1X access policy."""
+        return self.dashboard.switch.createNetworkSwitchAccessPolicy(network_id, **kwargs)
+
+    @log_api_call
+    def update_access_policy(self, network_id: str, access_policy_number: str, **kwargs) -> dict:
+        """Update an existing 802.1X access policy."""
+        return self.dashboard.switch.updateNetworkSwitchAccessPolicy(network_id, access_policy_number, **kwargs)
+
+    @log_api_call
+    def delete_access_policy(self, network_id: str, access_policy_number: str) -> None:
+        """Delete an 802.1X access policy."""
+        return self.dashboard.switch.deleteNetworkSwitchAccessPolicy(network_id, access_policy_number)
+
+    # ==================== Phase 2 - Wave 2: Air Marshal ====================
+
+    @log_api_call
+    def get_air_marshal(self, network_id: str) -> list:
+        """Get Air Marshal rogue access point detection data."""
+        return self.dashboard.wireless.getNetworkWirelessAirMarshal(network_id)
+
+    # ==================== Phase 2 - Wave 2: SSID Firewall ====================
+
+    @log_api_call
+    def get_ssid_l3_firewall(self, network_id: str, number: int) -> dict:
+        """Get L3 firewall rules for a specific SSID."""
+        return self.dashboard.wireless.getNetworkWirelessSsidFirewallL3FirewallRules(network_id, number)
+
+    @log_api_call
+    def update_ssid_l3_firewall(self, network_id: str, number: int, **kwargs) -> dict:
+        """Update L3 firewall rules for a specific SSID."""
+        return self.dashboard.wireless.updateNetworkWirelessSsidFirewallL3FirewallRules(network_id, number, **kwargs)
+
+    @log_api_call
+    def get_ssid_l7_firewall(self, network_id: str, number: int) -> dict:
+        """Get L7 firewall rules for a specific SSID."""
+        return self.dashboard.wireless.getNetworkWirelessSsidFirewallL7FirewallRules(network_id, number)
+
+    @log_api_call
+    def update_ssid_l7_firewall(self, network_id: str, number: int, **kwargs) -> dict:
+        """Update L7 firewall rules for a specific SSID."""
+        return self.dashboard.wireless.updateNetworkWirelessSsidFirewallL7FirewallRules(network_id, number, **kwargs)
+
+    # ==================== Phase 2 - Wave 2: Splash Pages ====================
+
+    @log_api_call
+    def get_splash_settings(self, network_id: str, number: int) -> dict:
+        """Get splash page settings for a specific SSID."""
+        return self.dashboard.wireless.getNetworkWirelessSsidSplashSettings(network_id, number)
+
+    @log_api_call
+    def update_splash_settings(self, network_id: str, number: int, **kwargs) -> dict:
+        """Update splash page settings for a specific SSID."""
+        return self.dashboard.wireless.updateNetworkWirelessSsidSplashSettings(network_id, number, **kwargs)
+
+    # ===== Phase 2 - Wave 3 =====
+
+    # Story 11.3: Adaptive Policy / SGT
+    @log_api_call
+    def get_adaptive_policies(self, org_id: str) -> list:
+        """Get all adaptive policies for organization."""
+        return self.dashboard.organizations.getOrganizationAdaptivePolicyPolicies(org_id)
+
+    @log_api_call
+    def create_adaptive_policy(self, org_id: str, **kwargs) -> dict:
+        """Create adaptive policy in organization."""
+        return self.dashboard.organizations.createOrganizationAdaptivePolicyPolicy(org_id, **kwargs)
+
+    @log_api_call
+    def get_adaptive_policy_acls(self, org_id: str) -> list:
+        """Get all adaptive policy ACLs for organization."""
+        return self.dashboard.organizations.getOrganizationAdaptivePolicyAcls(org_id)
+
+    # Story 12.1: Switch Stacks
+    @log_api_call
+    def get_switch_stacks(self, network_id: str) -> list:
+        """Get all switch stacks in network."""
+        return self.dashboard.switch.getNetworkSwitchStacks(network_id)
+
+    @log_api_call
+    def create_switch_stack(self, network_id: str, name: str, serials: list) -> dict:
+        """Create a new switch stack."""
+        return self.dashboard.switch.createNetworkSwitchStack(network_id, name=name, serials=serials)
+
+    @log_api_call
+    def add_to_stack(self, network_id: str, stack_id: str, serial: str) -> dict:
+        """Add a switch to an existing stack."""
+        return self.dashboard.switch.addNetworkSwitchStack(network_id, stack_id, serial=serial)
+
+    @log_api_call
+    def remove_from_stack(self, network_id: str, stack_id: str, serial: str) -> dict:
+        """Remove a switch from a stack."""
+        return self.dashboard.switch.removeNetworkSwitchStack(network_id, stack_id, serial=serial)
+
+    @log_api_call
+    def get_stack_routing(self, network_id: str, stack_id: str) -> list:
+        """Get routing interfaces for a switch stack."""
+        return self.dashboard.switch.getNetworkSwitchStackRoutingInterfaces(network_id, stack_id)
+
+    # Story 12.4: HA / Warm Spare
+    @log_api_call
+    def get_warm_spare(self, network_id: str) -> dict:
+        """Get warm spare configuration for network."""
+        return self.dashboard.appliance.getNetworkApplianceWarmSpare(network_id)
+
+    @log_api_call
+    def update_warm_spare(self, network_id: str, enabled: bool, spare_serial: str = None,
+                          uplink_mode: str = None, virtual_ip1: str = None, virtual_ip2: str = None) -> dict:
+        """Update warm spare configuration."""
+        kwargs = {"enabled": enabled}
+        if spare_serial is not None:
+            kwargs["spareSerial"] = spare_serial
+        if uplink_mode is not None:
+            kwargs["uplinkMode"] = uplink_mode
+        if virtual_ip1 is not None:
+            kwargs["virtualIp1"] = virtual_ip1
+        if virtual_ip2 is not None:
+            kwargs["virtualIp2"] = virtual_ip2
+        return self.dashboard.appliance.updateNetworkApplianceWarmSpare(network_id, **kwargs)
+
+    @log_api_call
+    def swap_warm_spare(self, network_id: str) -> dict:
+        """Swap primary and warm spare appliances."""
+        return self.dashboard.appliance.swapNetworkApplianceWarmSpare(network_id)
+
+    # Story 13.1: Camera Analytics & Snapshots
+    @log_api_call
+    def get_camera_analytics_overview(self, serial: str) -> dict:
+        """Get analytics overview for a camera."""
+        return self.dashboard.camera.getDeviceCameraAnalyticsOverview(serial)
+
+    @log_api_call
+    def get_camera_analytics_zones(self, serial: str) -> list:
+        """Get analytics zones configured on a camera."""
+        return self.dashboard.camera.getDeviceCameraAnalyticsZones(serial)
+
+    @log_api_call
+    def get_camera_analytics_history(self, serial: str, zone_id: str) -> list:
+        """Get analytics history for a specific zone."""
+        return self.dashboard.camera.getDeviceCameraAnalyticsZoneHistory(serial, zoneId=zone_id)
+
+    @log_api_call
+    def generate_snapshot(self, serial: str, timestamp: str = None) -> dict:
+        """Generate a snapshot from a camera."""
+        if timestamp:
+            return self.dashboard.camera.generateDeviceCameraSnapshot(serial, timestamp=timestamp)
+        return self.dashboard.camera.generateDeviceCameraSnapshot(serial)
+
+    @log_api_call
+    def get_video_link(self, serial: str, timestamp: str = None) -> dict:
+        """Get video link for camera footage."""
+        if timestamp:
+            return self.dashboard.camera.getDeviceCameraVideoLink(serial, timestamp=timestamp)
+        return self.dashboard.camera.getDeviceCameraVideoLink(serial)
+
+    # Story 13.2: Sensor Readings & Alerts
+    @log_api_call
+    def get_sensor_readings_latest(self, org_id: str, serials: list = None) -> list:
+        """Get latest sensor readings for organization."""
+        return self.dashboard.sensor.getOrganizationSensorReadingsLatest(org_id, serials=serials)
+
+    @log_api_call
+    def get_sensor_readings_history(self, org_id: str, serials: list = None, t0: str = None, t1: str = None) -> list:
+        """Get historical sensor readings."""
+        kwargs = {}
+        if serials:
+            kwargs["serials"] = serials
+        if t0:
+            kwargs["t0"] = t0
+        if t1:
+            kwargs["t1"] = t1
+        return self.dashboard.sensor.getOrganizationSensorReadingsHistory(org_id, **kwargs)
+
+    @log_api_call
+    def get_sensor_alert_profiles(self, network_id: str) -> list:
+        """Get sensor alert profiles for network."""
+        return self.dashboard.sensor.getNetworkSensorAlertsProfiles(network_id)
+
+    @log_api_call
+    def create_sensor_alert(self, network_id: str, name: str, conditions: list, recipients: list = None) -> dict:
+        """Create sensor alert profile."""
+        kwargs = {"name": name, "conditions": conditions}
+        if recipients:
+            kwargs["recipients"] = recipients
+        return self.dashboard.sensor.createNetworkSensorAlertsProfile(network_id, **kwargs)
+
+    # ===== Phase 2 - Wave 4 =====
+
+    @log_api_call
+    def get_floor_plans(self, network_id: str) -> list:
+        """Get all floor plans for a network."""
+        return self.dashboard.networks.getNetworkFloorPlans(network_id)
+
+    @log_api_call
+    def create_floor_plan(self, network_id: str, name: str, **kwargs) -> dict:
+        """Create a new floor plan."""
+        return self.dashboard.networks.createNetworkFloorPlan(
+            network_id, name=name, **kwargs
+        )
+
+    @log_api_call
+    def update_floor_plan(self, network_id: str, floor_plan_id: str, **kwargs) -> dict:
+        """Update an existing floor plan."""
+        return self.dashboard.networks.updateNetworkFloorPlan(
+            network_id, floor_plan_id, **kwargs
+        )
+
+    @log_api_call
+    def delete_floor_plan(self, network_id: str, floor_plan_id: str) -> dict:
+        """Delete a floor plan."""
+        return self.dashboard.networks.deleteNetworkFloorPlan(
+            network_id, floor_plan_id
+        )
+
+    @log_api_call
+    def get_group_policies(self, network_id: str) -> list:
+        """Get all group policies for a network."""
+        return self.dashboard.networks.getNetworkGroupPolicies(network_id)
+
+    @log_api_call
+    def create_group_policy(self, network_id: str, name: str, **kwargs) -> dict:
+        """Create a new group policy."""
+        return self.dashboard.networks.createNetworkGroupPolicy(
+            network_id, name=name, **kwargs
+        )
+
+    @log_api_call
+    def update_group_policy(self, network_id: str, group_policy_id: str, **kwargs) -> dict:
+        """Update an existing group policy."""
+        return self.dashboard.networks.updateNetworkGroupPolicy(
+            network_id, group_policy_id, **kwargs
+        )
+
+    @log_api_call
+    def delete_group_policy(self, network_id: str, group_policy_id: str) -> dict:
+        """Delete a group policy."""
+        return self.dashboard.networks.deleteNetworkGroupPolicy(
+            network_id, group_policy_id
+        )
+
+    @log_api_call
+    def create_packet_capture(self, device_serial: str, **kwargs) -> dict:
+        """Initiate a packet capture on a device."""
+        return self.dashboard.devices.createDeviceLiveToolsPcap(
+            device_serial, **kwargs
+        )
+
+    @log_api_call
+    def get_packet_capture_status(self, device_serial: str, capture_id: str) -> dict:
+        """Get status of a packet capture."""
+        return self.dashboard.devices.getDeviceLiveToolsPcap(
+            device_serial, capture_id
+        )
+
+    @log_api_call
+    def get_static_routes(self, network_id: str) -> list:
+        """Get all static routes for an appliance network."""
+        return self.dashboard.appliance.getNetworkApplianceStaticRoutes(network_id)
+
+    @log_api_call
+    def create_static_route(
+        self, network_id: str, subnet: str, gateway_ip: str, name: str = None
+    ) -> dict:
+        """Create a new static route."""
+        return self.dashboard.appliance.createNetworkApplianceStaticRoute(
+            network_id, subnet=subnet, gatewayIp=gateway_ip, name=name
+        )
+
+    @log_api_call
+    def update_static_route(self, network_id: str, route_id: str, **kwargs) -> dict:
+        """Update an existing static route."""
+        return self.dashboard.appliance.updateNetworkApplianceStaticRoute(
+            network_id, route_id, **kwargs
+        )
+
+    @log_api_call
+    def delete_static_route(self, network_id: str, route_id: str) -> dict:
+        """Delete a static route."""
+        return self.dashboard.appliance.deleteNetworkApplianceStaticRoute(
+            network_id, route_id
+        )
+
+
+# ==================== Product Type Helpers ====================
+
+_network_product_cache: dict[str, list[str]] = {}
+
+
+def get_network_product_types(network_id: str, client: "MerakiClient") -> list[str] | None:
+    """Return the product types for a network, with caching.
+
+    Returns None when the product types cannot be determined (e.g. mock
+    client in tests, API error).  Callers should treat None as "unknown –
+    proceed normally".
+    """
+    if network_id in _network_product_cache:
+        return _network_product_cache[network_id]
+
+    try:
+        network = client.get_network(network_id)
+        # MagicMock / non-dict → cannot determine
+        if not isinstance(network, dict):
+            return None
+        product_types = network.get("productTypes")
+        if not isinstance(product_types, list):
+            return None  # key missing or wrong type → unknown
+        _network_product_cache[network_id] = product_types
+        return product_types
+    except Exception:
+        return None
+
+
+def network_has_product(network_id: str, required_type: str, client: "MerakiClient") -> bool | None:
+    """Check whether *network_id* includes *required_type* hardware.
+
+    Returns:
+        True  – network has the required hardware
+        False – network definitely lacks the required hardware
+        None  – cannot determine (mock client, API error) → caller should proceed
+    """
+    types = get_network_product_types(network_id, client)
+    if types is None:
+        return None
+    return required_type in types
+
+
+def clear_product_type_cache() -> None:
+    """Clear the network product-type cache (for tests)."""
+    _network_product_cache.clear()
 
 
 if __name__ == "__main__":

@@ -1,12 +1,13 @@
 # CNL - PRD Phase 2: Platform Depth (P1)
 
-> **Version:** 1.0.0
+> **Version:** 1.1.0
 > **Type:** Brownfield Enhancement - API Coverage Expansion
 > **Created:** 2026-02-09
 > **Author:** Morgan (PM Agent) + jspetrucio
-> **Status:** Draft
+> **PO Validation:** Pax — APPROVED (2026-02-09)
+> **Status:** Approved
 > **Epics:** 11, 12, 13
-> **Story Points:** ~75 SP
+> **Story Points:** 73 SP
 > **Sprints:** 5-7 sprints
 > **Coverage Target:** 15% -> 35% (~65 new api.py methods)
 > **Prerequisite:** Phase 1 complete (Epics 8-10)
@@ -112,16 +113,17 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 **Scope:**
 | Layer | New Items | Details |
 |-------|-----------|---------|
-| `api.py` | 5 methods | `get_adaptive_policies`, `create_adaptive_policy`, `get_adaptive_policy_acls`, `get_policy_objects`, `create_policy_object` |
+| `api.py` | 3 methods | `get_adaptive_policies`, `create_adaptive_policy`, `get_adaptive_policy_acls` |
 | `discovery.py` | 1 function | `discover_adaptive_policies` |
-| `config.py` | 2 functions | `configure_adaptive_policy`, `create_policy_object` |
-| `agent_tools.py` | 5 schemas | meraki-specialist tools |
+| `config.py` | 1 function | `configure_adaptive_policy` |
+| `agent_tools.py` | 3 schemas | meraki-specialist tools |
 | Safety | DANGEROUS | Policy changes affect segmentation |
+| **Depends on** | Story 11.5 | Policy objects CRUD (shared `get_policy_objects`, `create_policy_object`) |
 
 **Acceptance Criteria:**
 1. `discover_adaptive_policies` returns all SGT assignments, ACLs, and policies
 2. `configure_adaptive_policy` creates/updates policy with source/destination SGTs
-3. `create_policy_object` manages reusable policy objects (IPs, FQDNs, ports)
+3. Uses policy objects from Story 11.5 for reusable IP/FQDN/port references
 4. Integration with existing SGT preflight check in config.py
 
 **Est. SP:** 8
@@ -204,6 +206,7 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 2. Stack CRUD operations supported
 3. `get_stack_routing` returns routing interfaces for stack
 4. Safety: DANGEROUS for add/remove operations
+5. Issue detection: `stp_inconsistent` when STP configuration mismatches across stack members
 
 **Est. SP:** 5
 
@@ -298,6 +301,7 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 |-------|-----------|---------|
 | `api.py` | 2 methods | `get_air_marshal`, `get_air_marshal_rules` |
 | `discovery.py` | 1 function | `discover_rogue_aps` |
+| `config.py` | — | Read-only feature, no config |
 | `agent_tools.py` | 2 schemas | network-analyst tools |
 | Safety | SAFE | Read-only |
 
@@ -375,8 +379,9 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 |-------|-----------|---------|
 | `api.py` | 5 methods | `get_camera_analytics_overview`, `get_camera_analytics_zones`, `get_camera_analytics_history`, `generate_snapshot`, `get_video_link` |
 | `discovery.py` | 1 function | `discover_camera_analytics` |
+| `config.py` | — | Read-only feature, no config |
 | `agent_tools.py` | 5 schemas | network-analyst tools |
-| Safety | SAFE | Read-only |
+| Safety | SAFE | Read-only (`generate_snapshot` triggers capture but is non-destructive) |
 
 **Acceptance Criteria:**
 1. `discover_camera_analytics` returns analytics summary with people counts
@@ -428,8 +433,15 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 |-------|-----------|---------|
 | `api.py` | 4 methods | `get_floor_plans`, `create_floor_plan`, `update_floor_plan`, `delete_floor_plan` |
 | `discovery.py` | 1 function | `discover_floor_plans` |
+| `config.py` | — | CRUD via api.py directly; no separate config wrapper needed |
 | `agent_tools.py` | 2 schemas | network-analyst tools |
 | Safety | SAFE (read) / MODERATE (write) |
+
+**Acceptance Criteria:**
+1. `discover_floor_plans` returns all floor plans with device placement counts
+2. Floor plan CRUD supported (create, update, delete)
+3. `get_floor_plans` includes image URL and dimensions
+4. Natural language: "show me the floor plans" works
 
 **Est. SP:** 3
 
@@ -450,6 +462,12 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 | `agent_tools.py` | 3 schemas | meraki-specialist tools |
 | Safety | MODERATE |
 
+**Acceptance Criteria:**
+1. `discover_group_policies` returns all group policies with bandwidth limits and scheduling
+2. `configure_group_policy` supports creating/updating policies with bandwidth, firewall, and scheduling rules
+3. Full CRUD for group policies
+4. Natural language: "create a group policy with 10Mbps limit" works
+
 **Est. SP:** 3
 
 ---
@@ -465,8 +483,14 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 |-------|-----------|---------|
 | `api.py` | 1 method | `get_lldp_cdp` |
 | `discovery.py` | 1 function | `discover_lldp_cdp` |
+| `config.py` | — | Read-only feature, no config |
 | `agent_tools.py` | 1 schema | network-analyst tool |
 | Safety | SAFE |
+
+**Acceptance Criteria:**
+1. `discover_lldp_cdp` returns LLDP/CDP neighbor data per device port
+2. Data includes neighbor device name, port, platform, and IP
+3. Natural language: "show me the network topology" or "who is connected to switch X?" works
 
 **Est. SP:** 2
 
@@ -482,8 +506,16 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 | Layer | New Items | Details |
 |-------|-----------|---------|
 | `api.py` | 2 methods | `create_packet_capture`, `get_packet_capture_status` |
+| `discovery.py` | — | One-off action, no continuous discovery |
+| `config.py` | — | Capture is a diagnostic action, not persistent config |
 | `agent_tools.py` | 2 schemas | network-analyst tools |
-| Safety | SAFE | Read-only diagnostic |
+| Safety | MODERATE | Initiates capture on device (non-destructive but resource-consuming) |
+
+**Acceptance Criteria:**
+1. `create_packet_capture` initiates a capture with filter options (port, protocol, duration)
+2. `get_packet_capture_status` returns capture progress and download URL when complete
+3. Natural language: "capture packets on switch X port 5 for 30 seconds" works
+4. Capture duration limited to prevent resource exhaustion
 
 **Est. SP:** 3
 
@@ -504,6 +536,11 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 | `agent_tools.py` | 2 schemas | meraki-specialist tools |
 | Safety | MODERATE |
 
+**Acceptance Criteria:**
+1. `discover_netflow_config` returns current NetFlow collector IP, port, and reporting status
+2. `configure_netflow` enables/disables NetFlow and sets collector destination
+3. Backup + rollback supported
+
 **Est. SP:** 2
 
 ---
@@ -517,13 +554,16 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 **Scope:**
 | Layer | New Items | Details |
 |-------|-----------|---------|
+| `api.py` | — | Uses existing `get_switch_port_statuses()` from Phase 1 |
 | `discovery.py` | 1 function | `discover_poe_status` |
+| `config.py` | — | Read-only monitoring, no config |
 | `agent_tools.py` | 1 schema | network-analyst tool |
 | Safety | SAFE |
 
 **Acceptance Criteria:**
 1. `discover_poe_status` returns per-port PoE draw and total budget utilization
 2. Issue detection: `poe_budget_exceeded` when >90% budget used
+3. Natural language: "check PoE budget on switch X" works
 
 **Est. SP:** 2
 
@@ -543,6 +583,12 @@ This phase adds **~65 new api.py methods**, **~20 discovery functions**, **~18 c
 | `config.py` | 1 function | `manage_static_route` |
 | `agent_tools.py` | 3 schemas | meraki-specialist tools |
 | Safety | MODERATE |
+
+**Acceptance Criteria:**
+1. `discover_static_routes` returns all static routes with subnet, next hop, and enabled state
+2. Full CRUD for static routes (create, update, delete)
+3. `manage_static_route` validates subnet format and checks for overlapping routes
+4. Backup + rollback supported
 
 **Est. SP:** 3
 
@@ -574,7 +620,7 @@ New issue types added to `find_issues()` in Phase 2:
 | New tool schemas | ~62 |
 | New issue detection types | 7 |
 | Total stories | 20 |
-| Total story points | ~75 SP |
+| Total story points | 73 SP |
 | Estimated sprints | 5-7 |
 
 ---
@@ -613,5 +659,6 @@ Same targets as Phase 1:
 
 ---
 
-*Generated by Morgan (PM Agent) | CNL PRD Phase 2 v1.0.0*
+*Generated by Morgan (PM Agent) | CNL PRD Phase 2 v1.1.0*
+*PO Validation by Pax | 2026-02-09 — APPROVED (7 issues fixed)*
 *-- Morgan, planejando o futuro*

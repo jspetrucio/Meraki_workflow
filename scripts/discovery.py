@@ -30,7 +30,7 @@ from typing import Any, Optional
 
 from meraki.exceptions import APIError
 
-from .api import MerakiClient, get_client
+from .api import MerakiClient, get_client, network_has_product
 
 logger = logging.getLogger(__name__)
 
@@ -330,6 +330,10 @@ def discover_ssids(network_id: str, client: MerakiClient) -> list[SSIDInfo]:
     """
     logger.debug(f"Descobrindo SSIDs da network {network_id}")
 
+    has_hw = network_has_product(network_id, "wireless", client)
+    if has_hw is False:
+        return []
+
     ssids_raw = client.safe_call(client.get_ssids, network_id, default=[])
 
     if not ssids_raw:
@@ -354,6 +358,10 @@ def discover_vlans(network_id: str, client: MerakiClient) -> list[VLANInfo]:
     """
     logger.debug(f"Descobrindo VLANs da network {network_id}")
 
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return []
+
     vlans_raw = client.safe_call(client.get_vlans, network_id, default=[])
 
     if not vlans_raw:
@@ -377,6 +385,10 @@ def discover_firewall_rules(network_id: str, client: MerakiClient) -> dict:
         Dict com l3_rules e l7_rules
     """
     logger.debug(f"Descobrindo firewall rules da network {network_id}")
+
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return {"l3_rules": [], "l7_rules": []}
 
     result = {
         "l3_rules": [],
@@ -432,6 +444,10 @@ def discover_switch_acls(network_id: str, client: MerakiClient) -> dict:
         Dict com regras de ACL
     """
     logger.debug(f"Descobrindo switch ACLs da network {network_id}")
+
+    has_hw = network_has_product(network_id, "switch", client)
+    if has_hw is False:
+        return {}
 
     acls = client.safe_call(client.get_switch_acls, network_id, default={})
 
@@ -513,8 +529,17 @@ def discover_vpn_topology(org_id: Optional[str] = None, client: Optional[MerakiC
     # Get all networks
     networks = client.safe_call(client.get_networks, org_id, default=[])
 
-    # Filter MX networks
+    # Filter MX networks (VPN requires MX appliances)
     mx_networks = [n for n in networks if "appliance" in n.get("productTypes", [])]
+
+    if not mx_networks:
+        logger.info("No MX appliance networks found — VPN not available in this org")
+        return {
+            "vpn_configs": {},
+            "vpn_statuses": [],
+            "mx_networks": [],
+            "summary": "No VPN infrastructure found. This organization has no MX appliance networks, which are required for Site-to-Site VPN.",
+        }
 
     # Get VPN config for each MX network
     vpn_configs = {}
@@ -532,10 +557,21 @@ def discover_vpn_topology(org_id: Optional[str] = None, client: Optional[MerakiC
         f"{len(vpn_statuses)} status entries"
     )
 
+    # Build human-readable summary
+    active_peers = len([s for s in vpn_statuses if s.get("vpnMode") in ("hub", "spoke")])
+    summary = (
+        f"VPN topology: {len(mx_networks)} MX network(s), "
+        f"{len(vpn_configs)} with VPN configured, "
+        f"{active_peers} active peer(s)."
+    )
+    if not vpn_configs:
+        summary += " No VPN configurations found on any MX network."
+
     return {
         "vpn_configs": vpn_configs,
         "vpn_statuses": vpn_statuses,
         "mx_networks": mx_networks,
+        "summary": summary,
     }
 
 
@@ -551,6 +587,11 @@ def discover_content_filtering(network_id: str, client: Optional[MerakiClient] =
         Dict com configuracao de content filtering
     """
     client = client or get_client()
+
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return {}
+
     logger.debug(f"Descobrindo content filtering da network {network_id}")
 
     result = client.safe_call(client.get_content_filtering, network_id, default={})
@@ -571,6 +612,11 @@ def discover_ips_settings(network_id: str, client: Optional[MerakiClient] = None
         Dict com configuracoes de IPS
     """
     client = client or get_client()
+
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return {}
+
     logger.debug(f"Descobrindo IPS settings da network {network_id}")
 
     result = client.safe_call(client.get_intrusion_settings, network_id, default={})
@@ -591,6 +637,11 @@ def discover_amp_settings(network_id: str, client: Optional[MerakiClient] = None
         Dict com configuracoes de AMP
     """
     client = client or get_client()
+
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return {}
+
     logger.debug(f"Descobrindo AMP settings da network {network_id}")
 
     result = client.safe_call(client.get_malware_settings, network_id, default={})
@@ -611,6 +662,11 @@ def discover_traffic_shaping(network_id: str, client: Optional[MerakiClient] = N
         Dict com regras de traffic shaping
     """
     client = client or get_client()
+
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return {}
+
     logger.debug(f"Descobrindo traffic shaping da network {network_id}")
 
     result = client.safe_call(client.get_traffic_shaping, network_id, default={})
@@ -784,6 +840,11 @@ def discover_stp_config(network_id: str, client: Optional[MerakiClient] = None) 
         Dict com configuracao STP
     """
     client = client or get_client()
+
+    has_hw = network_has_product(network_id, "switch", client)
+    if has_hw is False:
+        return {}
+
     logger.debug(f"Descobrindo STP config da network {network_id}")
 
     result = client.safe_call(client.get_stp_settings, network_id, default={})
@@ -804,6 +865,11 @@ def discover_nat_rules(network_id: str, client: Optional[MerakiClient] = None) -
         Dict com regras 1:1 e 1:Many
     """
     client = client or get_client()
+
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return {"1to1_nat": {"rules": []}, "1tomany_nat": {"rules": []}}
+
     logger.debug(f"Descobrindo NAT rules da network {network_id}")
 
     result = {
@@ -827,6 +893,11 @@ def discover_port_forwarding(network_id: str, client: Optional[MerakiClient] = N
         Dict com regras de port forwarding
     """
     client = client or get_client()
+
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return {"rules": []}
+
     logger.debug(f"Descobrindo port forwarding da network {network_id}")
 
     result = client.safe_call(client.get_port_forwarding, network_id, default={"rules": []})
@@ -847,6 +918,11 @@ def discover_rf_profiles(network_id: str, client: Optional[MerakiClient] = None)
         Lista de RF profiles
     """
     client = client or get_client()
+
+    has_hw = network_has_product(network_id, "wireless", client)
+    if has_hw is False:
+        return []
+
     logger.debug(f"Descobrindo RF profiles da network {network_id}")
 
     result = client.safe_call(client.get_rf_profiles, network_id, default=[])
@@ -868,6 +944,17 @@ def discover_wireless_health(network_id: str, client: Optional[MerakiClient] = N
         Dict com metricas de saude wireless
     """
     client = client or get_client()
+
+    has_hw = network_has_product(network_id, "wireless", client)
+    if has_hw is False:
+        return {
+            "connection_stats": {},
+            "latency_stats": {},
+            "signal_quality": [],
+            "channel_utilization": [],
+            "failed_connections": [],
+        }
+
     logger.debug(f"Descobrindo wireless health da network {network_id}")
 
     result = {
@@ -894,6 +981,11 @@ def discover_qos_config(network_id: str, client: Optional[MerakiClient] = None) 
         Lista de regras QoS
     """
     client = client or get_client()
+
+    has_hw = network_has_product(network_id, "switch", client)
+    if has_hw is False:
+        return []
+
     logger.debug(f"Descobrindo QoS config da network {network_id}")
 
     result = client.safe_call(client.get_qos_rules, network_id, default=[])
@@ -946,6 +1038,366 @@ def discover_inventory(org_id: Optional[str] = None, client: Optional[MerakiClie
 
     result = client.safe_call(client.get_inventory, org_id, default=[])
     logger.debug(f"Inventory: {len(result)} devices")
+
+    return result
+
+
+def discover_policy_objects(org_id: Optional[str] = None, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre policy objects e grupos da org.
+
+    Args:
+        org_id: ID da organizacao (opcional)
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com policy objects e grupos
+    """
+    client = client or get_client()
+    org_id = org_id or client.org_id
+    if not org_id:
+        raise ValueError("org_id deve ser fornecido ou definido no profile")
+
+    logger.debug(f"Descobrindo policy objects da org {org_id}")
+
+    objects = client.safe_call(client.get_policy_objects, org_id, default=[])
+    groups = client.safe_call(client.get_policy_object_groups, org_id, default=[])
+
+    logger.debug(f"Policy objects: {len(objects)} objects, {len(groups)} groups")
+
+    return {
+        "objects": objects,
+        "groups": groups,
+        "count": len(objects),
+        "groups_count": len(groups),
+    }
+
+
+def discover_client_vpn(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracao de Client VPN.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com configuracao Client VPN
+    """
+    client = client or get_client()
+
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return {}
+
+    logger.debug(f"Descobrindo Client VPN da network {network_id}")
+
+    result = client.safe_call(client.get_client_vpn, network_id, default={})
+    enabled = result.get("enabled", False)
+    logger.debug(f"Client VPN enabled: {enabled}")
+
+    return result
+
+
+def discover_port_schedules(network_id: str, client: Optional[MerakiClient] = None) -> list[dict]:
+    """
+    Descobre port schedules da network.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Lista de port schedules
+    """
+    client = client or get_client()
+
+    has_hw = network_has_product(network_id, "switch", client)
+    if has_hw is False:
+        return []
+
+    logger.debug(f"Descobrindo port schedules da network {network_id}")
+
+    result = client.safe_call(client.get_port_schedules, network_id, default=[])
+    logger.debug(f"Port schedules: {len(result)} schedules")
+
+    return result
+
+
+def discover_lldp_cdp(serial: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre dados LLDP/CDP de um device.
+
+    Args:
+        serial: Serial do device
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com dados LLDP/CDP por porta
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo LLDP/CDP do device {serial}")
+
+    result = client.safe_call(client.get_lldp_cdp, serial, default={})
+    ports = result.get("ports", {})
+    logger.debug(f"LLDP/CDP: {len(ports)} ports with neighbor data")
+
+    return result
+
+
+def discover_netflow_config(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracao NetFlow.
+
+    Args:
+        network_id: ID da network
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com configuracao NetFlow
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo NetFlow config da network {network_id}")
+
+    result = client.safe_call(client.get_netflow_settings, network_id, default={})
+    enabled = result.get("reportingEnabled", False)
+    logger.debug(f"NetFlow reporting enabled: {enabled}")
+
+    return result
+
+
+def discover_poe_status(serial: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre status PoE de um switch.
+
+    Args:
+        serial: Serial do switch
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com status PoE por porta e total
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo PoE status do switch {serial}")
+
+    # Reuse existing get_switch_ports method (from Phase 1)
+    ports = client.safe_call(client.get_switch_ports, serial, default=[])
+
+    total_poe_draw = 0.0
+    total_poe_budget = 0.0
+    poe_ports = []
+
+    for port in ports:
+        poe = port.get("poe", {})
+        if poe.get("enabled"):
+            poe_draw = float(poe.get("powerDraw", 0) or 0)
+            total_poe_draw += poe_draw
+            poe_ports.append({
+                "port_id": port.get("portId"),
+                "poe_draw": poe_draw,
+                "poe_enabled": True,
+            })
+
+    # Estimate budget (typical MS switches have 370W-740W PoE budget)
+    # For now, use a conservative estimate based on model (can be enhanced later)
+    total_poe_budget = 370.0  # Default estimate
+
+    utilization_pct = (total_poe_draw / total_poe_budget * 100) if total_poe_budget > 0 else 0
+
+    logger.debug(f"PoE: {total_poe_draw:.2f}W used / {total_poe_budget:.2f}W budget ({utilization_pct:.1f}%)")
+
+    return {
+        "total_poe_draw": total_poe_draw,
+        "total_poe_budget": total_poe_budget,
+        "utilization_pct": utilization_pct,
+        "poe_ports": poe_ports,
+    }
+
+
+# ==================== Phase 2 - Wave 2: Discovery Functions ====================
+
+
+def discover_sdwan_config(network_id: str, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracao SD-WAN/uplink selection de uma rede MX.
+
+    Args:
+        network_id: ID da rede
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com uplink selection policies e VPN exclusions
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo SD-WAN config da rede {network_id}")
+
+    # Product guard
+    if not network_has_product(network_id, "appliance", client):
+        logger.debug(f"Network {network_id} nao tem appliance, skipping SD-WAN discovery")
+        return {}
+
+    uplink_selection = client.safe_call(client.get_uplink_selection, network_id, default={})
+    vpn_exclusions = client.safe_call(client.get_vpn_exclusions, network_id, default={})
+
+    return {
+        "uplink_selection": uplink_selection,
+        "vpn_exclusions": vpn_exclusions,
+    }
+
+
+def discover_templates(org_id: Optional[str] = None, client: Optional[MerakiClient] = None) -> list:
+    """
+    Descobre configuration templates de uma organizacao.
+
+    Args:
+        org_id: ID da organizacao (opcional, usa default)
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Lista de templates
+    """
+    client = client or get_client()
+    org_id = org_id or client.org_id
+    logger.debug(f"Descobrindo templates da org {org_id}")
+
+    templates = client.safe_call(client.get_config_templates, org_id, default=[])
+    return templates
+
+
+def discover_access_policies(network_id: str, client: Optional[MerakiClient] = None) -> list:
+    """
+    Descobre 802.1X access policies de uma rede switch.
+
+    Args:
+        network_id: ID da rede
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Lista de access policies
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo access policies da rede {network_id}")
+
+    # Product guard
+    if not network_has_product(network_id, "switch", client):
+        logger.debug(f"Network {network_id} nao tem switch, skipping access policies")
+        return []
+
+    policies = client.safe_call(client.get_access_policies, network_id, default=[])
+    return policies
+
+
+def discover_rogue_aps(network_id: str, client: Optional[MerakiClient] = None) -> list:
+    """
+    Descobre rogue APs detectados via Air Marshal.
+
+    Args:
+        network_id: ID da rede
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Lista de rogue APs detectados
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo rogue APs da rede {network_id}")
+
+    # Product guard
+    if not network_has_product(network_id, "wireless", client):
+        logger.debug(f"Network {network_id} nao tem wireless, skipping Air Marshal")
+        return []
+
+    rogue_aps = client.safe_call(client.get_air_marshal, network_id, default=[])
+    return rogue_aps
+
+
+def discover_ssid_firewall(network_id: str, ssid_number: Optional[int] = None, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre regras de firewall L3/L7 de SSIDs.
+
+    Args:
+        network_id: ID da rede
+        ssid_number: Numero do SSID (0-14, opcional - retorna todos se None)
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com L3 e L7 firewall rules por SSID
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo SSID firewall da rede {network_id}")
+
+    # Product guard
+    if not network_has_product(network_id, "wireless", client):
+        logger.debug(f"Network {network_id} nao tem wireless, skipping SSID firewall")
+        return {}
+
+    # Get SSIDs first to know which ones to query
+    ssids = client.safe_call(client.get_ssids, network_id, default=[])
+
+    result = {}
+
+    if ssid_number is not None:
+        # Single SSID
+        l3_rules = client.safe_call(client.get_ssid_l3_firewall, network_id, ssid_number, default={})
+        l7_rules = client.safe_call(client.get_ssid_l7_firewall, network_id, ssid_number, default={})
+        result[ssid_number] = {
+            "l3_rules": l3_rules,
+            "l7_rules": l7_rules,
+        }
+    else:
+        # All enabled SSIDs
+        for ssid in ssids:
+            if ssid.get("enabled"):
+                num = ssid.get("number")
+                l3_rules = client.safe_call(client.get_ssid_l3_firewall, network_id, num, default={})
+                l7_rules = client.safe_call(client.get_ssid_l7_firewall, network_id, num, default={})
+                result[num] = {
+                    "name": ssid.get("name"),
+                    "l3_rules": l3_rules,
+                    "l7_rules": l7_rules,
+                }
+
+    return result
+
+
+def discover_splash_config(network_id: str, ssid_number: Optional[int] = None, client: Optional[MerakiClient] = None) -> dict:
+    """
+    Descobre configuracao de splash pages de SSIDs.
+
+    Args:
+        network_id: ID da rede
+        ssid_number: Numero do SSID (0-14, opcional - retorna todos se None)
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        Dict com splash settings por SSID
+    """
+    client = client or get_client()
+    logger.debug(f"Descobrindo splash config da rede {network_id}")
+
+    # Product guard
+    if not network_has_product(network_id, "wireless", client):
+        logger.debug(f"Network {network_id} nao tem wireless, skipping splash config")
+        return {}
+
+    # Get SSIDs first
+    ssids = client.safe_call(client.get_ssids, network_id, default=[])
+
+    result = {}
+
+    if ssid_number is not None:
+        # Single SSID
+        splash = client.safe_call(client.get_splash_settings, network_id, ssid_number, default={})
+        result[ssid_number] = splash
+    else:
+        # All enabled SSIDs
+        for ssid in ssids:
+            if ssid.get("enabled"):
+                num = ssid.get("number")
+                splash = client.safe_call(client.get_splash_settings, network_id, num, default={})
+                result[num] = {
+                    "name": ssid.get("name"),
+                    "splash_settings": splash,
+                }
 
     return result
 
@@ -1780,3 +2232,327 @@ if __name__ == "__main__":
         console.print(f"[red]Erro:[/red] {e}")
         logger.exception("Erro no discovery")
         sys.exit(1)
+
+
+# ===== Phase 2 - Wave 3 =====
+
+def discover_adaptive_policies(network_id: str, client=None) -> dict:
+    """
+    Discover adaptive policy configuration (org-level).
+
+    Args:
+        network_id: Network ID (used to get org_id)
+        client: MerakiClient instance
+
+    Returns:
+        dict with policies, acls, policy_count, acl_count
+    """
+    client = client or get_client()
+    result = {
+        "policies": [],
+        "acls": [],
+        "policy_count": 0,
+        "acl_count": 0,
+    }
+
+    try:
+        # Get org_id from network
+        network = client.safe_call(client.get_network, network_id)
+        if not network or "organizationId" not in network:
+            logger.warning(f"Could not determine org_id from network {network_id}")
+            return result
+
+        org_id = network["organizationId"]
+
+        # Fetch policies
+        policies = client.safe_call(client.get_adaptive_policies, org_id)
+        if policies:
+            result["policies"] = policies
+            result["policy_count"] = len(policies)
+
+        # Fetch ACLs
+        acls = client.safe_call(client.get_adaptive_policy_acls, org_id)
+        if acls:
+            result["acls"] = acls
+            result["acl_count"] = len(acls)
+
+    except Exception as e:
+        logger.error(f"Error discovering adaptive policies: {e}")
+
+    return result
+
+
+def discover_switch_stacks(network_id: str, client=None) -> dict:
+    """
+    Discover switch stack configuration.
+
+    Args:
+        network_id: Network ID
+        client: MerakiClient instance
+
+    Returns:
+        dict with stacks, stack_count, routing_interfaces
+    """
+    from scripts.api import network_has_product
+
+    client = client or get_client()
+    result = {
+        "stacks": [],
+        "stack_count": 0,
+        "routing_interfaces": {},
+    }
+
+    # Product guard
+    if not network_has_product(network_id, "switch", client):
+        logger.info(f"Network {network_id} has no switches, skipping stack discovery")
+        return result
+
+    try:
+        # Fetch stacks
+        stacks = client.safe_call(client.get_switch_stacks, network_id)
+        if stacks:
+            result["stacks"] = stacks
+            result["stack_count"] = len(stacks)
+
+            # Fetch routing for each stack
+            for stack in stacks:
+                stack_id = stack.get("id")
+                if stack_id:
+                    routing = client.safe_call(client.get_stack_routing, network_id, stack_id)
+                    if routing:
+                        result["routing_interfaces"][stack_id] = routing
+
+    except Exception as e:
+        logger.error(f"Error discovering switch stacks: {e}")
+
+    return result
+
+
+def discover_ha_config(network_id: str, client=None) -> dict:
+    """
+    Discover high availability (warm spare) configuration.
+
+    Args:
+        network_id: Network ID
+        client: MerakiClient instance
+
+    Returns:
+        dict with enabled, spare_serial, uplink_mode, primary_ip, spare_ip
+    """
+    from scripts.api import network_has_product
+
+    client = client or get_client()
+    result = {
+        "enabled": False,
+        "spare_serial": None,
+        "uplink_mode": None,
+        "primary_ip": None,
+        "spare_ip": None,
+    }
+
+    # Product guard
+    if not network_has_product(network_id, "appliance", client):
+        logger.info(f"Network {network_id} has no appliances, skipping HA discovery")
+        return result
+
+    try:
+        warm_spare = client.safe_call(client.get_warm_spare, network_id)
+        if warm_spare:
+            result["enabled"] = warm_spare.get("enabled", False)
+            result["spare_serial"] = warm_spare.get("spareSerial")
+            result["uplink_mode"] = warm_spare.get("uplinkMode")
+            result["primary_ip"] = warm_spare.get("primarySerial")  # Note: API may return IPs differently
+            result["spare_ip"] = warm_spare.get("spareSerial")
+
+    except Exception as e:
+        logger.error(f"Error discovering HA config: {e}")
+
+    return result
+
+
+def discover_camera_analytics(network_id: str, client=None) -> dict:
+    """
+    Discover camera analytics configuration.
+
+    Args:
+        network_id: Network ID
+        client: MerakiClient instance
+
+    Returns:
+        dict with cameras, camera_count, analytics_data
+    """
+    from scripts.api import network_has_product
+
+    client = client or get_client()
+    result = {
+        "cameras": [],
+        "camera_count": 0,
+        "analytics_data": {},
+    }
+
+    # Product guard
+    if not network_has_product(network_id, "camera", client):
+        logger.info(f"Network {network_id} has no cameras, skipping analytics discovery")
+        return result
+
+    try:
+        # Get devices and filter cameras
+        devices = client.safe_call(client.get_devices, network_id)
+        if devices:
+            cameras = [d for d in devices if d.get("model", "").startswith("MV")]
+            result["cameras"] = cameras
+            result["camera_count"] = len(cameras)
+
+            # Fetch analytics overview for each camera
+            for camera in cameras:
+                serial = camera.get("serial")
+                if serial:
+                    overview = client.safe_call(client.get_camera_analytics_overview, serial)
+                    if overview:
+                        result["analytics_data"][serial] = overview
+
+    except Exception as e:
+        logger.error(f"Error discovering camera analytics: {e}")
+
+    return result
+
+
+def discover_sensors(network_id: str, client=None) -> dict:
+    """
+    Discover sensor devices and alert profiles.
+
+    Args:
+        network_id: Network ID
+        client: MerakiClient instance
+
+    Returns:
+        dict with sensors, sensor_count, alert_profiles
+    """
+    from scripts.api import network_has_product
+
+    client = client or get_client()
+    result = {
+        "sensors": [],
+        "sensor_count": 0,
+        "alert_profiles": [],
+    }
+
+    # Product guard
+    if not network_has_product(network_id, "sensor", client):
+        logger.info(f"Network {network_id} has no sensors, skipping sensor discovery")
+        return result
+
+    try:
+        # Get devices and filter sensors (MT models)
+        devices = client.safe_call(client.get_devices, network_id)
+        if devices:
+            sensors = [d for d in devices if d.get("model", "").startswith("MT")]
+            result["sensors"] = sensors
+            result["sensor_count"] = len(sensors)
+
+        # Fetch alert profiles
+        alert_profiles = client.safe_call(client.get_sensor_alert_profiles, network_id)
+        if alert_profiles:
+            result["alert_profiles"] = alert_profiles
+
+    except Exception as e:
+        logger.error(f"Error discovering sensors: {e}")
+
+    return result
+
+
+# ===== Phase 2 - Wave 4 =====
+
+
+def discover_floor_plans(network_id: str, client=None) -> dict:
+    """
+    Discover floor plans for a network.
+
+    Args:
+        network_id: Network ID
+        client: MerakiClient instance (optional)
+
+    Returns:
+        dict with floor_plans, plan_count
+    """
+    client = client or get_client()
+    result = {
+        "floor_plans": [],
+        "plan_count": 0,
+    }
+
+    try:
+        floor_plans = client.safe_call(client.get_floor_plans, network_id)
+        if floor_plans:
+            result["floor_plans"] = floor_plans
+            result["plan_count"] = len(floor_plans)
+
+    except Exception as e:
+        logger.error(f"Error discovering floor plans: {e}")
+
+    return result
+
+
+def discover_group_policies(network_id: str, client=None) -> dict:
+    """
+    Discover group policies for a network.
+
+    Args:
+        network_id: Network ID
+        client: MerakiClient instance (optional)
+
+    Returns:
+        dict with policies, policy_count
+    """
+    client = client or get_client()
+    result = {
+        "policies": [],
+        "policy_count": 0,
+    }
+
+    try:
+        policies = client.safe_call(client.get_group_policies, network_id)
+        if policies:
+            result["policies"] = policies
+            result["policy_count"] = len(policies)
+
+    except Exception as e:
+        logger.error(f"Error discovering group policies: {e}")
+
+    return result
+
+
+def discover_static_routes(network_id: str, client=None) -> dict:
+    """
+    Discover static routes for an appliance network.
+
+    Args:
+        network_id: Network ID
+        client: MerakiClient instance (optional)
+
+    Returns:
+        dict with routes, route_count
+    """
+    from scripts.api import network_has_product
+
+    client = client or get_client()
+    result = {
+        "routes": [],
+        "route_count": 0,
+    }
+
+    # Product guard: appliance
+    if not network_has_product(network_id, "appliance", client):
+        logger.info(f"Network {network_id} does not have appliance - skipping static routes")
+        return result
+
+    try:
+        routes = client.safe_call(client.get_static_routes, network_id)
+        if routes:
+            result["routes"] = routes
+            result["route_count"] = len(routes)
+
+    except Exception as e:
+        logger.error(f"Error discovering static routes: {e}")
+
+    return result

@@ -715,15 +715,16 @@ def test_all_classified_functions_exist():
     assert counts[SafetyLevel.DANGEROUS] > 0, "Should have dangerous operations"
 
     # Verify specific counts match what's actually in SAFETY_CLASSIFICATION
-    # Updated for Epic 8, Epic 9 & Epic 10:
-    # SAFE: 51 (base 24 + Epic 8: 5 + Epic 9: 7 + Epic 10: 15)
-    # MODERATE: 22 (base 6 + Epic 8: 7 + Epic 9: 4 + Epic 10: 5)
-    # DANGEROUS: 15 (base 5 + Epic 8: 2 + Epic 9: 2 + Epic 10: 6)
+    # Updated for Phase 2 Wave 1 + Wave 2 + Wave 3:
+    # SAFE: 74 (prev 63 + Wave 3: 11)
+    # MODERATE: 30 (prev 29 + Wave 3: 1)
+    # DANGEROUS: 22 (prev 18 + Wave 3: 4)
+    # After Phase 2 Wave 4: +4 SAFE, +6 MODERATE, +0 DANGEROUS
 
     expected_counts = {
-        SafetyLevel.SAFE: 51,
-        SafetyLevel.MODERATE: 22,
-        SafetyLevel.DANGEROUS: 15,
+        SafetyLevel.SAFE: 78,
+        SafetyLevel.MODERATE: 36,
+        SafetyLevel.DANGEROUS: 22,
     }
 
     assert counts == expected_counts, (

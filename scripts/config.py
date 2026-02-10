@@ -32,7 +32,7 @@ from typing import Optional
 
 from meraki.exceptions import APIError
 
-from .api import MerakiClient, get_client
+from .api import MerakiClient, get_client, network_has_product
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +69,36 @@ class ConfigResult:
             f"ConfigResult({status}, {self.action.value} {self.resource_type} "
             f"{self.resource_id}: {self.message})"
         )
+
+
+# Hardware display names for guard messages
+_HW_DISPLAY = {
+    "appliance": "MX appliance",
+    "switch": "MS switch",
+    "wireless": "MR wireless AP",
+}
+
+
+def _missing_hardware_result(
+    network_id: str,
+    required_type: str,
+    resource_type: str,
+    action: ConfigAction,
+    context: str = "",
+) -> ConfigResult:
+    """Build a ConfigResult for when the required hardware is absent."""
+    hw_name = _HW_DISPLAY.get(required_type, required_type)
+    msg = f"Network has no {hw_name}."
+    if context:
+        msg += f" {context} requires {hw_name}."
+    return ConfigResult(
+        success=False,
+        action=action,
+        resource_type=resource_type,
+        resource_id=network_id,
+        message=msg,
+        error=f"missing_hardware:{required_type}",
+    )
 
 
 # ==================== Backup & Rollback ====================
@@ -268,6 +298,9 @@ def configure_ssid(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "wireless", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "wireless", "ssid", ConfigAction.UPDATE, "SSID configuration")
     backup_path = None
 
     try:
@@ -382,6 +415,9 @@ def create_vlan(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "vlan", ConfigAction.CREATE, "VLAN")
     backup_path = None
 
     try:
@@ -437,6 +473,9 @@ def update_vlan(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "vlan", ConfigAction.UPDATE, "VLAN")
     backup_path = None
 
     try:
@@ -490,6 +529,9 @@ def delete_vlan(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "vlan", ConfigAction.DELETE, "VLAN")
     backup_path = None
 
     try:
@@ -579,6 +621,9 @@ def add_firewall_rule(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "firewall", ConfigAction.CREATE, "Firewall rules")
     backup_path = None
 
     try:
@@ -656,6 +701,9 @@ def remove_firewall_rule(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "firewall", ConfigAction.DELETE, "Firewall rules")
     backup_path = None
 
     try:
@@ -741,6 +789,9 @@ def add_switch_acl(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "switch", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "switch", "switch_acl", ConfigAction.CREATE, "Switch ACL")
     backup_path = None
 
     try:
@@ -871,6 +922,9 @@ def configure_s2s_vpn(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "vpn", ConfigAction.UPDATE, "S2S VPN")
     backup_path = None
 
     if dry_run:
@@ -949,6 +1003,9 @@ def add_vpn_peer(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "vpn", ConfigAction.CREATE, "VPN peer")
     backup_path = None
 
     try:
@@ -1024,6 +1081,9 @@ def configure_content_filter(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "content_filter", ConfigAction.UPDATE, "Content filtering")
     backup_path = None
 
     try:
@@ -1088,6 +1148,9 @@ def add_blocked_url(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "content_filter", ConfigAction.CREATE, "Content filtering")
     backup_path = None
 
     try:
@@ -1162,6 +1225,9 @@ def configure_ips(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "ips", ConfigAction.UPDATE, "IPS/IDS")
     backup_path = None
 
     try:
@@ -1251,6 +1317,9 @@ def configure_amp(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "amp", ConfigAction.UPDATE, "AMP/Malware Protection")
     backup_path = None
 
     try:
@@ -1315,6 +1384,9 @@ def configure_traffic_shaping(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "traffic_shaping", ConfigAction.UPDATE, "Traffic shaping")
     backup_path = None
 
     try:
@@ -1385,6 +1457,9 @@ def set_bandwidth_limit(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "bandwidth", ConfigAction.UPDATE, "Bandwidth limits")
     backup_path = None
 
     try:
@@ -2482,6 +2557,9 @@ def configure_stp(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "switch", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "switch", "stp", ConfigAction.UPDATE, "STP")
     backup_path = None
 
     if dry_run:
@@ -2552,6 +2630,9 @@ def configure_1to1_nat(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "nat", ConfigAction.UPDATE, "1:1 NAT")
     backup_path = None
 
     try:
@@ -2605,6 +2686,9 @@ def configure_port_forwarding(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "port_forwarding", ConfigAction.UPDATE, "Port forwarding")
     backup_path = None
 
     try:
@@ -2662,6 +2746,9 @@ def configure_rf_profile(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "wireless", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "wireless", "rf_profile", ConfigAction.CREATE, "RF profile")
     backup_path = None
 
     try:
@@ -2722,6 +2809,9 @@ def configure_qos(
         ConfigResult com resultado da operacao
     """
     client = client or get_client()
+    has_hw = network_has_product(network_id, "switch", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "switch", "qos", ConfigAction.CREATE, "QoS rules")
     backup_path = None
 
     try:
@@ -2894,6 +2984,1172 @@ def manage_admin(
         )
 
 
+# ==================== Phase 2 Wave 1: Policy Objects, Client VPN, Port Schedules, NetFlow ====================
+
+
+def manage_policy_object(
+    org_id: Optional[str] = None,
+    action: str = "create",
+    policy_object_id: Optional[str] = None,
+    name: Optional[str] = None,
+    category: Optional[str] = None,
+    object_type: Optional[str] = None,
+    cidr: Optional[str] = None,
+    fqdn: Optional[str] = None,
+    backup: bool = True,
+    client_name: Optional[str] = None,
+    client: Optional[MerakiClient] = None,
+    **kwargs
+) -> ConfigResult:
+    """
+    Gerencia policy objects (MODERATE).
+
+    Args:
+        org_id: ID da organizacao (opcional)
+        action: Acao (create, update, delete)
+        policy_object_id: ID do policy object (para update/delete)
+        name: Nome do policy object
+        category: Categoria (network, networkObjectGroup, etc)
+        object_type: Tipo (cidr, fqdn, ipRange)
+        cidr: CIDR notation (para type=cidr)
+        fqdn: FQDN (para type=fqdn)
+        backup: Fazer backup antes de aplicar
+        client_name: Nome do cliente para backup
+        client: Cliente Meraki (opcional)
+        **kwargs: Parametros adicionais
+
+    Returns:
+        ConfigResult com resultado da operacao
+    """
+    client = client or get_client()
+    org_id = org_id or client.org_id
+    if not org_id:
+        raise ValueError("org_id deve ser fornecido ou definido no profile")
+
+    backup_path = None
+
+    try:
+        # Backup
+        if backup and client_name:
+            backup_dir = Path("clients") / client_name / "backups"
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = backup_dir / f"backup_policy_objects_{timestamp}.json"
+
+            # Save current policy objects
+            objects = client.get_policy_objects(org_id)
+            backup_path.write_text(json.dumps({"policy_objects": objects}, indent=2), encoding="utf-8")
+
+        if action == "create":
+            if not name or not category:
+                raise ValueError("name, category required for create")
+
+            create_data = {"name": name, "category": category, **kwargs}
+            if object_type:
+                create_data["type"] = object_type
+            if cidr:
+                create_data["cidr"] = cidr
+            if fqdn:
+                create_data["fqdn"] = fqdn
+
+            result = client.create_policy_object(org_id, **create_data)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.CREATE,
+                resource_type="policy_object",
+                resource_id=result.get("id", name),
+                message=f"Policy object criado: {name}",
+                backup_path=backup_path,
+                changes=create_data
+            )
+
+        elif action == "update":
+            if not policy_object_id:
+                raise ValueError("policy_object_id required for update")
+
+            update_data = {**kwargs}
+            if name:
+                update_data["name"] = name
+            if cidr:
+                update_data["cidr"] = cidr
+            if fqdn:
+                update_data["fqdn"] = fqdn
+
+            result = client.update_policy_object(org_id, policy_object_id, **update_data)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.UPDATE,
+                resource_type="policy_object",
+                resource_id=policy_object_id,
+                message=f"Policy object atualizado: {policy_object_id}",
+                backup_path=backup_path,
+                changes=update_data
+            )
+
+        elif action == "delete":
+            if not policy_object_id:
+                raise ValueError("policy_object_id required for delete")
+
+            # TODO: Dependency check (warn if object is in use by firewall rules or Adaptive Policy)
+            # For now, just delete
+            client.delete_policy_object(org_id, policy_object_id)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.DELETE,
+                resource_type="policy_object",
+                resource_id=policy_object_id,
+                message=f"Policy object removido: {policy_object_id}",
+                backup_path=backup_path
+            )
+
+        else:
+            raise ValueError(f"Invalid action: {action}")
+
+    except APIError as e:
+        logger.error(f"Erro ao gerenciar policy object: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="policy_object",
+            resource_id=policy_object_id or name or "unknown",
+            message=f"Falha ao gerenciar policy object ({action})",
+            error=str(e)
+        )
+
+
+def configure_client_vpn(
+    network_id: str,
+    enabled: Optional[bool] = None,
+    subnet: Optional[str] = None,
+    backup: bool = True,
+    client_name: Optional[str] = None,
+    client: Optional[MerakiClient] = None,
+    **kwargs
+) -> ConfigResult:
+    """
+    Configura Client VPN (MODERATE).
+
+    Args:
+        network_id: ID da network
+        enabled: Habilitar/desabilitar Client VPN
+        subnet: Subnet para Client VPN (ex: 192.168.128.0/24)
+        backup: Fazer backup antes de aplicar
+        client_name: Nome do cliente para backup
+        client: Cliente Meraki (opcional)
+        **kwargs: Parametros adicionais (splitTunnel, authMode, etc)
+
+    Returns:
+        ConfigResult com resultado da operacao
+    """
+    client = client or get_client()
+    has_hw = network_has_product(network_id, "appliance", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "appliance", "client_vpn", ConfigAction.UPDATE, "Client VPN")
+
+    backup_path = None
+
+    try:
+        # Backup
+        if backup and client_name:
+            current = client.safe_call(client.get_client_vpn, network_id, default={})
+            backup_dir = Path("clients") / client_name / "backups"
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = backup_dir / f"backup_client_vpn_{timestamp}.json"
+            backup_path.write_text(json.dumps(current, indent=2), encoding="utf-8")
+
+        update_data = {**kwargs}
+        if enabled is not None:
+            update_data["enabled"] = enabled
+        if subnet:
+            update_data["subnet"] = subnet
+
+        result = client.update_client_vpn(network_id, **update_data)
+
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.UPDATE,
+            resource_type="client_vpn",
+            resource_id=network_id,
+            message=f"Client VPN configurado (enabled={enabled})",
+            backup_path=backup_path,
+            changes=update_data
+        )
+
+    except APIError as e:
+        logger.error(f"Erro ao configurar Client VPN: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="client_vpn",
+            resource_id=network_id,
+            message="Falha ao configurar Client VPN",
+            error=str(e)
+        )
+
+
+def configure_port_schedule(
+    network_id: str,
+    action: str = "create",
+    port_schedule_id: Optional[str] = None,
+    name: Optional[str] = None,
+    port_schedule: Optional[dict] = None,
+    backup: bool = True,
+    client_name: Optional[str] = None,
+    client: Optional[MerakiClient] = None
+) -> ConfigResult:
+    """
+    Configura port schedule (MODERATE).
+
+    Args:
+        network_id: ID da network
+        action: Acao (create, update, delete)
+        port_schedule_id: ID do port schedule (para update/delete)
+        name: Nome do schedule
+        port_schedule: Dict com horarios (monday, tuesday, etc)
+        backup: Fazer backup antes de aplicar
+        client_name: Nome do cliente para backup
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        ConfigResult com resultado da operacao
+    """
+    client = client or get_client()
+    has_hw = network_has_product(network_id, "switch", client)
+    if has_hw is False:
+        return _missing_hardware_result(network_id, "switch", "port_schedule", ConfigAction.UPDATE, "Port schedule")
+
+    backup_path = None
+
+    try:
+        # Backup
+        if backup and client_name:
+            current = client.safe_call(client.get_port_schedules, network_id, default=[])
+            backup_dir = Path("clients") / client_name / "backups"
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = backup_dir / f"backup_port_schedules_{timestamp}.json"
+            backup_path.write_text(json.dumps(current, indent=2), encoding="utf-8")
+
+        if action == "create":
+            if not name:
+                raise ValueError("name required for create")
+
+            create_data = {"name": name}
+            if port_schedule:
+                create_data["portSchedule"] = port_schedule
+
+            result = client.create_port_schedule(network_id, **create_data)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.CREATE,
+                resource_type="port_schedule",
+                resource_id=result.get("id", name),
+                message=f"Port schedule criado: {name}",
+                backup_path=backup_path,
+                changes=create_data
+            )
+
+        elif action == "update":
+            if not port_schedule_id:
+                raise ValueError("port_schedule_id required for update")
+
+            update_data = {}
+            if name:
+                update_data["name"] = name
+            if port_schedule:
+                update_data["portSchedule"] = port_schedule
+
+            result = client.update_port_schedule(network_id, port_schedule_id, **update_data)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.UPDATE,
+                resource_type="port_schedule",
+                resource_id=port_schedule_id,
+                message=f"Port schedule atualizado: {port_schedule_id}",
+                backup_path=backup_path,
+                changes=update_data
+            )
+
+        elif action == "delete":
+            if not port_schedule_id:
+                raise ValueError("port_schedule_id required for delete")
+
+            client.delete_port_schedule(network_id, port_schedule_id)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.DELETE,
+                resource_type="port_schedule",
+                resource_id=port_schedule_id,
+                message=f"Port schedule removido: {port_schedule_id}",
+                backup_path=backup_path
+            )
+
+        else:
+            raise ValueError(f"Invalid action: {action}")
+
+    except APIError as e:
+        logger.error(f"Erro ao configurar port schedule: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="port_schedule",
+            resource_id=port_schedule_id or name or "unknown",
+            message=f"Falha ao configurar port schedule ({action})",
+            error=str(e)
+        )
+
+
+def configure_netflow(
+    network_id: str,
+    reporting_enabled: Optional[bool] = None,
+    collector_ip: Optional[str] = None,
+    collector_port: Optional[int] = None,
+    backup: bool = True,
+    client_name: Optional[str] = None,
+    client: Optional[MerakiClient] = None
+) -> ConfigResult:
+    """
+    Configura NetFlow (MODERATE).
+
+    Args:
+        network_id: ID da network
+        reporting_enabled: Habilitar/desabilitar NetFlow reporting
+        collector_ip: IP do collector
+        collector_port: Porta do collector
+        backup: Fazer backup antes de aplicar
+        client_name: Nome do cliente para backup
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        ConfigResult com resultado da operacao
+    """
+    client = client or get_client()
+    backup_path = None
+
+    try:
+        # Backup
+        if backup and client_name:
+            current = client.safe_call(client.get_netflow_settings, network_id, default={})
+            backup_dir = Path("clients") / client_name / "backups"
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = backup_dir / f"backup_netflow_{timestamp}.json"
+            backup_path.write_text(json.dumps(current, indent=2), encoding="utf-8")
+
+        update_data = {}
+        if reporting_enabled is not None:
+            update_data["reportingEnabled"] = reporting_enabled
+        if collector_ip:
+            update_data["collectorIp"] = collector_ip
+        if collector_port:
+            update_data["collectorPort"] = collector_port
+
+        result = client.update_netflow_settings(network_id, **update_data)
+
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.UPDATE,
+            resource_type="netflow",
+            resource_id=network_id,
+            message=f"NetFlow configurado (enabled={reporting_enabled})",
+            backup_path=backup_path,
+            changes=update_data
+        )
+
+    except APIError as e:
+        logger.error(f"Erro ao configurar NetFlow: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="netflow",
+            resource_id=network_id,
+            message="Falha ao configurar NetFlow",
+            error=str(e)
+        )
+
+
+# ==================== Phase 2 - Wave 2: Config Functions ====================
+
+
+def configure_sdwan_policy(
+    network_id: str,
+    wan_traffic_uplink_preferences: Optional[list] = None,
+    default_uplink: Optional[str] = None,
+    client: Optional[MerakiClient] = None
+) -> ConfigResult:
+    """
+    Configura SD-WAN policy para uma rede MX.
+
+    Args:
+        network_id: ID da rede
+        wan_traffic_uplink_preferences: Lista de preferencias de uplink por aplicacao
+        default_uplink: Uplink default ("wan1" ou "wan2")
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        ConfigResult com resultado da operacao
+    """
+    client = client or get_client()
+    logger.info(f"Configurando SD-WAN policy na rede {network_id}")
+
+    # Product guard
+    if not network_has_product(network_id, "appliance", client):
+        return _missing_hardware_result(network_id, "appliance", "sdwan_policy", ConfigAction.UPDATE)
+
+    try:
+        # Build kwargs
+        kwargs = {}
+        if wan_traffic_uplink_preferences is not None:
+            kwargs["wanTrafficUplinkPreferences"] = wan_traffic_uplink_preferences
+        if default_uplink is not None:
+            kwargs["defaultUplink"] = default_uplink
+
+        result = client.safe_call(client.update_uplink_selection, network_id, **kwargs)
+
+        logger.info(f"SD-WAN policy configurado: {result}")
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.UPDATE,
+            resource_type="sdwan_policy",
+            resource_id=network_id,
+            message="SD-WAN policy configurado com sucesso"
+        )
+
+    except APIError as e:
+        logger.error(f"Erro ao configurar SD-WAN policy: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="sdwan_policy",
+            resource_id=network_id,
+            message="Falha ao configurar SD-WAN policy",
+            error=str(e)
+        )
+
+
+def set_uplink_preference(
+    network_id: str,
+    app_name: str,
+    preferred_uplink: str,
+    client: Optional[MerakiClient] = None
+) -> ConfigResult:
+    """
+    Define preferencia de uplink para uma aplicacao especifica.
+
+    Args:
+        network_id: ID da rede
+        app_name: Nome da aplicacao
+        preferred_uplink: Uplink preferido ("wan1" ou "wan2")
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        ConfigResult com resultado da operacao
+    """
+    client = client or get_client()
+    logger.info(f"Configurando uplink preference para {app_name} na rede {network_id}")
+
+    # Product guard
+    if not network_has_product(network_id, "appliance", client):
+        return _missing_hardware_result(network_id, "appliance", "uplink_preference", ConfigAction.UPDATE)
+
+    try:
+        # Backup
+        backup_path = None
+
+        # Get current settings
+        current = client.safe_call(client.get_uplink_selection, network_id, default={})
+        prefs = current.get("wanTrafficUplinkPreferences", [])
+
+        # Update or add preference
+        found = False
+        for pref in prefs:
+            if pref.get("trafficFilters", [{}])[0].get("value", {}).get("id") == app_name:
+                pref["preferredUplink"] = preferred_uplink
+                found = True
+                break
+
+        if not found:
+            prefs.append({
+                "trafficFilters": [{"type": "applicationCategory", "value": {"id": app_name}}],
+                "preferredUplink": preferred_uplink
+            })
+
+        result = client.safe_call(client.update_uplink_selection, network_id, wanTrafficUplinkPreferences=prefs)
+
+        logger.info(f"Uplink preference configurado: {app_name} -> {preferred_uplink}")
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.UPDATE,
+            resource_type="uplink_preference",
+            resource_id=network_id,
+            message=f"Uplink preference configurado: {app_name} -> {preferred_uplink}",
+            backup_path=backup_path
+        )
+
+    except APIError as e:
+        logger.error(f"Erro ao configurar uplink preference: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="uplink_preference",
+            resource_id=network_id,
+            message="Falha ao configurar uplink preference",
+            error=str(e)
+        )
+
+
+def manage_template(
+    org_id: Optional[str] = None,
+    action: str = "create",
+    template_id: Optional[str] = None,
+    name: Optional[str] = None,
+    network_id: Optional[str] = None,
+    auto_bind: Optional[bool] = None,
+    client: Optional[MerakiClient] = None,
+    **kwargs
+) -> ConfigResult:
+    """
+    Gerencia configuration templates (create/update/delete/bind/unbind).
+
+    Args:
+        org_id: ID da organizacao (opcional, usa default)
+        action: Acao a executar (create/update/delete/bind/unbind)
+        template_id: ID do template (required para update/delete)
+        name: Nome do template (required para create)
+        network_id: ID da rede (required para bind/unbind)
+        auto_bind: Auto-bind networks (para create)
+        client: Cliente Meraki (opcional)
+        **kwargs: Parametros adicionais
+
+    Returns:
+        ConfigResult com resultado da operacao
+    """
+    client = client or get_client()
+    org_id = org_id or client.org_id
+    logger.info(f"Gerenciando template: action={action}")
+
+    try:
+        config_action = ConfigAction.CREATE
+        resource_id = template_id or network_id or org_id
+
+        if action == "create":
+            if not name:
+                raise ValueError("name required para create")
+            result = client.safe_call(client.create_config_template, org_id, name=name, **kwargs)
+            message = f"Template '{name}' criado com sucesso"
+
+        elif action == "update":
+            if not template_id:
+                raise ValueError("template_id required para update")
+            config_action = ConfigAction.UPDATE
+            result = client.safe_call(client.update_config_template, org_id, template_id, **kwargs)
+            message = f"Template {template_id} atualizado com sucesso"
+
+        elif action == "delete":
+            if not template_id:
+                raise ValueError("template_id required para delete")
+            config_action = ConfigAction.DELETE
+            client.safe_call(client.delete_config_template, org_id, template_id)
+            result = {"deleted": template_id}
+            message = f"Template {template_id} deletado com sucesso"
+
+        elif action == "bind":
+            if not network_id or not template_id:
+                raise ValueError("network_id and template_id required para bind")
+            config_action = ConfigAction.UPDATE
+            result = client.safe_call(client.bind_network, network_id, template_id, **kwargs)
+            message = f"Rede {network_id} vinculada ao template {template_id}"
+
+        elif action == "unbind":
+            if not network_id:
+                raise ValueError("network_id required para unbind")
+            config_action = ConfigAction.UPDATE
+            result = client.safe_call(client.unbind_network, network_id)
+            message = f"Rede {network_id} desvinculada do template"
+
+        else:
+            raise ValueError(f"Acao invalida: {action}")
+
+        logger.info(message)
+        return ConfigResult(
+            success=True,
+            action=config_action,
+            resource_type="config_template",
+            resource_id=resource_id,
+            message=message
+        )
+
+    except (APIError, ValueError) as e:
+        logger.error(f"Erro ao gerenciar template: {e}")
+        return ConfigResult(
+            success=False,
+            action=config_action,
+            resource_type="config_template",
+            resource_id=resource_id,
+            message=f"Falha ao gerenciar template (action={action})",
+            error=str(e)
+        )
+
+
+def configure_access_policy(
+    network_id: str,
+    action: str = "create",
+    access_policy_number: Optional[str] = None,
+    name: Optional[str] = None,
+    radius_servers: Optional[list] = None,
+    access_policy_type: Optional[str] = None,
+    client: Optional[MerakiClient] = None,
+    **kwargs
+) -> ConfigResult:
+    """
+    Configura 802.1X access policy.
+
+    Args:
+        network_id: ID da rede
+        action: Acao (create/update/delete)
+        access_policy_number: Numero da policy (required para update/delete)
+        name: Nome da policy (required para create)
+        radius_servers: Lista de servidores RADIUS
+        access_policy_type: Tipo (802.1x/MAC authentication/Hybrid authentication)
+        client: Cliente Meraki (opcional)
+        **kwargs: Parametros adicionais
+
+    Returns:
+        ConfigResult com resultado da operacao
+    """
+    client = client or get_client()
+    logger.info(f"Configurando access policy na rede {network_id}: action={action}")
+
+    # Product guard
+    if not network_has_product(network_id, "switch", client):
+        return _missing_hardware_result(network_id, "switch", "access_policy", ConfigAction.CREATE)
+
+    try:
+        config_action = ConfigAction.CREATE
+        resource_id = access_policy_number or network_id
+
+        if action == "create":
+            if not name:
+                raise ValueError("name required para create")
+            result = client.safe_call(client.create_access_policy, network_id, name=name, radiusServers=radius_servers, accessPolicyType=access_policy_type, **kwargs)
+            message = f"Access policy '{name}' criada com sucesso"
+
+        elif action == "update":
+            if not access_policy_number:
+                raise ValueError("access_policy_number required para update")
+            config_action = ConfigAction.UPDATE
+            result = client.safe_call(client.update_access_policy, network_id, access_policy_number, **kwargs)
+            message = f"Access policy {access_policy_number} atualizada com sucesso"
+
+        elif action == "delete":
+            if not access_policy_number:
+                raise ValueError("access_policy_number required para delete")
+            config_action = ConfigAction.DELETE
+            client.safe_call(client.delete_access_policy, network_id, access_policy_number)
+            result = {"deleted": access_policy_number}
+            message = f"Access policy {access_policy_number} deletada com sucesso"
+
+        else:
+            raise ValueError(f"Acao invalida: {action}")
+
+        logger.info(message)
+        return ConfigResult(
+            success=True,
+            action=config_action,
+            resource_type="access_policy",
+            resource_id=resource_id,
+            message=message
+        )
+
+    except (APIError, ValueError) as e:
+        logger.error(f"Erro ao configurar access policy: {e}")
+        return ConfigResult(
+            success=False,
+            action=config_action,
+            resource_type="access_policy",
+            resource_id=resource_id,
+            message=f"Falha ao configurar access policy (action={action})",
+            error=str(e)
+        )
+
+
+def configure_ssid_firewall(
+    network_id: str,
+    ssid_number: int,
+    layer: str = "l3",
+    rules: Optional[list] = None,
+    client: Optional[MerakiClient] = None
+) -> ConfigResult:
+    """
+    Configura regras de firewall L3/L7 para um SSID.
+
+    Args:
+        network_id: ID da rede
+        ssid_number: Numero do SSID (0-14)
+        layer: Camada (l3 ou l7)
+        rules: Lista de regras
+        client: Cliente Meraki (opcional)
+
+    Returns:
+        ConfigResult com resultado da operacao
+    """
+    client = client or get_client()
+    logger.info(f"Configurando SSID {ssid_number} {layer} firewall na rede {network_id}")
+
+    # Product guard
+    if not network_has_product(network_id, "wireless", client):
+        return _missing_hardware_result(network_id, "wireless", "ssid_firewall", ConfigAction.UPDATE)
+
+    try:
+        if layer == "l3":
+            result = client.safe_call(client.update_ssid_l3_firewall, network_id, ssid_number, rules=rules)
+        elif layer == "l7":
+            result = client.safe_call(client.update_ssid_l7_firewall, network_id, ssid_number, rules=rules)
+        else:
+            raise ValueError(f"Layer invalida: {layer} (use 'l3' ou 'l7')")
+
+        logger.info(f"SSID {ssid_number} {layer} firewall configurado: {len(rules or [])} regras")
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.UPDATE,
+            resource_type="ssid_firewall",
+            resource_id=f"{network_id}/ssid_{ssid_number}",
+            message=f"SSID {ssid_number} {layer} firewall configurado com sucesso"
+        )
+
+    except (APIError, ValueError) as e:
+        logger.error(f"Erro ao configurar SSID firewall: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="ssid_firewall",
+            resource_id=f"{network_id}/ssid_{ssid_number}",
+            message="Falha ao configurar SSID firewall",
+            error=str(e)
+        )
+
+
+def configure_splash_page(
+    network_id: str,
+    ssid_number: int,
+    splash_page: Optional[str] = None,
+    splash_timeout: Optional[int] = None,
+    client: Optional[MerakiClient] = None,
+    **kwargs
+) -> ConfigResult:
+    """
+    Configura splash page para um SSID.
+
+    Args:
+        network_id: ID da rede
+        ssid_number: Numero do SSID (0-14)
+        splash_page: Tipo de splash (None/Click-through/Billing/Password-protected/etc)
+        splash_timeout: Timeout em minutos
+        client: Cliente Meraki (opcional)
+        **kwargs: Parametros adicionais
+
+    Returns:
+        ConfigResult com resultado da operacao
+    """
+    client = client or get_client()
+    logger.info(f"Configurando splash page no SSID {ssid_number} da rede {network_id}")
+
+    # Product guard
+    if not network_has_product(network_id, "wireless", client):
+        return _missing_hardware_result(network_id, "wireless", "splash_page", ConfigAction.UPDATE)
+
+    try:
+        update_kwargs = {}
+        if splash_page is not None:
+            update_kwargs["splashPage"] = splash_page
+        if splash_timeout is not None:
+            update_kwargs["splashTimeout"] = splash_timeout
+        update_kwargs.update(kwargs)
+
+        result = client.safe_call(client.update_splash_settings, network_id, ssid_number, **update_kwargs)
+
+        logger.info(f"Splash page configurado no SSID {ssid_number}")
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.UPDATE,
+            resource_type="splash_page",
+            resource_id=f"{network_id}/ssid_{ssid_number}",
+            message=f"Splash page configurado no SSID {ssid_number} com sucesso"
+        )
+
+    except APIError as e:
+        logger.error(f"Erro ao configurar splash page: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="splash_page",
+            resource_id=f"{network_id}/ssid_{ssid_number}",
+            message="Falha ao configurar splash page",
+            error=str(e)
+        )
+
+
+# ===== Phase 2 - Wave 3 =====
+
+def configure_adaptive_policy(
+    org_id: str,
+    source_sgt: str,
+    dest_sgt: str,
+    acl_ids: list = None,
+    catch_all_rule: str = "global",
+    client=None
+) -> ConfigResult:
+    """
+    Configure adaptive policy for organization.
+
+    Args:
+        org_id: Organization ID
+        source_sgt: Source Security Group Tag
+        dest_sgt: Destination Security Group Tag
+        acl_ids: List of ACL IDs to apply
+        catch_all_rule: Default rule ("global" or "deny")
+        client: MerakiClient instance
+
+    Returns:
+        ConfigResult with operation status
+    """
+    client = client or get_client()
+
+    try:
+        # Backup
+        backup_path = backup_config(
+            f"adaptive_policy_{source_sgt}_{dest_sgt}",
+            {"org_id": org_id, "source": source_sgt, "dest": dest_sgt}
+        )
+
+        # Create policy
+        kwargs = {
+            "sourceGroup": {"sgt": source_sgt},
+            "destinationGroup": {"sgt": dest_sgt},
+            "defaultRule": catch_all_rule,
+        }
+        if acl_ids:
+            kwargs["acls"] = [{"id": acl_id} for acl_id in acl_ids]
+
+        result = client.create_adaptive_policy(org_id, **kwargs)
+
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.CREATE,
+            resource_type="adaptive_policy",
+            resource_id=result.get("policyId", ""),
+            message=f"Adaptive policy criada: {source_sgt} → {dest_sgt}",
+            backup_path=backup_path,
+            changes={"source_sgt": source_sgt, "dest_sgt": dest_sgt, "acls": acl_ids or []}
+        )
+
+    except Exception as e:
+        logger.error(f"Error configuring adaptive policy: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.CREATE,
+            resource_type="adaptive_policy",
+            resource_id="",
+            message="Falha ao criar adaptive policy",
+            error=str(e)
+        )
+
+
+def manage_switch_stack(
+    network_id: str,
+    action: str,
+    name: str = None,
+    serials: list = None,
+    stack_id: str = None,
+    serial: str = None,
+    client=None
+) -> ConfigResult:
+    """
+    Manage switch stacks (create, add, remove).
+
+    Args:
+        network_id: Network ID
+        action: "create", "add", or "remove"
+        name: Stack name (for create)
+        serials: List of serials (for create)
+        stack_id: Stack ID (for add/remove)
+        serial: Single serial (for add/remove)
+        client: MerakiClient instance
+
+    Returns:
+        ConfigResult with operation status
+    """
+    from scripts.api import network_has_product
+
+    client = client or get_client()
+
+    # Product guard
+    if not network_has_product(network_id, "switch", client):
+        return _missing_hardware_result(network_id, "switch", "switch_stack", ConfigAction.UPDATE)
+
+    try:
+        # Backup
+        backup_path = backup_config(
+            f"switch_stack_{action}",
+            {"network_id": network_id, "action": action}
+        )
+
+        if action == "create":
+            if not name or not serials:
+                raise ValueError("create requires name and serials")
+            result = client.create_switch_stack(network_id, name, serials)
+            msg = f"Switch stack '{name}' criada"
+            resource_id = result.get("id", "")
+
+        elif action == "add":
+            if not stack_id or not serial:
+                raise ValueError("add requires stack_id and serial")
+            result = client.add_to_stack(network_id, stack_id, serial)
+            msg = f"Switch {serial} adicionado ao stack {stack_id}"
+            resource_id = stack_id
+
+        elif action == "remove":
+            if not stack_id or not serial:
+                raise ValueError("remove requires stack_id and serial")
+            result = client.remove_from_stack(network_id, stack_id, serial)
+            msg = f"Switch {serial} removido do stack {stack_id}"
+            resource_id = stack_id
+
+        else:
+            raise ValueError(f"Invalid action: {action}")
+
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.UPDATE,
+            resource_type="switch_stack",
+            resource_id=resource_id,
+            message=msg,
+            backup_path=backup_path,
+            changes={"action": action}
+        )
+
+    except Exception as e:
+        logger.error(f"Error managing switch stack: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="switch_stack",
+            resource_id="",
+            message=f"Falha ao {action} switch stack",
+            error=str(e)
+        )
+
+
+def configure_warm_spare(
+    network_id: str,
+    enabled: bool,
+    spare_serial: str = None,
+    uplink_mode: str = None,
+    virtual_ip1: str = None,
+    virtual_ip2: str = None,
+    client=None
+) -> ConfigResult:
+    """
+    Configure warm spare (HA) for appliance.
+
+    Args:
+        network_id: Network ID
+        enabled: Enable or disable warm spare
+        spare_serial: Serial of spare appliance
+        uplink_mode: "virtual" or "public"
+        virtual_ip1: Virtual IP for uplink 1
+        virtual_ip2: Virtual IP for uplink 2
+        client: MerakiClient instance
+
+    Returns:
+        ConfigResult with operation status
+    """
+    from scripts.api import network_has_product
+
+    client = client or get_client()
+
+    # Product guard
+    if not network_has_product(network_id, "appliance", client):
+        return _missing_hardware_result(network_id, "appliance", "warm_spare", ConfigAction.UPDATE)
+
+    try:
+        # Backup
+        backup_path = backup_config(
+            "warm_spare",
+            {"network_id": network_id}
+        )
+
+        # Update warm spare
+        result = client.update_warm_spare(
+            network_id,
+            enabled=enabled,
+            spare_serial=spare_serial,
+            uplink_mode=uplink_mode,
+            virtual_ip1=virtual_ip1,
+            virtual_ip2=virtual_ip2
+        )
+
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.UPDATE,
+            resource_type="warm_spare",
+            resource_id=network_id,
+            message=f"Warm spare {'ativado' if enabled else 'desativado'}",
+            backup_path=backup_path,
+            changes={"enabled": enabled, "spare_serial": spare_serial}
+        )
+
+    except Exception as e:
+        logger.error(f"Error configuring warm spare: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="warm_spare",
+            resource_id=network_id,
+            message="Falha ao configurar warm spare",
+            error=str(e)
+        )
+
+
+def trigger_failover(
+    network_id: str,
+    confirm_text: str = None,
+    client=None
+) -> ConfigResult:
+    """
+    Trigger failover by swapping primary and warm spare.
+
+    Args:
+        network_id: Network ID
+        confirm_text: Must be "CONFIRM" to proceed
+        client: MerakiClient instance
+
+    Returns:
+        ConfigResult with operation status
+    """
+    from scripts.api import network_has_product
+
+    client = client or get_client()
+
+    # Product guard
+    if not network_has_product(network_id, "appliance", client):
+        return _missing_hardware_result(network_id, "appliance", "failover", ConfigAction.UPDATE)
+
+    # Safety check
+    if confirm_text != "CONFIRM":
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="failover",
+            resource_id=network_id,
+            message="Failover requer confirmacao explicita (confirm_text='CONFIRM')",
+            error="Missing confirmation"
+        )
+
+    try:
+        # Backup
+        backup_path = backup_config(
+            "failover",
+            {"network_id": network_id}
+        )
+
+        # Trigger swap
+        result = client.swap_warm_spare(network_id)
+
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.UPDATE,
+            resource_type="failover",
+            resource_id=network_id,
+            message="Failover executado com sucesso",
+            backup_path=backup_path,
+            changes={"action": "swap"}
+        )
+
+    except Exception as e:
+        logger.error(f"Error triggering failover: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="failover",
+            resource_id=network_id,
+            message="Falha ao executar failover",
+            error=str(e)
+        )
+
+
+def configure_sensor_alert(
+    network_id: str,
+    name: str,
+    conditions: list,
+    recipients: list = None,
+    client=None
+) -> ConfigResult:
+    """
+    Configure sensor alert profile.
+
+    Args:
+        network_id: Network ID
+        name: Alert profile name
+        conditions: List of conditions (dicts with metric, threshold, duration)
+        recipients: List of notification recipients
+        client: MerakiClient instance
+
+    Returns:
+        ConfigResult with operation status
+    """
+    from scripts.api import network_has_product
+
+    client = client or get_client()
+
+    # Product guard
+    if not network_has_product(network_id, "sensor", client):
+        return _missing_hardware_result(network_id, "sensor", "sensor_alert", ConfigAction.CREATE)
+
+    try:
+        # Backup
+        backup_path = backup_config(
+            f"sensor_alert_{name}",
+            {"network_id": network_id}
+        )
+
+        # Create alert
+        result = client.create_sensor_alert(
+            network_id,
+            name=name,
+            conditions=conditions,
+            recipients=recipients
+        )
+
+        return ConfigResult(
+            success=True,
+            action=ConfigAction.CREATE,
+            resource_type="sensor_alert",
+            resource_id=result.get("profileId", ""),
+            message=f"Sensor alert '{name}' criado",
+            backup_path=backup_path,
+            changes={"name": name, "conditions_count": len(conditions)}
+        )
+
+    except Exception as e:
+        logger.error(f"Error configuring sensor alert: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.CREATE,
+            resource_type="sensor_alert",
+            resource_id="",
+            message="Falha ao criar sensor alert",
+            error=str(e)
+        )
+
+
 if __name__ == "__main__":
     # Teste rapido
     import sys
@@ -2925,3 +4181,272 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Erro: {e}")
         sys.exit(1)
+
+
+# ===== Phase 2 - Wave 4 =====
+
+
+def configure_group_policy(
+    network_id: str,
+    action: str,
+    name: str = None,
+    group_policy_id: str = None,
+    bandwidth_limit: dict = None,
+    client=None,
+) -> ConfigResult:
+    """
+    Configure group policies for a network.
+
+    Args:
+        network_id: Network ID
+        action: "create", "update", or "delete"
+        name: Policy name (required for create)
+        group_policy_id: Policy ID (required for update/delete)
+        bandwidth_limit: Bandwidth settings (optional for create/update)
+        client: MerakiClient instance (optional)
+
+    Returns:
+        ConfigResult
+    """
+    client = client or get_client()
+
+    try:
+        if action == "create":
+            if not name:
+                return ConfigResult(
+                    success=False,
+                    action=ConfigAction.CREATE,
+                    resource_type="group_policy",
+                    resource_id=None,
+                    message="Policy name is required for create",
+                    error="Missing required parameter: name",
+                )
+
+            kwargs = {}
+            if bandwidth_limit:
+                kwargs["bandwidthLimits"] = bandwidth_limit
+
+            backup_path = backup_config(network_id, "group_policy", client)
+
+            result = client.create_group_policy(network_id, name, **kwargs)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.CREATE,
+                resource_type="group_policy",
+                resource_id=result.get("groupPolicyId"),
+                message=f"Group policy '{name}' created successfully",
+                backup_path=backup_path,
+            )
+
+        elif action == "update":
+            if not group_policy_id:
+                return ConfigResult(
+                    success=False,
+                    action=ConfigAction.UPDATE,
+                    resource_type="group_policy",
+                    resource_id=None,
+                    message="Policy ID is required for update",
+                    error="Missing required parameter: group_policy_id",
+                )
+
+            kwargs = {}
+            if name:
+                kwargs["name"] = name
+            if bandwidth_limit:
+                kwargs["bandwidthLimits"] = bandwidth_limit
+
+            backup_path = backup_config(network_id, "group_policy", client)
+
+            result = client.update_group_policy(network_id, group_policy_id, **kwargs)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.UPDATE,
+                resource_type="group_policy",
+                resource_id=group_policy_id,
+                message=f"Group policy {group_policy_id} updated successfully",
+                backup_path=backup_path,
+            )
+
+        elif action == "delete":
+            if not group_policy_id:
+                return ConfigResult(
+                    success=False,
+                    action=ConfigAction.DELETE,
+                    resource_type="group_policy",
+                    resource_id=None,
+                    message="Policy ID is required for delete",
+                    error="Missing required parameter: group_policy_id",
+                )
+
+            backup_path = backup_config(network_id, "group_policy", client)
+
+            client.delete_group_policy(network_id, group_policy_id)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.DELETE,
+                resource_type="group_policy",
+                resource_id=group_policy_id,
+                message=f"Group policy {group_policy_id} deleted successfully",
+                backup_path=backup_path,
+            )
+
+        else:
+            return ConfigResult(
+                success=False,
+                action=ConfigAction.UPDATE,
+                resource_type="group_policy",
+                resource_id=None,
+                message=f"Invalid action: {action}",
+                error=f"Action must be create, update, or delete (got: {action})",
+            )
+
+    except Exception as e:
+        logger.error(f"Error configuring group policy: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="group_policy",
+            resource_id=group_policy_id,
+            message=f"Failed to {action} group policy",
+            error=str(e),
+        )
+
+
+def manage_static_route(
+    network_id: str,
+    action: str,
+    subnet: str = None,
+    gateway_ip: str = None,
+    name: str = None,
+    route_id: str = None,
+    client=None,
+) -> ConfigResult:
+    """
+    Manage static routes for an appliance network.
+
+    Args:
+        network_id: Network ID
+        action: "create", "update", or "delete"
+        subnet: Route subnet (required for create)
+        gateway_ip: Gateway IP (required for create)
+        name: Route name (optional)
+        route_id: Route ID (required for update/delete)
+        client: MerakiClient instance (optional)
+
+    Returns:
+        ConfigResult
+    """
+    from scripts.api import network_has_product
+
+    # Product guard: appliance
+    if not network_has_product(network_id, "appliance", client):
+        return _missing_hardware_result(
+            network_id, "appliance", "static_route", ConfigAction.CREATE
+        )
+
+    client = client or get_client()
+
+    try:
+        if action == "create":
+            if not subnet or not gateway_ip:
+                return ConfigResult(
+                    success=False,
+                    action=ConfigAction.CREATE,
+                    resource_type="static_route",
+                    resource_id=None,
+                    message="Subnet and gateway_ip are required for create",
+                    error="Missing required parameters: subnet, gateway_ip",
+                )
+
+            backup_path = backup_config(network_id, "static_route", client)
+
+            result = client.create_static_route(network_id, subnet, gateway_ip, name)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.CREATE,
+                resource_type="static_route",
+                resource_id=result.get("id"),
+                message=f"Static route to {subnet} via {gateway_ip} created successfully",
+                backup_path=backup_path,
+            )
+
+        elif action == "update":
+            if not route_id:
+                return ConfigResult(
+                    success=False,
+                    action=ConfigAction.UPDATE,
+                    resource_type="static_route",
+                    resource_id=None,
+                    message="Route ID is required for update",
+                    error="Missing required parameter: route_id",
+                )
+
+            kwargs = {}
+            if subnet:
+                kwargs["subnet"] = subnet
+            if gateway_ip:
+                kwargs["gatewayIp"] = gateway_ip
+            if name:
+                kwargs["name"] = name
+
+            backup_path = backup_config(network_id, "static_route", client)
+
+            result = client.update_static_route(network_id, route_id, **kwargs)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.UPDATE,
+                resource_type="static_route",
+                resource_id=route_id,
+                message=f"Static route {route_id} updated successfully",
+                backup_path=backup_path,
+            )
+
+        elif action == "delete":
+            if not route_id:
+                return ConfigResult(
+                    success=False,
+                    action=ConfigAction.DELETE,
+                    resource_type="static_route",
+                    resource_id=None,
+                    message="Route ID is required for delete",
+                    error="Missing required parameter: route_id",
+                )
+
+            backup_path = backup_config(network_id, "static_route", client)
+
+            client.delete_static_route(network_id, route_id)
+
+            return ConfigResult(
+                success=True,
+                action=ConfigAction.DELETE,
+                resource_type="static_route",
+                resource_id=route_id,
+                message=f"Static route {route_id} deleted successfully",
+                backup_path=backup_path,
+            )
+
+        else:
+            return ConfigResult(
+                success=False,
+                action=ConfigAction.UPDATE,
+                resource_type="static_route",
+                resource_id=None,
+                message=f"Invalid action: {action}",
+                error=f"Action must be create, update, or delete (got: {action})",
+            )
+
+    except Exception as e:
+        logger.error(f"Error managing static route: {e}")
+        return ConfigResult(
+            success=False,
+            action=ConfigAction.UPDATE,
+            resource_type="static_route",
+            resource_id=route_id,
+            message=f"Failed to {action} static route",
+            error=str(e),
+        )

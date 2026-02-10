@@ -692,10 +692,15 @@ def run_server(host: str = "127.0.0.1", port: Optional[int] = None):
 if __name__ == "__main__":
     import sys
 
+    debug = "--debug" in sys.argv
+
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG if debug else logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
+
+    if debug:
+        logger.info("DEBUG mode enabled - verbose logging active")
 
     # Simple CLI parsing
     host = "127.0.0.1"
